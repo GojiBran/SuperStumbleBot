@@ -5,6 +5,8 @@
 
 This script is a **UserScript** designed to enhance the functionality of **StumbleChat**, a web-based chat platform. It is written in JavaScript and is intended to be executed in the browser using a UserScript manager like **Tampermonkey** or **Greasemonkey**. The script adds various features to the chat, including custom commands, media playback (e.g., YouTube videos), and interactive responses to specific chat messages.
 
+View the **commands list** here: **[Super Stumble Bot Commands](https://github.com/GojiBran/SuperStumbleBot-Commands)**.
+
 Here’s a breakdown of what the script does:
 
 ---
