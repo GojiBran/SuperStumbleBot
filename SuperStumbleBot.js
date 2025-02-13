@@ -118,7 +118,7 @@
 
             this._send(JSON.stringify({
                 stumble: "msg",
-                text: `${nickname}'S ${message}` // Send message with nickname + possessive
+                text: `${nickname}'s ${message}` // Send message with nickname + possessive
             }));
         }
 
