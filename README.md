@@ -1,5 +1,5 @@
 # SuperStumbleBot
- -Goji
+ ## Goji's **StumbleChat** Bot
 
 
 
