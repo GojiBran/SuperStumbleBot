@@ -819,7 +819,14 @@
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+        // Handle the ".commands" command to output the commands link
+        if (wsmsg['text'].toLowerCase() === '.commands') {
+            this._send(`{"stumble":"msg","text":"Bot Commands: https://github.com/GojiBran/SuperStumbleBot-Commands"}`);
+        }
+
+
         // Handle the "commands" and ".commands" commands to output the list of commands as a single message
+        /*
         if (wsmsg['text'].toLowerCase() === 'commands' || wsmsg['text'].toLowerCase() === '.commands') {
             // Define the StumbleBot Commands list and sort it alphabetically
             const commandsList = [
@@ -857,6 +864,7 @@
             // Send the list of commands as a single message, separated by commas
             this._send(`{"stumble":"msg","text":"${commandsList.join(', ')}"}`);
         }
+        */
 
 // Triggers -------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
