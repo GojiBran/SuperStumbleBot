@@ -94,6 +94,34 @@
 // Bot Commands ---------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+        // Command: .me
+        if (wsmsg['text'].startsWith(".me")) {
+            const handle = wsmsg['handle']; // Get the handle
+            const username = wsmsg['username']; // Get the username to find the nickname
+            const nickname = userNicknames[handle]?.nickname || "Bot"; // Use handle to get the nickname, default to Bot if not found
+
+            const message = wsmsg['text'].slice(4).trim(); // Get the string after .me (removes the command part)
+
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `${nickname} ${message}` // Send message with nickname + the string
+            }));
+        }
+
+        // Command: .my
+        if (wsmsg['text'].startsWith(".my")) {
+            const handle = wsmsg['handle']; // Get the handle
+            const username = wsmsg['username']; // Get the username to find the nickname
+            const nickname = userNicknames[handle]?.nickname || "Bot"; // Use handle to get the nickname, default to Bot if not found
+
+            const message = wsmsg['text'].slice(4).trim(); // Get the string after .my (removes the command part)
+
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `${nickname}'S ${message}` // Send message with nickname + possessive
+            }));
+        }
+
         // Command: .cheers (Use handle to get nickname)
         if (wsmsg['text'] === ".c" || wsmsg['text'] === ".cheers") {
             const handle = wsmsg['handle']; // Get the handle
