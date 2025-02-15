@@ -9,6 +9,34 @@
 // The StumbleChat Bot is a UserScript written in JavaScript designed to enhance the user experience on StumbleChat, a web-based chat platform, by adding additional functionality for handling specific chat messages and enabling media playback within the chat room.
 // The script modifies the behavior of WebSocket communication to intercept and manipulate messages. It establishes a WebSocket connection with the chat server and overrides the send method to intercept outgoing messages.
 
+// ==UserScript==
+// @name         StumbleBot
+// @namespace    StumbleBot
+// @version      1.0
+// @description  Play youtube videos from the chat box and/or add custom commands to StumbleChat
+// @author       Goji
+// @match        https://stumblechat.com/room/*
+// ==/UserScript==
+// The StumbleChat Bot is a UserScript written in JavaScript designed to enhance the user experience on StumbleChat, a web-based chat platform, by adding additional functionality for handling specific chat messages and enabling media playback within the chat room.
+// The script modifies the behavior of WebSocket communication to intercept and manipulate messages. It establishes a WebSocket connection with the chat server and overrides the send method to intercept outgoing messages.
+
+
+let lastSentHour = -1;
+let shouldSendMessage = false;
+
+setInterval(() => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const currentSecond = now.getSeconds();
+
+    // Ensure the message is only scheduled once per hour at HH:20:00
+    if (currentMinute === 20 && currentSecond === 0 && lastSentHour !== currentHour && !shouldSendMessage) {
+        lastSentHour = currentHour;
+        shouldSendMessage = true; // Set flag
+    }
+}, 1000);
+
 (function() {
     // Load userNicknames from localStorage (if any)
     let userNicknames = JSON.parse(localStorage.getItem('userNicknames')) || {};
@@ -90,254 +118,18 @@
             }
         }
 
+        // Send 420 alert
+        if (shouldSendMessage) {
+            shouldSendMessage = false; // Reset the flag immediately to prevent multiple sends
+
+            setTimeout(() => {
+                this._send('{"stumble":"msg","text": "🌲 It\'s 420 somewhere! Smoke em if you got em! 💨"}');
+            }, 1000); // 1-second delay to send at HH:20:01
+        }
+
 //-----------------------------------------------------------------------------------------------------------------------------------
 // Bot Commands ---------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
-
-        // Command: .me
-        if (wsmsg['text'].startsWith(".me")) {
-            const handle = wsmsg['handle']; // Get the handle
-            const username = wsmsg['username']; // Get the username to find the nickname
-            const nickname = userNicknames[handle]?.nickname || "Bot"; // Use handle to get the nickname, default to Bot if not found
-
-            const message = wsmsg['text'].slice(4).trim(); // Get the string after .me (removes the command part)
-
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: `${nickname} ${message}` // Send message with nickname + the string
-            }));
-        }
-
-        // Command: .my
-        if (wsmsg['text'].startsWith(".my")) {
-            const handle = wsmsg['handle']; // Get the handle
-            const username = wsmsg['username']; // Get the username to find the nickname
-            const nickname = userNicknames[handle]?.nickname || "Bot"; // Use handle to get the nickname, default to Bot if not found
-
-            const message = wsmsg['text'].slice(4).trim(); // Get the string after .my (removes the command part)
-
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: `${nickname}'s ${message}` // Send message with nickname + possessive
-            }));
-        }
-
-        // Command: .cheers (Use handle to get nickname)
-        if (wsmsg['text'] === ".c" || wsmsg['text'] === ".cheers") {
-            const handle = wsmsg['handle']; // Get the handle
-            const username = wsmsg['username']; // Get the username to find the nickname
-            const nickname = userNicknames[handle]?.nickname || "Someone"; // Use handle to get the nickname
-
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: `${nickname} is smokin! Cheers! 🌲`
-            }));
-        }
-
-        // Command: .sub cheers
-        if (wsmsg['text'] === ".sc" || wsmsg['text'] === ".subcheers" || wsmsg['text'] === ".subchar" || wsmsg['text'] === ".schar" || wsmsg['text'] === ".scheers") {
-            const handle = wsmsg['handle']; // Get the handle
-            const username = wsmsg['username']; // Get the username to find the nickname
-            const nickname = userNicknames[handle]?.nickname || "Someone"; // Use handle to get the nickname
-
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: `${nickname} is subbin! Char! 🌲🍻`
-            }));
-        }
-
-        // Command: .dab
-        if (wsmsg['text'] === ".d" || wsmsg['text'] === ".dab" || wsmsg['text'] === ".dabbin" || wsmsg['text'] === ".dabbing") {
-            const handle = wsmsg['handle'];
-            const nickname = userNicknames[handle]?.nickname || "Someone";
-
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: `${nickname} is dabbin! Cheers!`
-            }));
-        }
-
-        // Command: .joint
-        if (wsmsg['text'] === ".j" || wsmsg['text'] === ".joint") {
-            const handle = wsmsg['handle'];
-            const nickname = userNicknames[handle]?.nickname || "Someone";
-
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: `${nickname} is smokin a joint! Cheers! 🌲`
-            }));
-        }
-
-        // Command: .prep
-        if (wsmsg['text'] === ".p" || wsmsg['text'] === ".prep" || wsmsg['text'] === ".preppin" || wsmsg['text'] === ".prepping" || wsmsg['text'] === ".pack" || wsmsg['text'] === ".packin" || wsmsg['text'] === ".packing") {
-            const handle = wsmsg['handle'];
-            const nickname = userNicknames[handle]?.nickname || "Someone";
-
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: `${nickname} is packin! 🌲`
-            }));
-        }
-
-        // Command: .set
-        if (wsmsg['text'] === ".s" || wsmsg['text'] === ".set" || wsmsg['text'] === ".packed" || wsmsg['text'] === ".ready") {
-            const handle = wsmsg['handle'];
-            const nickname = userNicknames[handle]?.nickname || "Someone";
-
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: `${nickname} is set! 🌲`
-            }));
-        }
-
-        // Command: goji and bran (case-insensitive and works anywhere in a sentence) [MUST FIX TO NOT REPLY TO SELF]
-//        if (/goji|bran/i.test(wsmsg['text'])) {
-//            const handle = wsmsg['handle']; // Get the handle
-//            const username = wsmsg['username']; // Get the username to find the nickname
-//            const nickname = userNicknames[handle]?.nickname || "YOU"; // Use handle to get the nickname
-
-            // Determine whether "goji" or "bran" was used in the text
-//            const wordUsed = /goji/i.test(wsmsg['text']) ? "GOJI" : "BRAN";
-
-//            this._send(JSON.stringify({
-//                stumble: "msg",
-//                text: `${wordUsed} FARTED ON 💨 ${nickname}!`
-//            }));
-//        }
-
-        // Command: .penis
-        if (wsmsg['text'].startsWith(".penis")) {
-            const handle = wsmsg['handle']; // Get the handle
-            const username = wsmsg['username']; // Get the username to find the nickname
-            const nickname = userNicknames[handle]?.nickname || "Bot"; // Use handle to get the nickname
-
-            // Generate random length for the penis (8D to 8============D)
-            const length = Math.floor(Math.random() * 21) + 1; // Generates a number between 1 and 21
-            const penis = `8${"=".repeat(length)}D`;
-
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: `${nickname}'s penis is this long: ${penis}`
-            }));
-        }
-
-        // Command: .smoko
-        if (wsmsg['text'].startsWith(".smoko")) {
-            const handle = wsmsg['handle']; // Get the handle
-            const username = wsmsg['username']; // Get the username to find the nickname
-            const nickname = userNicknames[handle]?.nickname || "YOU"; // Use handle to get the nickname
-
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: `${nickname.toUpperCase()} IS ON SMOKO! SO LEAVE EM ALONE! 🎶`
-            }));
-        }
-
-        // Command: .piss
-        if (wsmsg['text'].startsWith(".piss")) {
-            const handle = wsmsg['handle']; // Get the handle
-            const username = wsmsg['username']; // Get the username to find the nickname
-            const nickname = userNicknames[handle]?.nickname || "YOU"; // Use handle to get the nickname
-
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: `${nickname.toUpperCase()} HAS TO PISS PISS! 💦`
-            }));
-        }
-
-        // Command: .pooping (Random responses)
-        if (/^\.poop(ing|ed)?$/.test(wsmsg['text'])) {
-            const handle = wsmsg['handle'];
-            const nickname = userNicknames[handle]?.nickname || "Someone";
-
-            const responses = [
-                `${nickname} is pooping! 💩`,
-                `${nickname} took a break! 💩`,
-                `${nickname} is dropping the kids off at the pool! 💩`
-            ];
-
-            // Choose a random response
-            const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: randomResponse
-            }));
-        }
-
-        // Command: .farting (Random responses)
-        if (/^\.fart(ing|ed)?$/.test(wsmsg['text'])) {
-            const handle = wsmsg['handle'];
-            const nickname = userNicknames[handle]?.nickname || "Someone";
-
-            const responses = [
-                `${nickname} let out a loud fart! 💨`,
-                `${nickname} just ripped one! 💨`,
-                `${nickname} is blasting some gas! 💨`
-            ];
-
-            // Choose a random response
-            const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: randomResponse
-            }));
-        }
-
-        // Command: .users (List all users with delay)
-        if (wsmsg['text'] === ".users") {
-            const usersArray = Object.values(userNicknames)
-                .filter((v, i, a) => a.findIndex(t => t.username === v.username) === i) // Remove duplicates
-                .map(user => `Nickname: ${user.nickname}, Username: ${user.username}, Status: ${user.modStatus}`);
-
-            if (usersArray.length === 0) {
-                this._send(JSON.stringify({
-                    stumble: "msg",
-                    text: "No users stored."
-                }));
-            } else {
-                usersArray.forEach((userInfo, index) => {
-                    setTimeout(() => {
-                        this._send(JSON.stringify({
-                            stumble: "msg",
-                            text: userInfo
-                        }));
-                    }, index * 1000); // Delay each message by 1000ms
-                });
-            }
-        }
-
-        //start self
-        if (wsmsg['text'] === ".self") // Show the user's info
-        {
-            const handle = wsmsg['handle'];
-            const user = userNicknames[handle];
-
-            if (user) {
-                this._send(JSON.stringify({
-                    stumble: "msg",
-                    text: `Your Info:\nNickname: ${user.nickname}\nHandle: ${user.handle}\nUsername: ${user.username}\nStatus: ${user.modStatus}`
-                }));
-            } else {
-                this._send(JSON.stringify({
-                    stumble: "msg",
-                    text: "Sorry, I couldn't find your information."
-                }));
-            }
-        }
-
-        // Command: .clearUsers (Clear stored users)
-        if (wsmsg['text'] === ".clearUsers") {
-            userNicknames = {}; // Reset the user data
-            localStorage.removeItem('userNicknames'); // Clear from localStorage
-
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: "All stored users have been cleared."
-            }));
-        }
-
 
 
 // YouTube --------------------------------------------------------------------------------------------------------------------------
@@ -382,6 +174,299 @@
             }
         }
 
+// User Commands --------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Command: .me
+        if (wsmsg['text'].startsWith(".me")) {
+            const handle = wsmsg['handle']; // Get the handle
+            const username = wsmsg['username']; // Get the username to find the nickname
+            const nickname = userNicknames[handle]?.nickname || "Bot"; // Use handle to get the nickname, default to Bot if not found
+
+            const message = wsmsg['text'].slice(4).trim(); // Get the string after .me (removes the command part)
+
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `${nickname} ${message}` // Send message with nickname + the string
+            }));
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Command: .my
+        if (wsmsg['text'].startsWith(".my")) {
+            const handle = wsmsg['handle']; // Get the handle
+            const username = wsmsg['username']; // Get the username to find the nickname
+            const nickname = userNicknames[handle]?.nickname || "Bot"; // Use handle to get the nickname, default to Bot if not found
+
+            const message = wsmsg['text'].slice(4).trim(); // Get the string after .my (removes the command part)
+
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `${nickname}'s ${message}` // Send message with nickname + possessive
+            }));
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Command: .cheers (Use handle to get nickname)
+        if (wsmsg['text'] === ".c" || wsmsg['text'] === ".cheers") {
+            const handle = wsmsg['handle']; // Get the handle
+            const username = wsmsg['username']; // Get the username to find the nickname
+            const nickname = userNicknames[handle]?.nickname || "Someone"; // Use handle to get the nickname
+
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `${nickname} is smokin! Cheers! 🌲💨`
+            }));
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Command: .420
+        if (wsmsg['text'] === ".420") {
+            const handle = wsmsg['handle']; // Get the handle
+            const username = wsmsg['username']; // Get the username to find the nickname
+            const nickname = userNicknames[handle]?.nickname || "Someone"; // Use handle to get the nickname
+
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `${nickname} is smokin! Cheers! 💨 Happy 4:20! 🌲`
+            }));
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Command: .sub cheers
+        if (wsmsg['text'] === ".sc" || wsmsg['text'] === ".subcheers" || wsmsg['text'] === ".subchar" || wsmsg['text'] === ".schar" || wsmsg['text'] === ".scheers") {
+            const handle = wsmsg['handle']; // Get the handle
+            const username = wsmsg['username']; // Get the username to find the nickname
+            const nickname = userNicknames[handle]?.nickname || "Someone"; // Use handle to get the nickname
+
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `${nickname} is subbin! Char! 🌲🍻`
+            }));
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Command: .dab
+        if (wsmsg['text'] === ".d" || wsmsg['text'] === ".dab" || wsmsg['text'] === ".dabbin" || wsmsg['text'] === ".dabbing") {
+            const handle = wsmsg['handle'];
+            const nickname = userNicknames[handle]?.nickname || "Someone";
+
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `${nickname} is dabbin! Cheers! 💨`
+            }));
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Command: .joint
+        if (wsmsg['text'] === ".j" || wsmsg['text'] === ".joint") {
+            const handle = wsmsg['handle'];
+            const nickname = userNicknames[handle]?.nickname || "Someone";
+
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `${nickname} is smokin a joint! Cheers! 🌲💨`
+            }));
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Command: .prep
+        if (wsmsg['text'] === ".p" || wsmsg['text'] === ".prep" || wsmsg['text'] === ".preppin" || wsmsg['text'] === ".prepping" || wsmsg['text'] === ".pack" || wsmsg['text'] === ".packin" || wsmsg['text'] === ".packing") {
+            const handle = wsmsg['handle'];
+            const nickname = userNicknames[handle]?.nickname || "Someone";
+
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `${nickname} is packin! 🌲`
+            }));
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Command: .set
+        if (wsmsg['text'] === ".s" || wsmsg['text'] === ".set" || wsmsg['text'] === ".packed" || wsmsg['text'] === ".ready") {
+            const handle = wsmsg['handle'];
+            const nickname = userNicknames[handle]?.nickname || "Someone";
+
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `${nickname} is set! 🌲`
+            }));
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Command: goji and bran (case-insensitive and works anywhere in a sentence) [MUST FIX TO NOT REPLY TO SELF]
+        /*if (/goji|bran/i.test(wsmsg['text'])) {
+            const handle = wsmsg['handle']; // Get the handle
+            const username = wsmsg['username']; // Get the username to find the nickname
+            const nickname = userNicknames[handle]?.nickname || "YOU"; // Use handle to get the nickname
+
+            // Determine whether "goji" or "bran" was used in the text
+            const wordUsed = /goji/i.test(wsmsg['text']) ? "GOJI" : "BRAN";
+
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `${wordUsed} FARTED ON 💨 ${nickname}!`
+            }));
+        }*/
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Command: .penis
+        if (wsmsg['text'].startsWith(".penis")) {
+            const handle = wsmsg['handle']; // Get the handle
+            const username = wsmsg['username']; // Get the username to find the nickname
+            const nickname = userNicknames[handle]?.nickname || "Bot"; // Use handle to get the nickname
+
+            // Generate random length for the penis (8D to 8============D)
+            const length = Math.floor(Math.random() * 21) + 1; // Generates a number between 1 and 21
+            const penis = `8${"=".repeat(length)}D`;
+
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `${nickname}'s penis is this long: ${penis}`
+            }));
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Command: .smoko
+        if (wsmsg['text'].startsWith(".smoko")) {
+            const handle = wsmsg['handle']; // Get the handle
+            const username = wsmsg['username']; // Get the username to find the nickname
+            const nickname = userNicknames[handle]?.nickname || "YOU"; // Use handle to get the nickname
+
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `${nickname.toUpperCase()} IS ON SMOKO! SO LEAVE EM ALONE! 🎶`
+            }));
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Command: .piss
+        if (wsmsg['text'].startsWith(".piss")) {
+            const handle = wsmsg['handle']; // Get the handle
+            const username = wsmsg['username']; // Get the username to find the nickname
+            const nickname = userNicknames[handle]?.nickname || "YOU"; // Use handle to get the nickname
+
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `${nickname.toUpperCase()} HAS TO PISS PISS! 💦`
+            }));
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Command: .pooping (Random responses)
+        if (/^\.poop(ing|ed)?$/.test(wsmsg['text'])) {
+            const handle = wsmsg['handle'];
+            const nickname = userNicknames[handle]?.nickname || "Someone";
+
+            const responses = [
+                `${nickname} is pooping! 💩`,
+                `${nickname} took a break! 💩`,
+                `${nickname} is dropping the kids off at the pool! 💩`
+            ];
+
+            // Choose a random response
+            const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: randomResponse
+            }));
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Command: .farting (Random responses)
+        if (/^\.fart(ing|ed)?$/.test(wsmsg['text'])) {
+            const handle = wsmsg['handle'];
+            const nickname = userNicknames[handle]?.nickname || "Someone";
+
+            const responses = [
+                `${nickname} let out a loud fart! 💨`,
+                `${nickname} just ripped one! 💨`,
+                `${nickname} is blasting some gas! 💨`
+            ];
+
+            // Choose a random response
+            const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: randomResponse
+            }));
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Command: .users (List all users with delay)
+        if (wsmsg['text'] === ".users") {
+            const usersArray = Object.values(userNicknames)
+                .filter((v, i, a) => a.findIndex(t => t.username === v.username) === i) // Remove duplicates
+                .map(user => `Nickname: ${user.nickname}, Username: ${user.username}, Status: ${user.modStatus}`);
+
+            if (usersArray.length === 0) {
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: "No users stored."
+                }));
+            } else {
+                usersArray.forEach((userInfo, index) => {
+                    setTimeout(() => {
+                        this._send(JSON.stringify({
+                            stumble: "msg",
+                            text: userInfo
+                        }));
+                    }, index * 1000); // Delay each message by 1000ms
+                });
+            }
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        //start self
+        if (wsmsg['text'] === ".self") // Show the user's info
+        {
+            const handle = wsmsg['handle'];
+            const user = userNicknames[handle];
+
+            if (user) {
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: `Your Info:\nNickname: ${user.nickname}\nHandle: ${user.handle}\nUsername: ${user.username}\nStatus: ${user.modStatus}`
+                }));
+            } else {
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: "Sorry, I couldn't find your information."
+                }));
+            }
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Command: .clearUsers (Clear stored users)
+        if (wsmsg['text'] === ".clearUsers") {
+            userNicknames = {}; // Reset the user data
+            localStorage.removeItem('userNicknames'); // Clear from localStorage
+
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: "All stored users have been cleared."
+            }));
+        }
+
 // General Commands -----------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -421,6 +506,30 @@
                     text: "Please provide some options to choose from! (apple, orange, banana)"
                 }));
             }
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // start .suggest command
+        if (wsmsg['text'] === ".suggest") {
+            const lines = [
+                "To suggest a new command for StumbleBot, please follow this format:",
+                "Command: The name of the command (.cheers)",
+                "Result: What you expect StumbleBot to do (This command outputs a cheers message)",
+                "Example Suggestion:",
+                "'.cheers'",
+                "'Cheers!'",
+                "Thank you for your suggestion!"
+            ];
+
+            let delay = 1000; // 1000ms delay
+
+            // Send each line with a delay
+            lines.forEach((line, index) => {
+                setTimeout(() => {
+                    this._send('{"stumble":"msg","text":"' + line + '"}');
+                }, index * delay);
+            });
         }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -800,6 +909,25 @@
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+        //start snarf dilf
+        // Define an array of commands that will trigger the same result
+        const triggersDilfCommands = [".snarfdilf"];
+
+        // Define the GIFs to send
+        const sdilfgifs = [
+            "https://i.imgur.com/RSZ7xzg.jpeg"
+        ];
+
+        // Check if the message matches any of the trigger commands
+        if (triggersDilfCommands.includes(wsmsg['text'])) {
+            const randomsdilfGif = sdilfgifs[Math.floor(Math.random() * sdilfgifs.length)];
+
+            // Send the random GIF
+            this._send(`{"stumble":"msg","text": "${randomsdilfGif}"}`);
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
         // Start say command
         if (wsmsg['text'].startsWith(".say ")) {
             // Extract text after ".say " command
@@ -847,52 +975,35 @@
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // Handle the ".commands" command to output the commands link
-        if (wsmsg['text'].toLowerCase() === '.commands') {
+        // Handle the ".commands list" command to output the commands link
+        if (wsmsg['text'].toLowerCase() === '.commands list') {
             this._send(`{"stumble":"msg","text":"Bot Commands: https://github.com/GojiBran/SuperStumbleBot-Commands"}`);
         }
 
 
         // Handle the "commands" and ".commands" commands to output the list of commands as a single message
-        /*
         if (wsmsg['text'].toLowerCase() === 'commands' || wsmsg['text'].toLowerCase() === '.commands') {
-            // Define the StumbleBot Commands list and sort it alphabetically
+            // Define the commands
             const commandsList = [
-                '.commands',
-                '.bacon',
-                '.calc',
-                '.convert',
-                '.currency',
-                '.char',
-                '.chilidog',
-                '.claptrick',
-                '.roll',
-                '.dance',
-                '.hippo',
-                '.jedi',
-                '.wizard',
-                '.packiedance',
-                '.vato',
-                '.beans',
-                '.dredd',
-                '.carfart',
-                '.flamingo',
-                '.viper',
-                '.spreadem',
-                '.froggy',
-                '.boobs',
-                '.ass',
-                '.gilf',
-                '.milf',
-                '.dilf',
-                '.dialupdick',
-                '.youtube'
-            ].sort(); // Sorting alphabetically
+                "- .c is Cheers",
+                "- .p is Packin",
+                "- .s is Set",
+                "- .tits shows boobs gifs",
+                "- .ass shows butt gifs",
+                "- .yt with a link or search"
+            ];
 
-            // Send the list of commands as a single message, separated by commas
-            this._send(`{"stumble":"msg","text":"${commandsList.join(', ')}"}`);
+            // Function to send each command with a delay
+            const sendCommandsLineByLine = (list, index = 0) => {
+                if (index < list.length) {
+                    this._send(`{"stumble":"msg","text":"${list[index]}"}`);
+                    setTimeout(() => sendCommandsLineByLine(list, index + 1), 1000); // Delay 1000ms before sending the next one
+                }
+            };
+
+            // Start sending the commands line by line
+            sendCommandsLineByLine(commandsList);
         }
-        */
 
 // Triggers -------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -1248,7 +1359,7 @@
         if (/\bjava\b/i.test(wsmsg['text'])) { // When java
             // Create an array of responses
             const rsp = [
-                "https://i.imgur.com/OcCttVE.gif"
+                "https://i.imgur.com/OcCttVE.mp4"
             ];
 
             // Select a random response from the array
@@ -1949,26 +2060,26 @@ if (wsmsg['text'].startsWith(".calc ")) {
         }
     }
 
-// Handle the command
-function handleChatMessage(wsmsg) {
-    const { text, handle } = wsmsg;
+    // Handle the command
+    function handleChatMessage(wsmsg) {
+        const { text, handle } = wsmsg;
 
-    //--------------------------------------------------------------------------------------------------------------------
-    // Bot Commands
-    //--------------------------------------------------------------------------------------------------------------------
+        //--------------------------------------------------------------------------------------------------------------------
+        // Bot Commands
+        //--------------------------------------------------------------------------------------------------------------------
 
-    if (text === ".command") {
-        respondWithMessage.call(this, "result");
-    }
+        if (text === ".command") {
+            respondWithMessage.call(this, "result");
+        }
 
-    //if (text === ".cheers" && handle) {
+        //if (text === ".cheers" && handle) {
         // Retrieve nickname from userNicknames or default to "Someone"
-    //    const nickname = userNicknames[handle] || "Someone";
-    //    respondWithMessage.call(this, `${nickname} is smoking! Cheers!`);
-    //}
+        //    const nickname = userNicknames[handle] || "Someone";
+        //    respondWithMessage.call(this, `${nickname} is smoking! Cheers!`);
+        //}
 
-    //--------------------------------------------------------------------------------------------------------------------
-}
+        //--------------------------------------------------------------------------------------------------------------------
+    }
 
     // This code defines the respondWithMessage function, which takes a text parameter. It sends a response message to the server. The text parameter represents the content of the message.
     function respondWithMessage(text) {
