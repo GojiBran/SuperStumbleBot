@@ -1,6 +1,4 @@
----
-
-# SuperStumbleBot
+# **SuperStumbleBot**
 ## Goji's **StumbleChat** Bot
 
 This **UserScript**, written in JavaScript, enhances **StumbleChat** by adding custom commands, media playback, and interactive responses. It runs in the browser using a UserScript manager like **Tampermonkey** or **Greasemonkey**.
@@ -9,22 +7,7 @@ This **UserScript**, written in JavaScript, enhances **StumbleChat** by adding c
 
 ---
 
-### **1. Metadata Block**
-```javascript
-// ==UserScript==
-// @name         StumbleBot
-// @namespace    StumbleBot
-// @version      1.0
-// @description  Play YouTube videos and add custom commands to StumbleChat
-// @author       Goji
-// @match        https://stumblechat.com/room/*
-// ==/UserScript==
-```
-- Defines script metadata, including name, version, description, author, and target URLs.
-
----
-
-### **2. Key Features**
+### **Key Features**
 1. **Custom Commands**:
    - Supports commands like `.cheers`, `.dab`, `.joint`, `.penis`, `.smoko`, etc., often triggering humorous or media-rich responses.
    - Includes utility commands: `.time`, `.currency`, `.calc`, `.convert`, and `.roll`.
@@ -48,13 +31,23 @@ This **UserScript**, written in JavaScript, enhances **StumbleChat** by adding c
 7. **Cheers System**:
    - Supports cheers in multiple languages (e.g., `skål`, `santé`, `prost`, `kanpai`).
 
-8. **Random Fun**:
-   - Commands like `.dialupdick`, `.dialupdicklong`, and `.dialupdickkong` send humorous ASCII art.
-   - `.roll` for dice rolling and `.choose` for random selections.
+8. **Personalized Commands**:
+   - Uses usernames/nicknames for personalized responses (e.g., `.me`, `.my`, `.cheers`, `.420`).
+   - Welcomes users with personalized messages when they join the chat (e.g., "Welcome to Let's Get High, [username]!").
+   - Recognizes returning users and greets them with a "Welcome back" message.
+
+9. **Nickname Management**:
+   - Stores user nicknames and information in `localStorage`.
+   - Updates nicknames when users change them.
+   - Commands like `.self` display user info (nickname, username, handle, and mod status), and `.users` lists all stored users.
+
+10. **Random Fun**:
+    - Commands like `.dialupdick`, `.dialupdicklong`, and `.dialupdickkong` send humorous ASCII art.
+    - `.roll` for dice rolling and `.choose` for random selections.
 
 ---
 
-### **3. Core Functions**
+### **Core Functions**
 - **`handleMessage(msg)`**: Processes incoming WebSocket messages.
 - **`respondWithMessage(text)`**: Sends responses to the chat.
 - **`safeJSONParse(jsonString)`**: Safely parses JSON strings.
@@ -62,15 +55,7 @@ This **UserScript**, written in JavaScript, enhances **StumbleChat** by adding c
 
 ---
 
-### **4. Technical Details**
-- **WebSocket Override**: Intercepts and manipulates WebSocket messages.
-- **LocalStorage**: Stores user nicknames and GojiBux values.
-- **Regular Expressions**: Used for command parsing and triggering responses.
-- **Asynchronous Delays**: `setTimeout` for dynamic, delayed messages.
-
----
-
-### **5. Example Commands**
+### **Example Commands**
 - **`.cheers`**: Celebratory message.
 - **`.penis`**: Random "penis length" message.
 - **`.dance`**: Random dancing GIF.
@@ -79,10 +64,18 @@ This **UserScript**, written in JavaScript, enhances **StumbleChat** by adding c
 - **`.roll 2d6`**: Rolls dice.
 - **`.time pst`**: Displays time in a specific timezone.
 - **`.egg`**: Rickrolls with lyrics.
+- **`.me`**: Sends a message in the format `[nickname] [message]`.
+- **`.my`**: Sends a message in the format `[nickname]'s [message]`.
 
 ---
 
-### **6. Summary**
-SuperStumbleBot is a feature-rich, humorous enhancement for StumbleChat, adding custom commands, media playback, and interactive responses. It’s well-organized, leveraging WebSocket manipulation, LocalStorage, and regex for a seamless and entertaining chat experience.
+### **Technical Details**
+- **WebSocket Override**: Intercepts and manipulates WebSocket messages.
+- **LocalStorage**: Stores user nicknames and GojiBux values.
+- **Regular Expressions**: Used for command parsing and triggering responses.
+- **Asynchronous Delays**: `setTimeout` for dynamic, delayed messages.
 
---- 
+---
+
+### **Summary**
+SuperStumbleBot is a feature-rich, humorous enhancement for StumbleChat, adding custom commands, media playback, and interactive responses. It’s well-organized, leveraging WebSocket manipulation, LocalStorage, and regex for a seamless and entertaining chat experience. The bot now includes personalized commands, welcome messages, and nickname management, making it even more engaging and user-friendly.
