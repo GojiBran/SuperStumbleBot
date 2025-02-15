@@ -41,7 +41,12 @@ This **UserScript**, written in JavaScript, enhances **StumbleChat** by adding c
    - Updates nicknames when users change them.
    - Commands like `.self` display user info (nickname, username, handle, and mod status), and `.users` lists all stored users.
 
-10. **Random Fun**:
+10. **Universal Notes Storage**:
+    - **`.note [text]`**: Adds a note to a shared storage (up to 6 notes, oldest removed when full).
+    - **`.notes`**: Displays all stored notes with a 1-second delay between each.
+    - **`.clearNotes`**: Clears all stored notes.
+
+11. **Random Fun**:
     - Commands like `.dialupdick`, `.dialupdicklong`, and `.dialupdickkong` send humorous ASCII art.
     - `.roll` for dice rolling and `.choose` for random selections.
 
@@ -66,16 +71,20 @@ This **UserScript**, written in JavaScript, enhances **StumbleChat** by adding c
 - **`.egg`**: Rickrolls with lyrics.
 - **`.me`**: Sends a message in the format `[nickname] [message]`.
 - **`.my`**: Sends a message in the format `[nickname]'s [message]`.
+- **`.note [text]`**: Adds a note to shared storage.
+- **`.notes`**: Displays all stored notes.
+- **`.clearNotes`**: Clears all notes.
 
 ---
 
 ### **Technical Details**
 - **WebSocket Override**: Intercepts and manipulates WebSocket messages.
-- **LocalStorage**: Stores user nicknames and GojiBux values.
+- **LocalStorage**: Stores user nicknames, GojiBux values, and universal notes.
 - **Regular Expressions**: Used for command parsing and triggering responses.
 - **Asynchronous Delays**: `setTimeout` for dynamic, delayed messages.
 
 ---
 
 ### **Summary**
-SuperStumbleBot is a feature-rich, humorous enhancement for StumbleChat, adding custom commands, media playback, and interactive responses. It’s well-organized, leveraging WebSocket manipulation, LocalStorage, and regex for a seamless and entertaining chat experience. The bot now includes personalized commands, welcome messages, and nickname management, making it even more engaging and user-friendly.
+SuperStumbleBot is a feature-rich, humorous enhancement for StumbleChat, adding custom commands, media playback, and interactive responses. It’s well-organized, leveraging WebSocket manipulation, LocalStorage, and regex for a seamless and entertaining chat experience. The bot now includes personalized commands, welcome messages, nickname management, and a universal notes system, making it even more engaging and user-friendly.
+

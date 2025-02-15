@@ -123,8 +123,50 @@ setInterval(() => {
             shouldSendMessage = false; // Reset the flag immediately to prevent multiple sends
 
             setTimeout(() => {
-                this._send('{"stumble":"msg","text": "🌲 It\'s 420 somewhere! Smoke em if you got em! 💨"}');
+                this._send('{"stumble":"msg","text": "🌲 It\'s 4:20 somewhere! Smoke em if you got em! 💨"}');
             }, 1000); // 1-second delay to send at HH:20:01
+        }
+
+        // Universal Notes Storage
+        let universalNotes = JSON.parse(localStorage.getItem("universalNotes")) || [];
+
+        // Handle .note command to add a new note
+        if (wsmsg['text'] && wsmsg['text'].startsWith(".note ")) {
+            const note = wsmsg['text'].slice(6).trim(); // Extract the note text
+
+            if (note) {
+                // Limit notes to 6, remove the oldest if full
+                if (universalNotes.length >= 6) {
+                    universalNotes.shift(); // Remove the first (oldest) note
+                }
+
+                universalNotes.push(note);
+                localStorage.setItem("universalNotes", JSON.stringify(universalNotes));
+
+                respondWithMessage.call(this, "Note added!");
+            } else {
+                respondWithMessage.call(this, "Usage: .note [your note]");
+            }
+        }
+
+        // Handle .notes command to display all notes
+        if (wsmsg['text'] === ".notes") {
+            if (universalNotes.length === 0) {
+                respondWithMessage.call(this, "No notes available.");
+            } else {
+                universalNotes.forEach((note, index) => {
+                    setTimeout(() => {
+                        respondWithMessage.call(this, `${index + 1}. ${note}`);
+                    }, index * 1000); // 1000ms delay per note
+                });
+            }
+        }
+
+        // Handle .clearNotes command to wipe all notes
+        if (wsmsg['text'] === ".clearNotes") {
+            universalNotes = [];
+            localStorage.removeItem("universalNotes");
+            respondWithMessage.call(this, "All notes cleared.");
         }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
