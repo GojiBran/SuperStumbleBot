@@ -1,6 +1,7 @@
 // ==UserScript==
 // @name         SuperStumbleBot
 // @namespace    SuperStumbleBot
+// @icon         https://baskinbros.com/favicon.ico
 // @version      1.0
 // @description  Play youtube videos from the chat box and/or add custom commands to StumbleChat
 // @author       Goji
@@ -9,6 +10,16 @@
 // The StumbleChat Bot is a UserScript written in JavaScript designed to enhance the user experience on StumbleChat, a web-based chat platform, by adding additional functionality for handling specific chat messages and enabling media playback within the chat room.
 // The script modifies the behavior of WebSocket communication to intercept and manipulate messages. It establishes a WebSocket connection with the chat server and overrides the send method to intercept outgoing messages.
 
+
+(function() {
+    let link = document.createElement("link");
+    link.rel = "icon";
+    link.href = "https://baskinbros.com/favicon.ico"; // Replace with your favicon URL
+    document.head.appendChild(link);
+})();
+
+// Track user times (entry time and total time spent)
+let userTimes = {};
 
 let lastSentHour = -1;
 let shouldSendMessage = false;
@@ -54,42 +65,83 @@ setInterval(() => {
         console.log(wsmsg);
 
         // Store user's nickname and info when they join
-        if (wsmsg['stumble'] === 'join' && wsmsg['nick'] && wsmsg['username'] && wsmsg['handle']) {
-            const username = wsmsg['username'];
-            let nickname = wsmsg['nick'];
-            const handle = wsmsg['handle'];
+if (wsmsg['stumble'] === 'join' && wsmsg['nick'] && wsmsg['username'] && wsmsg['handle']) {
+    const username = wsmsg['username'];
+    let nickname = wsmsg['nick'];
+    const handle = wsmsg['handle'];
 
-            // If nickname starts with "guest-" followed by numbers, use username instead
-            if (/^guest-\d+$/i.test(nickname)) {
-                nickname = username;
-            }
+    // If nickname starts with "guest-" followed by numbers, use username instead
+    if (/^guest-\d+$/i.test(nickname)) {
+        nickname = username;
+    }
 
-            // Check if user has been here before
-            if (userNicknames[username]) {
-                // User is returning, send a "welcome back" message using username
-                respondWithMessage.call(this, `Welcome back to Let's Get High, ${nickname || username}!`);
-            } else {
-                // First-time user, send a "welcome" message using username
-                respondWithMessage.call(this, `Welcome to Let's Get High, ${nickname || username}!`);
-            }
+    let welcomeMessage;
+    if (username === "Goji") {
+        welcomeMessage = "🤖 Ah hell, it's Goji! I heard he eats ass. 🍑🔥";
+    } else if (username === "HippoTwatamus") {
+        welcomeMessage = "🤖 Hungry hungry HippoTwatamus is here to gobble some balls! 🦛🍽️";
+    } else if (username === "thilly") {
+        welcomeMessage = "🤖 You so Thilly! 😂🤪";
+    } else if (username === "JediSnarf") {
+        welcomeMessage = "🤖 The force is strong! Master of the chat, the force, and the game! ⚡💪🏀";
+    } else if (username === "Greenisacolour") {
+        welcomeMessage = "🤖 Green is not a creative color! 💚❌🎨";
+    } else if (username === "KailesaKaos89") {
+        welcomeMessage = "🤖 Beware, the Yokai emerges from the shadows... it's Kailesa!! 👹🌑";
+    } else if (username === "Guyonthecouch") {
+        welcomeMessage = "🤖 Hey GuyOnTheCouch, sorry to wake you... but you gotta try this! 🛋️😴🍔";
+    } else if (username === "BatonDeFromage") {
+        welcomeMessage = "🤖 A wild Cheese Stick appears! Someone grab the marinara! 🧀🍝";
+    } else if (username === "kangarooster") {
+        welcomeMessage = "🤖 It's a kangaroo! It's a Rooster! No! It's a hat! 🦘🐓🎩";
+    } else if (username === "Mysti") {
+        welcomeMessage = "🤖 HEY TEAM! 🔥👊";
+    } else if (username === "FatTabPirates") {
+        welcomeMessage = "🤖 All rise! The honorable FatTabPirates has entered the chat. ⚖️⚓";
+    } else if (username === "realmuchacha") {
+        welcomeMessage = "🤖 Soggy’s here! Better grab a towel, it’s about to get wet! 💦🧻";
+    } else if (username === "PeacefulTrees420") {
+        welcomeMessage = "🤖 Hide your grandmas and pack a fresh bowl! PeacefulTrees420 has arrived! 🌲🔥💨";
+    } else if (username === "KonkeyDong") {
+        welcomeMessage = "🤖 Cave has entered the game. Controls are janky, devs are dumb, 2/10 experience. 🎮⚠️";
+    } else if (username === "SemperZombie") {
+        welcomeMessage = "🤖 SemperZombie rises again! Remember: It's better to cum in the sink than sink in the cum. 🧟‍♀️💦";
+    } else if (username === "Indica") {
+        welcomeMessage = "🤖 Indica's here! Assume the position! 💋🔥";
+    } else if (username === "DSexpress") {
+        welcomeMessage = "🤖 DS is in the building! Beats, gloves, and vibes ready to drop. 🎧🥊🎶";
+    } else if (username === "Kicks") {
+        welcomeMessage = "🤖 Sick of all his kicks but still kickin it! 👟💥";
+    } else if (userNicknames[username]) {
+        welcomeMessage = `🤖 Welcome back to Let's Get High, ${nickname || username}! 🎉`;
+    } else {
+        welcomeMessage = `🤖 Welcome to Let's Get High, ${nickname || username}! 🌟`;
+    }
 
-            // Store or update the user's info using both username and handle
-            userNicknames[username] = {
-                handle: handle,
-                username: username,
-                nickname: nickname || username,
-                modStatus: wsmsg['mod'] ? "Moderator" : "Regular"
-            };
-            userNicknames[handle] = {
-                handle: handle,
-                username: username,
-                nickname: nickname || username,
-                modStatus: wsmsg['mod'] ? "Moderator" : "Regular"
-            };
+    respondWithMessage.call(this, welcomeMessage);
 
-            // Save the updated userNicknames to localStorage
-            localStorage.setItem('userNicknames', JSON.stringify(userNicknames));
-        }
+    // Store or update the user's info using both username and handle
+    userNicknames[username] = {
+        handle: handle,
+        username: username,
+        nickname: nickname || username,
+        modStatus: wsmsg['mod'] ? "Moderator" : "Regular"
+    };
+    userNicknames[handle] = {
+        handle: handle,
+        username: username,
+        nickname: nickname || username,
+        modStatus: wsmsg['mod'] ? "Moderator" : "Regular"
+    };
+
+    // Track user's join time
+    if (!userTimes[handle]) {
+        userTimes[handle] = { entryTime: Date.now(), totalTime: 0 };
+    }
+
+    // Save the updated userNicknames to localStorage
+    localStorage.setItem('userNicknames', JSON.stringify(userNicknames));
+}
 
         // Listen for nickname changes and update userNicknames
         if (wsmsg['stumble'] === 'nick' && wsmsg['handle'] && wsmsg['nick']) {
@@ -107,12 +159,23 @@ setInterval(() => {
             }
         }
 
+// Handle when user leaves the chat (track total time spent)
+if (wsmsg['stumble'] === 'leave' && wsmsg['handle']) {
+    const handle = wsmsg['handle'];
+
+    if (userTimes[handle]) {
+        // Calculate time spent in chat and update totalTime
+        const timeSpent = Date.now() - userTimes[handle].entryTime;
+        userTimes[handle].totalTime += timeSpent;
+    }
+}
+
         // Send 420 alert
         if (shouldSendMessage) {
             shouldSendMessage = false; // Reset the flag immediately to prevent multiple sends
 
             setTimeout(() => {
-                this._send('{"stumble":"msg","text": "🌲 It\'s 4:20 somewhere! Smoke em if you got em! 💨"}');
+                this._send('{"stumble":"msg","text": "🤖 It\'s 4:20 somewhere! Smoke em if you got em! 💨"}');
             }, 1000); // 1-second delay to send at HH:20:01
         }
 
@@ -132,16 +195,16 @@ setInterval(() => {
                 universalNotes.push(note);
                 localStorage.setItem("universalNotes", JSON.stringify(universalNotes));
 
-                respondWithMessage.call(this, "Note added!");
+                respondWithMessage.call(this, "🤖 Note added!");
             } else {
-                respondWithMessage.call(this, "Usage: .note [your note]");
+                respondWithMessage.call(this, "🤖 Usage: .note [your note]");
             }
         }
 
         // Handle .notes command to display all notes
         if (wsmsg['text'] === ".notes") {
             if (universalNotes.length === 0) {
-                respondWithMessage.call(this, "No notes available.");
+                respondWithMessage.call(this, "🤖 No notes available.");
             } else {
                 universalNotes.forEach((note, index) => {
                     setTimeout(() => {
@@ -155,13 +218,47 @@ setInterval(() => {
         if (wsmsg['text'] === ".clearNotes") {
             universalNotes = [];
             localStorage.removeItem("universalNotes");
-            respondWithMessage.call(this, "All notes cleared.");
+            respondWithMessage.call(this, "🤖 All notes cleared.");
         }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 // Bot Commands ---------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+        // Handle the ".commands list" command to output the commands link
+        if (wsmsg['text'].toLowerCase() === '.commands list') {
+            this._send(`{"stumble":"msg","text":"🤖 Bot Commands: https://github.com/GojiBran/SuperStumbleBot-Commands"}`);
+        }
+
+
+        // Handle the "commands" and ".commands" commands to output the list of commands as a single message
+        if (wsmsg['text'].toLowerCase() === 'commands' || wsmsg['text'].toLowerCase() === '.commands') {
+            // Define the commands
+            const commandsList = [
+                "- .yt with a link or query",
+                "- .c is Cheers",
+                "- .420 is 4:20",
+                "- .sc is Sub Cheers",
+                "- .h is Heatin",
+                "- .d is Dabbin",
+                "- .j is Joint",
+                "- .p is Packin",
+                "- .s is Set",
+                "- .tits shows boobs gifs",
+                "- .ass shows butt gifs"
+            ];
+
+            // Function to send each command with a delay
+            const sendCommandsLineByLine = (list, index = 0) => {
+                if (index < list.length) {
+                    this._send(`{"stumble":"msg","text":"${list[index]}"}`);
+                    setTimeout(() => sendCommandsLineByLine(list, index + 1), 1000); // Delay 1000ms before sending the next one
+                }
+            };
+
+            // Start sending the commands line by line
+            sendCommandsLineByLine(commandsList);
+        }
 
 // YouTube --------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -218,7 +315,7 @@ setInterval(() => {
 
             this._send(JSON.stringify({
                 stumble: "msg",
-                text: `${nickname} ${message}` // Send message with nickname + the string
+                text: `🤖 ${nickname} ${message}` // Send message with nickname + the string
             }));
         }
 
@@ -234,7 +331,7 @@ setInterval(() => {
 
             this._send(JSON.stringify({
                 stumble: "msg",
-                text: `${nickname}'s ${message}` // Send message with nickname + possessive
+                text: `🤖 ${nickname}'s ${message}` // Send message with nickname + possessive
             }));
         }
 
@@ -248,7 +345,7 @@ setInterval(() => {
 
             this._send(JSON.stringify({
                 stumble: "msg",
-                text: `${nickname} is smokin! Cheers! 🌲💨`
+                text: `🤖 ${nickname} is smokin! Cheers! 🌲💨`
             }));
         }
 
@@ -262,7 +359,7 @@ setInterval(() => {
 
             this._send(JSON.stringify({
                 stumble: "msg",
-                text: `${nickname} is smokin! Cheers! 💨 Happy 4:20! 🌲`
+                text: `🤖 ${nickname} is smokin! Cheers! 💨 Happy 4:20! 🌲`
             }));
         }
 
@@ -276,7 +373,20 @@ setInterval(() => {
 
             this._send(JSON.stringify({
                 stumble: "msg",
-                text: `${nickname} is subbin! Char! 🌲🍻`
+                text: `🤖 ${nickname} is subbin! Char! 🌲🍻`
+            }));
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Command: .heating
+        if (wsmsg['text'] === ".h" || wsmsg['text'] === ".heat" || wsmsg['text'] === ".heatin" || wsmsg['text'] === ".heating") {
+            const handle = wsmsg['handle'];
+            const nickname = userNicknames[handle]?.nickname || "Someone";
+
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `🤖 ${nickname} is heatin! 🔥`
             }));
         }
 
@@ -289,7 +399,7 @@ setInterval(() => {
 
             this._send(JSON.stringify({
                 stumble: "msg",
-                text: `${nickname} is dabbin! Cheers! 💨`
+                text: `🤖 ${nickname} is dabbin! Cheers! 💨`
             }));
         }
 
@@ -302,7 +412,7 @@ setInterval(() => {
 
             this._send(JSON.stringify({
                 stumble: "msg",
-                text: `${nickname} is smokin a joint! Cheers! 🌲💨`
+                text: `🤖 ${nickname} is smokin a joint! Cheers! 🌲💨`
             }));
         }
 
@@ -315,7 +425,7 @@ setInterval(() => {
 
             this._send(JSON.stringify({
                 stumble: "msg",
-                text: `${nickname} is packin! 🌲`
+                text: `🤖 ${nickname} is packin! 🌲`
             }));
         }
 
@@ -328,7 +438,7 @@ setInterval(() => {
 
             this._send(JSON.stringify({
                 stumble: "msg",
-                text: `${nickname} is set! 🌲`
+                text: `🤖 ${nickname} is set! 🌲`
             }));
         }
 
@@ -363,7 +473,7 @@ setInterval(() => {
 
             this._send(JSON.stringify({
                 stumble: "msg",
-                text: `${nickname}'s penis is this long: ${penis}`
+                text: `🤖 ${nickname}'s penis is this long: ${penis}`
             }));
         }
 
@@ -377,7 +487,7 @@ setInterval(() => {
 
             this._send(JSON.stringify({
                 stumble: "msg",
-                text: `${nickname.toUpperCase()} IS ON SMOKO! SO LEAVE EM ALONE! 🎶`
+                text: `🤖 ${nickname.toUpperCase()} IS ON SMOKO! SO LEAVE EM ALONE! 🎶`
             }));
         }
 
@@ -391,7 +501,7 @@ setInterval(() => {
 
             this._send(JSON.stringify({
                 stumble: "msg",
-                text: `${nickname.toUpperCase()} HAS TO PISS PISS! 💦`
+                text: `🤖 ${nickname.toUpperCase()} HAS TO PISS PISS! 💦`
             }));
         }
 
@@ -403,9 +513,9 @@ setInterval(() => {
             const nickname = userNicknames[handle]?.nickname || "Someone";
 
             const responses = [
-                `${nickname} is pooping! 💩`,
-                `${nickname} took a break! 💩`,
-                `${nickname} is dropping the kids off at the pool! 💩`
+                `🤖 ${nickname} is pooping! 💩`,
+                `🤖 ${nickname} took a break! 💩`,
+                `🤖 ${nickname} is dropping the kids off at the pool! 💩`
             ];
 
             // Choose a random response
@@ -425,9 +535,9 @@ setInterval(() => {
             const nickname = userNicknames[handle]?.nickname || "Someone";
 
             const responses = [
-                `${nickname} let out a loud fart! 💨`,
-                `${nickname} just ripped one! 💨`,
-                `${nickname} is blasting some gas! 💨`
+                `🤖 ${nickname} let out a loud fart! 💨`,
+                `🤖 ${nickname} just ripped one! 💨`,
+                `🤖 ${nickname} is blasting some gas! 💨`
             ];
 
             // Choose a random response
@@ -450,7 +560,7 @@ setInterval(() => {
             if (usersArray.length === 0) {
                 this._send(JSON.stringify({
                     stumble: "msg",
-                    text: "No users stored."
+                    text: "🤖 No users stored."
                 }));
             } else {
                 usersArray.forEach((userInfo, index) => {
@@ -466,24 +576,27 @@ setInterval(() => {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        //start self
-        if (wsmsg['text'] === ".self") // Show the user's info
-        {
-            const handle = wsmsg['handle'];
-            const user = userNicknames[handle];
+//start self
+if (wsmsg['text'] === ".self") { // Show the user's info
+    const handle = wsmsg['handle'];
+    const user = userNicknames[handle];
 
-            if (user) {
-                this._send(JSON.stringify({
-                    stumble: "msg",
-                    text: `Your Info:\nNickname: ${user.nickname}\nHandle: ${user.handle}\nUsername: ${user.username}\nStatus: ${user.modStatus}`
-                }));
-            } else {
-                this._send(JSON.stringify({
-                    stumble: "msg",
-                    text: "Sorry, I couldn't find your information."
-                }));
-            }
-        }
+    if (user) {
+        // Retrieve total time spent in chat from userTimes
+        const totalTime = userTimes[handle] ? userTimes[handle].totalTime : 0;
+        const totalTimeFormatted = (totalTime / 1000).toFixed(2); // Convert to seconds and format to 2 decimals
+
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: `🤖 Your Info:\nNickname: ${user.nickname}\nHandle: ${user.handle}\nUsername: ${user.username}\nStatus: ${user.modStatus}\nTotal Time in Chat: ${totalTimeFormatted} seconds`
+        }));
+    } else {
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: "🤖 Sorry, I couldn't find your information."
+        }));
+    }
+}
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -494,7 +607,7 @@ setInterval(() => {
 
             this._send(JSON.stringify({
                 stumble: "msg",
-                text: "All stored users have been cleared."
+                text: "🤖 All stored users have been cleared."
             }));
         }
 
@@ -504,7 +617,7 @@ setInterval(() => {
         // start Bot repo
         if (wsmsg['text'] === ".bot") {
         const lines = [
-            "Download the bot here: https://github.com/GojiBran/StumbleBot",
+            "🤖 Download the bot here: https://github.com/GojiBran/StumbleBot",
             "Just for YouTube here: https://github.com/GojiBran/stumbletube"
         ];
 
@@ -529,12 +642,12 @@ setInterval(() => {
 
                 this._send(JSON.stringify({
                     stumble: "msg",
-                    text: `I choose: ${choice}!`
+                    text: `🤖 I choose: ${choice}!`
                 }));
             } else {
                 this._send(JSON.stringify({
                     stumble: "msg",
-                    text: "Please provide some options to choose from! (apple, orange, banana)"
+                    text: "🤖 Please provide some options to choose from! (apple, orange, banana)"
                 }));
             }
         }
@@ -544,7 +657,7 @@ setInterval(() => {
         // start .suggest command
         if (wsmsg['text'] === ".suggest") {
             const lines = [
-                "To suggest a new command for StumbleBot, please follow this format:",
+                "🤖 To suggest a new command for StumbleBot, please follow this format:",
                 "Command: The name of the command (.cheers)",
                 "Result: What you expect StumbleBot to do (This command outputs a cheers message)",
                 "Example Suggestion:",
@@ -568,6 +681,20 @@ setInterval(() => {
         // start bacon
         if (wsmsg['text'] === ".bacon") {
             this._send('{"stumble":"msg","text":".yt bacon 45min"}'); // yes lazy
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // start discord
+        if (wsmsg['text'] === ".discord") {
+            this._send('{"stumble":"msg","text":"Join Discord: https://discord.gg/apu9gzGYMD (no video, use stumble)"}');
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // start orange juice
+        if (wsmsg['text'] === ".oj") {
+            this._send('{"stumble":"msg","text":"https://i.imgur.com/pTMweVs.gif"}');
         }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -689,6 +816,46 @@ setInterval(() => {
                 "https://i.imgur.com/sTykk6e.jpeg",
                 "https://i.imgur.com/9OkT24Y.jpeg",
                 "https://i.imgur.com/5hLQYft.jpeg"
+            ];
+
+            // Select a random GIF from the array
+            const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
+
+            // Send the random GIF
+            this._send(`{"stumble":"msg","text": "${randomGif}"}`);
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        //start shaq
+        if (wsmsg['text'] === ".shaq") {
+            // Create an array of GIF URLs
+            const gifs = [
+                "https://i.imgur.com/oK2nz7H.gif",
+                "https://i.imgur.com/gftiMkE.gif",
+                "https://i.imgur.com/fEjqx8T.gif",
+                "https://i.imgur.com/ileqsqo.gif",
+                "https://i.imgur.com/pKikBat.gif",
+                "https://i.imgur.com/7g8FFMd.gif",
+                "https://i.imgur.com/gVKNK1u.gif",
+                "https://i.imgur.com/huNMlZA.gif"
+            ];
+
+            // Select a random GIF from the array
+            const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
+
+            // Send the random GIF
+            this._send(`{"stumble":"msg","text": "${randomGif}"}`);
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        //start queef
+        if (wsmsg['text'] === ".queef") {
+            // Create an array of GIF URLs
+            const gifs = [
+                "https://i.imgur.com/Qq2bKNv.jpeg",
+                "https://i.imgur.com/ofC1jDn.gif"
             ];
 
             // Select a random GIF from the array
@@ -858,7 +1025,8 @@ setInterval(() => {
             "https://i.imgur.com/WRkLICq.gif",
             "https://i.imgur.com/fGqJjtI.gif",
             "https://i.imgur.com/Z3SgS85.gif",
-            "https://i.imgur.com/oZVxtAU.gif"
+            "https://i.imgur.com/oZVxtAU.gif",
+            "https://i.imgur.com/ImnJ0WV.gif"
         ];
 
         // Check if the message matches any of the trigger commands
@@ -963,7 +1131,7 @@ setInterval(() => {
         if (wsmsg['text'].startsWith(".say ")) {
             // Extract text after ".say " command
             const sayText = wsmsg['text'].substring(5);
-            this._send(`{"stumble":"msg","text":"${sayText}"}`);
+            this._send(`{"stumble":"msg","text":"🤖 ${sayText}"}`);
         }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -1006,34 +1174,30 @@ setInterval(() => {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // Handle the ".commands list" command to output the commands link
-        if (wsmsg['text'].toLowerCase() === '.commands list') {
-            this._send(`{"stumble":"msg","text":"Bot Commands: https://github.com/GojiBran/SuperStumbleBot-Commands"}`);
-        }
-
-
-        // Handle the "commands" and ".commands" commands to output the list of commands as a single message
-        if (wsmsg['text'].toLowerCase() === 'commands' || wsmsg['text'].toLowerCase() === '.commands') {
-            // Define the commands
-            const commandsList = [
-                "- .c is Cheers",
-                "- .p is Packin",
-                "- .s is Set",
-                "- .tits shows boobs gifs",
-                "- .ass shows butt gifs",
-                "- .yt with a link or search"
+        // Start labyrinth if the message contains ".labyrinth"
+        if (wsmsg['text'] === ".labyrinth") {
+            // Create an array of GIF URLs
+            const gifs = [
+                "https://i.imgur.com/KYHS47y.gif",
+                "https://i.imgur.com/ML8ZjPx.gif",
+                "https://i.imgur.com/bndmJ4w.gif",
+                "https://i.imgur.com/yYIhNTN.gif"
             ];
 
-            // Function to send each command with a delay
-            const sendCommandsLineByLine = (list, index = 0) => {
-                if (index < list.length) {
-                    this._send(`{"stumble":"msg","text":"${list[index]}"}`);
-                    setTimeout(() => sendCommandsLineByLine(list, index + 1), 1000); // Delay 1000ms before sending the next one
+            // Function to send GIFs with a 1000ms delay
+            const sendGifs = (index) => {
+                if (index < gifs.length) {
+                    this._send(`{"stumble":"msg","text": "${gifs[index]}"} `);
+                    setTimeout(() => sendGifs(index + 1), 1000); // 1000 ms delay between each gif
+                } else {
+                    // After sending all GIFs, wait 3 seconds and send the final GIF
+                    setTimeout(() => {
+                        this._send('{"stumble":"msg","text": "https://i.imgur.com/ALjpQST.gif"}');
+                    }, 6000); // 6000 ms delay before sending the last GIF
                 }
             };
 
-            // Start sending the commands line by line
-            sendCommandsLineByLine(commandsList);
+            sendGifs(0); // Start sending GIFs
         }
 
 // Triggers -------------------------------------------------------------------------------------------------------------------------
@@ -1041,41 +1205,43 @@ setInterval(() => {
 
         //ping pong
         if (wsmsg['text'] === "ding") {
-            setTimeout(() => this._send('{"stumble":"msg","text":"DONG"}'), 1000);
+            setTimeout(() => this._send('{"stumble":"msg","text":"🤖 DONG"}'), 1000);
         } else if (wsmsg['text'] === "ping") {
-            setTimeout(() => this._send('{"stumble":"msg","text":"PONG"}'), 1000);
+            setTimeout(() => this._send('{"stumble":"msg","text":"🤖 PONG"}'), 1000);
+        } else if (wsmsg['text'] === "bing") {
+            setTimeout(() => this._send('{"stumble":"msg","text":"🤖 BONG"}'), 1000);
         }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
         // Curse word check command
-        if (/\b(shit|fuck|bitch|asshole|damn|bastard|cock|pussy|dick|cunt|slut|fag|twat|douche|motherfucker|prick|gay|retard|nigger|whore|bastard)\b/i.test(wsmsg['text'])) {
+        /*if (/\b(shit|fuck|bitch|asshole|damn|bastard|cock|pussy|dick|cunt|slut|fag|twat|douche|motherfucker|prick|gay|retard|nigger|whore|bastard)\b/i.test(wsmsg['text'])) {
             this._send('{"stumble":"msg","text":"LE GASP!!"}');
-        }
+        }*/
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
         //5-0
         if (wsmsg['text'] === "5-0") {
-            setTimeout(() => this._send('{"stumble":"msg","text":"Cheese it!"}'), 1000);
+            setTimeout(() => this._send('{"stumble":"msg","text":"🤖 Cheese it!"}'), 1000);
         }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
         //set and packed
         if (wsmsg['text'] === "set") {
-            setTimeout(() => this._send('{"stumble":"msg","text":"Let\'s smoke!"}'), 1000);
+            setTimeout(() => this._send('{"stumble":"msg","text":"🤖 Let\'s smoke!"}'), 1000);
         } else if (wsmsg['text'] === "packed") {
-            setTimeout(() => this._send('{"stumble":"msg","text":"Let\'s toke!"}'), 1000);
+            setTimeout(() => this._send('{"stumble":"msg","text":"🤖 Let\'s toke!"}'), 1000);
         }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
         // bran and goji
         if (wsmsg['text'] === "bran") {
-            setTimeout(() => this._send('{"stumble":"msg","text":"Bran farted on you!"}'), 1000);
+            setTimeout(() => this._send('{"stumble":"msg","text":"🤖 Bran farted on you!"}'), 1000);
         } else if (wsmsg['text'] === "goji") {
-            setTimeout(() => this._send('{"stumble":"msg","text":"Goji farted on you!"}'), 1000);
+            setTimeout(() => this._send('{"stumble":"msg","text":"🤖 Goji farted on you!"}'), 1000);
         }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -1089,9 +1255,9 @@ setInterval(() => {
 
         // im on smoko
         if (wsmsg['text'] === "im on smoko") {
-            setTimeout(() => this._send('{"stumble":"msg","text":"SO LEAVE EM ALONE!"}'), 1000);
+            setTimeout(() => this._send('{"stumble":"msg","text":"🤖 SO LEAVE EM ALONE!"}'), 1000);
         } else if (wsmsg['text'] === "smoko") {
-            setTimeout(() => this._send('{"stumble":"msg","text":"THEY\'RE ON SMOKO! SO LEAVE EM ALONE!"}'), 1000);
+            setTimeout(() => this._send('{"stumble":"msg","text":"🤖 THEY\'RE ON SMOKO! SO LEAVE EM ALONE!"}'), 1000);
         }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -1216,9 +1382,9 @@ setInterval(() => {
 
         // Array of possible responses to be sent
         const responses = [
-            "Happy 4:20! Cheers!",
-            "It's 4:20 somewhere! Blaze it!",
-            "Happy 4:20! Smoke 'em if you got 'em!"
+            "🤖 Happy 4:20! Cheers!",
+            "🤖 It's 4:20 somewhere! Blaze it!",
+            "🤖 Happy 4:20! Smoke 'em if you got 'em!"
         ];
 
         if (tokeTimeTriggers.includes(wsmsg['text'].toLowerCase())) { // Check if the message matches any of the 420 phrases
@@ -1418,8 +1584,8 @@ setInterval(() => {
             const stinkResponse = stinkResponses[Math.floor(Math.random() * stinkResponses.length)];
 
             // Send the sniffing messages with a delay
-            setTimeout(() => this._send(`{"stumble":"msg","text":"${sniffResponse}"}`), 1000);
-            setTimeout(() => this._send(`{"stumble":"msg","text":"${stinkResponse}"}`), 3000);
+            setTimeout(() => this._send(`{"stumble":"msg","text":"🤖 ${sniffResponse}"}`), 1000);
+            setTimeout(() => this._send(`{"stumble":"msg","text":"🤖 ${stinkResponse}"}`), 3000);
         }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -1773,7 +1939,7 @@ setInterval(() => {
             const formattedDate = date.split('/').reverse().join('/'); // Convert to DD/MM/YYYY
 
             // Send the formatted time, date, and time zone
-            this._send(`{"stumble":"msg","text":"${time} | ${formattedDate} | ${userInput?.toUpperCase() || 'UTC'}"}`);
+            this._send(`{"stumble":"msg","text":"🕰 ${time} | 📅 ${formattedDate} | 🌎 ${userInput?.toUpperCase() || 'UTC'}"}`);
         }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -1826,7 +1992,7 @@ setInterval(() => {
             const args = wsmsg['text'].slice(10).trim().split(/\s+/); // Ignore the command ".currency " and split arguments by spaces
 
             if (args.length !== 4 || args[2].toLowerCase() !== "to") {
-                this._send('{"stumble":"msg","text":"Invalid input! Example: .currency 50 usd to dkk"}');
+                this._send('{"stumble":"msg","text":"🤖 Invalid input! Example: .currency 50 usd to dkk"}');
                 return;
             }
 
@@ -1835,10 +2001,10 @@ setInterval(() => {
             const toCurrency = args[3]?.toLowerCase();
 
             if (isNaN(amount) || !currencyConversions[fromCurrency] || !currencyConversions[fromCurrency][toCurrency]) {
-                this._send('{"stumble":"msg","text":"Invalid input! Example: .currency 50 usd to dkk"}');
+                this._send('{"stumble":"msg","text":"🤖 Invalid input! Example: .currency 50 usd to dkk"}');
             } else {
                 const convertedAmount = (amount * currencyConversions[fromCurrency][toCurrency]).toFixed(2);
-                this._send(`{"stumble":"msg","text":"${amount} ${fromCurrency.toUpperCase()} = ${convertedAmount} ${toCurrency.toUpperCase()}"}`);
+                this._send(`{"stumble":"msg","text":"💱 ${amount} ${fromCurrency.toUpperCase()} = ${convertedAmount} ${toCurrency.toUpperCase()}"}`);
             }
         }
 
@@ -1871,8 +2037,8 @@ if (wsmsg['text'].startsWith(".calc ")) {
             let result = eval(exp);
             let formattedExp = exp.replace(/\*/g, ' * ').replace(/\//g, ' / ').replace(/\+/g, ' + ').replace(/-/g, ' - ');
 
-            steps.push(`Evaluating: ${formattedExp}`);
-            steps.push(`Final result: ${result}`);
+            steps.push(`🧮 Evaluating: ${formattedExp}`);
+            steps.push(`🤖 Final result: ${result}`);
 
             // Send each step with a 1-second delay
             let delay = 1000;
@@ -1893,7 +2059,7 @@ if (wsmsg['text'].startsWith(".calc ")) {
             }, delay);
 
         } catch (error) {
-            this._send('{"stumble":"msg","text":"Invalid calculation"}');
+            this._send('{"stumble":"msg","text":"🤖 Invalid calculation"}');
         }
     }, 1000);
 }
@@ -1992,12 +2158,12 @@ if (wsmsg['text'].startsWith(".calc ")) {
                 }
 
                 if (convertedValue !== null) {
-                    this._send(`{"stumble":"msg","text":"${value} ${fromUnit} is ${convertedValue.toFixed(2)} ${toUnit}"}`);
+                    this._send(`{"stumble":"msg","text":"🤖 ${value} ${fromUnit} is ${convertedValue.toFixed(2)} ${toUnit}"}`);
                 } else {
-                    this._send('{"stumble":"msg","text":"Invalid units or conversion not supported."}');
+                    this._send('{"stumble":"msg","text":"🤖 Invalid units or conversion not supported."}');
                 }
             } else {
-                this._send('{"stumble":"msg","text":"Invalid format. Use: .convert [value] [unit] to [unit]."}');
+                this._send('{"stumble":"msg","text":"🤖 Invalid format. Use: .convert [value] [unit] to [unit]."}');
             }
         }
 
@@ -2030,12 +2196,12 @@ if (wsmsg['text'].startsWith(".calc ")) {
             }
 
             // Send the rolled results
-            this._send(`{"stumble":"msg","text": "Rolled: ${rolls.join(', ')}"}`);
+            this._send(`{"stumble":"msg","text": "🎲 Rolled: ${rolls.join(', ')}"}`);
 
             // If more than one die is rolled, send the total after 1000ms delay
             if (numDice > 1) {
                 setTimeout(() => {
-                    this._send(`{"stumble":"msg","text": "Total: ${total}"}`);
+                    this._send(`{"stumble":"msg","text": "🎲 Total: ${total}"}`);
                 }, 1000);
             }
         }
@@ -2054,7 +2220,7 @@ if (wsmsg['text'].startsWith(".calc ")) {
             localStorage.setItem('gojiBuxValue', gojiBuxValue);
 
             // Send the message with the updated value
-            this._send(`{"stumble":"msg","text": "GojiBux is now worth ${gojiBuxValue.toLocaleString()} USD per 1 GBX!"}`);
+            this._send(`{"stumble":"msg","text": "📈 GojiBux is now worth 💵 ${gojiBuxValue.toLocaleString()} USD per 1 GBX!"}`);
         }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -2062,7 +2228,7 @@ if (wsmsg['text'].startsWith(".calc ")) {
         // .$NARF command: Displays the negative value of GojiBux
         if (wsmsg['text'] === ".$NARF") {
             const narfValue = -gojiBuxValue; // $NRF is the negative of GBX
-            this._send(`{"stumble":"msg","text": "$NRF is now worth ${narfValue.toLocaleString()} USD per 1 $NRF!"}`);
+            this._send(`{"stumble":"msg","text": "📉 $NARF is now worth 💵 ${narfValue.toLocaleString()} USD per 1 $NRF!"}`);
         }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -2075,7 +2241,7 @@ if (wsmsg['text'].startsWith(".calc ")) {
             localStorage.setItem('gojiBuxValue', gojiBuxValue);
 
             // Send the message to confirm the reset
-            this._send(`{"stumble":"msg","text": "GojiBux has been reset to ${gojiBuxValue} USD per 1 GBX."}`);
+            this._send(`{"stumble":"msg","text": "🤖 GojiBux has been reset to ${gojiBuxValue} USD per 1 GBX."}`);
         }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
