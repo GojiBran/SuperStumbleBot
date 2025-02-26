@@ -18,9 +18,6 @@
     document.head.appendChild(link);
 })();
 
-// Track user times (entry time and total time spent)
-let userTimes = {};
-
 let lastSentHour = -1;
 let shouldSendMessage = false;
 
@@ -59,89 +56,121 @@ setInterval(() => {
         };
     };
 
+    // Updated handleMessage with filtering and color-coded output
     function handleMessage(msg) {
-        console.log('<<', msg.data);
-        const wsmsg = safeJSONParse(msg.data);
-        console.log(wsmsg);
+        const data = msg.data;
+        const wsmsg = safeJSONParse(data);
+        if (wsmsg) {
+            console.log(wsmsg); // Log the message to the browser console instead of a pop-up
+        } else {
+            console.warn('Failed to parse:', data);
+        }
 
         // Store user's nickname and info when they join
-if (wsmsg['stumble'] === 'join' && wsmsg['nick'] && wsmsg['username'] && wsmsg['handle']) {
-    const username = wsmsg['username'];
-    let nickname = wsmsg['nick'];
-    const handle = wsmsg['handle'];
+        if (wsmsg['stumble'] === 'join' && wsmsg['nick'] && wsmsg['username'] && wsmsg['handle']) {
+            const username = wsmsg['username'];
+            let nickname = wsmsg['nick'];
+            const handle = wsmsg['handle'];
 
-    // If nickname starts with "guest-" followed by numbers, use username instead
-    if (/^guest-\d+$/i.test(nickname)) {
-        nickname = username;
-    }
+            // If nickname starts with "guest-" followed by numbers, use username instead
+            if (/^guest-\d+$/i.test(nickname)) {
+                nickname = username;
+            }
 
-    let welcomeMessage;
-    if (username === "Goji") {
-        welcomeMessage = "🤖 Ah hell, it's Goji! I heard he eats ass. 🍑🔥";
-    } else if (username === "HippoTwatamus") {
-        welcomeMessage = "🤖 Hungry hungry HippoTwatamus is here to gobble some balls! 🦛🍽️";
-    } else if (username === "thilly") {
-        welcomeMessage = "🤖 You so Thilly! 😂🤪";
-    } else if (username === "JediSnarf") {
-        welcomeMessage = "🤖 The force is strong! Master of the chat, the force, and the game! ⚡💪🏀";
-    } else if (username === "Greenisacolour") {
-        welcomeMessage = "🤖 Green is not a creative color! 💚❌🎨";
-    } else if (username === "KailesaKaos89") {
-        welcomeMessage = "🤖 Beware, the Yokai emerges from the shadows... it's Kailesa!! 👹🌑";
-    } else if (username === "Guyonthecouch") {
-        welcomeMessage = "🤖 Hey GuyOnTheCouch, sorry to wake you... but you gotta try this! 🛋️😴🍔";
-    } else if (username === "BatonDeFromage") {
-        welcomeMessage = "🤖 A wild Cheese Stick appears! Someone grab the marinara! 🧀🍝";
-    } else if (username === "kangarooster") {
-        welcomeMessage = "🤖 It's a kangaroo! It's a Rooster! No! It's a hat! 🦘🐓🎩";
-    } else if (username === "Mysti") {
-        welcomeMessage = "🤖 HEY TEAM! 🔥👊";
-    } else if (username === "FatTabPirates") {
-        welcomeMessage = "🤖 All rise! The honorable FatTabPirates has entered the chat. ⚖️⚓";
-    } else if (username === "realmuchacha") {
-        welcomeMessage = "🤖 Soggy’s here! Better grab a towel, it’s about to get wet! 💦🧻";
-    } else if (username === "PeacefulTrees420") {
-        welcomeMessage = "🤖 Hide your grandmas and pack a fresh bowl! PeacefulTrees420 has arrived! 🌲🔥💨";
-    } else if (username === "KonkeyDong") {
-        welcomeMessage = "🤖 Cave has entered the game. Controls are janky, devs are dumb, 2/10 experience. 🎮⚠️";
-    } else if (username === "SemperZombie") {
-        welcomeMessage = "🤖 SemperZombie rises again! Remember: It's better to cum in the sink than sink in the cum. 🧟‍♀️💦";
-    } else if (username === "Indica") {
-        welcomeMessage = "🤖 Indica's here! Assume the position! 💋🔥";
-    } else if (username === "DSexpress") {
-        welcomeMessage = "🤖 DS is in the building! Beats, gloves, and vibes ready to drop. 🎧🥊🎶";
-    } else if (username === "Kicks") {
-        welcomeMessage = "🤖 Sick of all his kicks but still kickin it! 👟💥";
-    } else if (userNicknames[username]) {
-        welcomeMessage = `🤖 Welcome back to Let's Get High, ${nickname || username}! 🎉`;
-    } else {
-        welcomeMessage = `🤖 Welcome to Let's Get High, ${nickname || username}! 🌟`;
-    }
+            let welcomeMessage;
+            if (username === "Goji") {
+                welcomeMessage = "🤖 Ah hell, it's Goji! I heard he eats ass. 🍑🔥";
+            } else if (username === "HippoTwatamus") {
+                welcomeMessage = "🤖 Hungry hungry HippoTwatamus is here to gobble some balls! 🦛🍽️";
+            } else if (username === "thilly") {
+                welcomeMessage = "🤖 You tho Thilly! 😂🤪";
+            } else if (username === "jedisnarf") {
+                welcomeMessage = "🤖 The force is strong! Master of the chat, the force, and the game! ⚡💪🏀";
+            } else if (username === "Greenisacolour") {
+                welcomeMessage = "🤖 Roses are red, violets are blue, Elizabeth was your queen, welcome back Green! 📯📯📯";
+            } else if (username === "KailesaKaos89") {
+                welcomeMessage = "🤖 Beware, the Yokai emerges from the shadows... it's Kailesa!! 👹🌑";
+            } else if (username === "Guyonthecouch") {
+                welcomeMessage = "🤖 Hey GuyOnTheCouch, sorry to wake you... but you gotta try this! 🛋️😴🍔";
+            } else if (username === "BatonDeFromage") {
+                welcomeMessage = "🤖 A wild Cheese Stick appears! Someone grab the marinara! 🧀🍝";
+            } else if (username === "kangarooster") {
+                welcomeMessage = "🤖 It's a kangaroo! It's a Rooster! No! It's a hat! 🦘🐓🎩";
+            } else if (username === "Mysti") {
+                welcomeMessage = "🤖 HEY TEAM! 🔥👊";
+            } else if (username === "FatTabPirates") {
+                welcomeMessage = "🤖 All rise! The honorable FatTabPirates has entered the chat. ⚖️⚓";
+            } else if (username === "realmuchacha") {
+                welcomeMessage = "🤖 Soggy’s here! Better grab a towel, it’s about to get wet! 💦🧻";
+            } else if (username === "PeacefulTrees420") {
+                welcomeMessage = "🤖 Hide your grandmas and pack a fresh bowl! PeacefulTrees420 has arrived! 🌲🔥💨";
+            } else if (username === "KonkeyDong") {
+                welcomeMessage = "🤖 Cave has entered the game. Controls are janky, devs are dumb, 2/10 experience. 🎮⚠️";
+            } else if (username === "SemperZombie") {
+                welcomeMessage = "🤖 SemperZombie rises again! Remember: It's better to cum in the sink than sink in the cum. 🧟‍♀️💦";
+            } else if (username === "Indica") {
+                welcomeMessage = "🤖 Indica's here! Assume the position! 💋🔥";
+            } else if (username === "DSexpress") {
+                welcomeMessage = "🤖 DS is in the building! Beats, gloves, and vibes ready to drop. 🎧🥊🎶";
+            } else if (username === "Kicks") {
+                welcomeMessage = "🤖 Sick of all his kicks but still kickin it! 👟💥";
+            } else if (username === "Vato") {
+                welcomeMessage = "🤖 Pinche Vato! 🌮🔥";
+            } else if (username === "The1nkedRabbit") {
+                welcomeMessage = "🤖 You fell down the Rabbit hole! 🐇";
+            } else if (username === "anonymousstoner") {
+                welcomeMessage = "🤖 Le Mous is here, time to take down the system 🔥🔥🔥🔥";
+            } else if (username === "AkwRdtrTl3") {
+                welcomeMessage = "🤖 Hide your husbands, hide your wives, a Turtle arrives! 🐢🍌🍒";
+            } else if (username === "DaCrimsonFucker") {
+                welcomeMessage = "🤖 Is it blue? It green? It's CRIMSON! 😎😎😎";
+            } else if (username === "LolaNAP") {
+                welcomeMessage = "🤖 Oohh La La!! It's LOLA 😍😍";
+            } else if (username === "Sed") {
+                welcomeMessage = "🤖 Time for your daily bread, here comes Sed! 🍞";
+            } else if (username === "hwyspdking") {
+                welcomeMessage = "🤖 Have no fear, HwySpdKing is here! 👑";
+            } else if (username === "rubysoho") {
+                welcomeMessage = "🤖 Canna first? NO! Canna_Last! 🔥🔥";
+            } else if (username === "sMoKaRu") {
+                welcomeMessage = "🤖 All the angels wept when angelupsidedown slept. 👼";
+            } else if (username === "Bee") {
+                welcomeMessage = "🤖 Weeee! It's BEE!! 🐝🐝🐝😍";
+            } else if (username === "BaskinBros") {
+                welcomeMessage = "🤖 LE GASP!!";
+            } else if (username === "MisterKors") {
+                welcomeMessage = "🤖 Hide the french, hide the dutch, Belgium is in the hut! 🧇🧇🧇";
+            } else if (username === "DrPatCakes") {
+                welcomeMessage = "🤖 Don't get the shakes, but here comes DrPatCakes! 😨";
+            } else if (username === "StarshineCity") {
+                welcomeMessage = "🤖 Long skin? Short skin? No skin? OminousForeskin! 😎😎😎";
+            } else if (username === "smokeyredhead420") {
+                welcomeMessage = "🤖 Forget the blondes, forget the brunettes, it's all about the SmokeyRedHeads! 🥵";
+            } else if (userNicknames[username]) {
+                welcomeMessage = `🤖 Welcome back to Let's Get High, ${nickname || username}! 🎉`;
+            } else {
+                welcomeMessage = `🤖 Welcome to Let's Get High, ${nickname || username}! 🌟`;
+            }
 
-    respondWithMessage.call(this, welcomeMessage);
+            respondWithMessage.call(this, welcomeMessage);
 
-    // Store or update the user's info using both username and handle
-    userNicknames[username] = {
-        handle: handle,
-        username: username,
-        nickname: nickname || username,
-        modStatus: wsmsg['mod'] ? "Moderator" : "Regular"
-    };
-    userNicknames[handle] = {
-        handle: handle,
-        username: username,
-        nickname: nickname || username,
-        modStatus: wsmsg['mod'] ? "Moderator" : "Regular"
-    };
+            // Store or update the user's info using both username and handle
+            userNicknames[username] = {
+                handle: handle,
+                username: username,
+                nickname: nickname || username,
+                modStatus: wsmsg['mod'] ? "Moderator" : "Regular"
+            };
+            userNicknames[handle] = {
+                handle: handle,
+                username: username,
+                nickname: nickname || username,
+                modStatus: wsmsg['mod'] ? "Moderator" : "Regular"
+            };
 
-    // Track user's join time
-    if (!userTimes[handle]) {
-        userTimes[handle] = { entryTime: Date.now(), totalTime: 0 };
-    }
-
-    // Save the updated userNicknames to localStorage
-    localStorage.setItem('userNicknames', JSON.stringify(userNicknames));
-}
+            // Save the updated userNicknames to localStorage
+            localStorage.setItem('userNicknames', JSON.stringify(userNicknames));
+        }
 
         // Listen for nickname changes and update userNicknames
         if (wsmsg['stumble'] === 'nick' && wsmsg['handle'] && wsmsg['nick']) {
@@ -158,17 +187,6 @@ if (wsmsg['stumble'] === 'join' && wsmsg['nick'] && wsmsg['username'] && wsmsg['
                 console.log(`Nickname updated: ${handle} is now ${newNickname}`);
             }
         }
-
-// Handle when user leaves the chat (track total time spent)
-if (wsmsg['stumble'] === 'leave' && wsmsg['handle']) {
-    const handle = wsmsg['handle'];
-
-    if (userTimes[handle]) {
-        // Calculate time spent in chat and update totalTime
-        const timeSpent = Date.now() - userTimes[handle].entryTime;
-        userTimes[handle].totalTime += timeSpent;
-    }
-}
 
         // Send 420 alert
         if (shouldSendMessage) {
@@ -188,7 +206,7 @@ if (wsmsg['stumble'] === 'leave' && wsmsg['handle']) {
 
             if (note) {
                 // Limit notes to 6, remove the oldest if full
-                if (universalNotes.length >= 6) {
+                if (universalNotes.length >= 26) {
                     universalNotes.shift(); // Remove the first (oldest) note
                 }
 
@@ -231,8 +249,8 @@ if (wsmsg['stumble'] === 'leave' && wsmsg['handle']) {
         }
 
 
-        // Handle the "commands" and ".commands" commands to output the list of commands as a single message
-        if (wsmsg['text'].toLowerCase() === 'commands' || wsmsg['text'].toLowerCase() === '.commands') {
+        // Handle the ".commands" command to output the list of commands in batches of 6 lines with line breaks
+        if (wsmsg['text'].toLowerCase() === '.commands') {
             // Define the commands
             const commandsList = [
                 "- .yt with a link or query",
@@ -248,16 +266,17 @@ if (wsmsg['stumble'] === 'leave' && wsmsg['handle']) {
                 "- .ass shows butt gifs"
             ];
 
-            // Function to send each command with a delay
-            const sendCommandsLineByLine = (list, index = 0) => {
+            // Function to send commands in batches of 6 lines with line breaks
+            const sendCommandsInBatches = (list, index = 0) => {
                 if (index < list.length) {
-                    this._send(`{"stumble":"msg","text":"${list[index]}"}`);
-                    setTimeout(() => sendCommandsLineByLine(list, index + 1), 1000); // Delay 1000ms before sending the next one
+                    const batch = list.slice(index, index + 6).join("\\n");
+                    this._send(`{"stumble":"msg","text":"${batch}"}`);
+                    setTimeout(() => sendCommandsInBatches(list, index + 6), 1000); // Delay 1000ms before sending the next batch
                 }
             };
 
-            // Start sending the commands line by line
-            sendCommandsLineByLine(commandsList);
+            // Start sending the commands in batches
+            sendCommandsInBatches(commandsList);
         }
 
 // YouTube --------------------------------------------------------------------------------------------------------------------------
@@ -337,6 +356,21 @@ if (wsmsg['stumble'] === 'leave' && wsmsg['handle']) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+        // bran and goji with nickname
+        if (wsmsg['text'] === "bran" || wsmsg['text'] === "goji") {
+            const handle = wsmsg['handle']; // Get the handle
+            const nickname = userNicknames[handle]?.nickname || wsmsg['username'] || "you"; // Get nickname, fallback to username or Bot
+
+            const target = wsmsg['text'] === "bran" ? "Bran" : "Goji"; // Determine which target to use
+
+            setTimeout(() => this._send(JSON.stringify({
+                stumble: "msg",
+                text: `🤖 ${target} farted on ${nickname}!` // Message using nickname
+            })), 1000);
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
         // Command: .cheers (Use handle to get nickname)
         if (wsmsg['text'] === ".c" || wsmsg['text'] === ".cheers") {
             const handle = wsmsg['handle']; // Get the handle
@@ -351,17 +385,72 @@ if (wsmsg['stumble'] === 'leave' && wsmsg['handle']) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // Command: .420
-        if (wsmsg['text'] === ".420") {
-            const handle = wsmsg['handle']; // Get the handle
-            const username = wsmsg['username']; // Get the username to find the nickname
-            const nickname = userNicknames[handle]?.nickname || "Someone"; // Use handle to get the nickname
+    // Commands: .419 to .430 + .710 + .840
+    if (
+        wsmsg['text'] === ".419" || wsmsg['text'] === ".420" || wsmsg['text'] === ".421" ||
+        wsmsg['text'] === ".422" || wsmsg['text'] === ".423" || wsmsg['text'] === ".424" ||
+        wsmsg['text'] === ".425" || wsmsg['text'] === ".426" || wsmsg['text'] === ".427" ||
+        wsmsg['text'] === ".428" || wsmsg['text'] === ".429" || wsmsg['text'] === ".430" ||
+        wsmsg['text'] === ".710" || wsmsg['text'] === ".840"
+    ) {
+        const handle = wsmsg['handle']; // Get the handle
+        const username = wsmsg['username']; // Get the username to find the nickname
+        const nickname = userNicknames[handle]?.nickname || "Someone"; // Use handle to get the nickname
 
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: `🤖 ${nickname} is smokin! Cheers! 💨 Happy 4:20! 🌲`
-            }));
-        }
+        const timeMessages = {
+            ".419": [`${nickname} SMOKES WHEN THEY WANT!`],
+            ".420": [`${nickname} is smoking! Cheers! Happy 4:20!`],
+            ".421": [`${nickname} is smoking! Cheers! It's 4:21! Let's have some fun!`],
+            ".422": [
+                `${nickname} is smoking! Cheers! 4:20 2: Electric Boogaloo!`,
+                `${nickname} is smoking! Cheers! 4:20 2: The Sequel!`
+            ],
+            ".423": [`${nickname} is smoking! Cheers! Happy 4:23! Let's smoke some more, you’ll see!`],
+            ".424": [
+                `${nickname} is smoking! Cheers! Happy 4:24! Let's smoke some more!`,
+                `${nickname} is smoking! Cheers! Happy 4:24! Time to score!`
+            ],
+            ".425": [`Cheers! Happy 4:25! ${nickname}'s feelin alive!`],
+            ".426": [
+                `${nickname} is smoking! Cheers! Happy 4:26! Roll it quicks!`,
+                `${nickname} is smoking! Cheers! Happy 4:26! No seeds, no sticks!`
+            ],
+            ".427": [`Cheers! Happy 4:27! ${nickname}'s in heaven!`],
+            ".428": [`Cheers! Happy 4:28! ${nickname}'s always late!`],
+            ".429": [`Cheers! Happy 4:29! ${nickname}'s feelin fine!`],
+            ".430": [`${nickname} SMOKES WHEN THEY WANT!`,
+                     `${nickname} MISSED 420!`
+            ],
+            ".710": [
+                `${nickname} is smoking! Cheers! It’s 7:10! Let the dabs begin!`,
+                `${nickname} is smoking! Cheers! 7:10 again! Dab it up, my friend!`
+            ],
+            ".840": [`${nickname} is smoking! Cheers! It's 8:40! Twice the 4:20, twice the tokes! 💨`]
+        };
+
+        // Pick a random message if multiple are available
+        const messages = timeMessages[wsmsg['text']] || ["Error: Invalid time!"];
+        const message = messages[Math.floor(Math.random() * messages.length)];
+
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: `🤖 ${message} 💨`
+        }));
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // Command: .sub
+    if (wsmsg['text'] === ".sub") {
+        const handle = wsmsg['handle']; // Get the handle
+        const username = wsmsg['username']; // Get the username to find the nickname
+        const nickname = userNicknames[handle]?.nickname || "Someone"; // Use handle to get the nickname
+
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: `🤖 ${nickname} wants to sub! 🌲🍻`
+        }));
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -483,7 +572,7 @@ if (wsmsg['stumble'] === 'leave' && wsmsg['handle']) {
         if (wsmsg['text'].startsWith(".smoko")) {
             const handle = wsmsg['handle']; // Get the handle
             const username = wsmsg['username']; // Get the username to find the nickname
-            const nickname = userNicknames[handle]?.nickname || "YOU"; // Use handle to get the nickname
+            const nickname = userNicknames[handle]?.nickname || "SOMEONE"; // Use handle to get the nickname
 
             this._send(JSON.stringify({
                 stumble: "msg",
@@ -551,6 +640,20 @@ if (wsmsg['stumble'] === 'leave' && wsmsg['handle']) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+    // Command: .owner
+    if (wsmsg['text'].startsWith(".owner")) {
+        const handle = wsmsg['handle']; // Get the handle
+        const username = wsmsg['username']; // Get the username to find the nickname
+        const nickname = (userNicknames[handle]?.nickname || "YOUR ASSHOLE").toUpperCase(); // Use handle to get the nickname in all caps
+
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: `🤖 ${nickname} IS THE ROOM OWNER NOW!`
+        }));
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
         // Command: .users (List all users with delay)
         if (wsmsg['text'] === ".users") {
             const usersArray = Object.values(userNicknames)
@@ -576,27 +679,23 @@ if (wsmsg['stumble'] === 'leave' && wsmsg['handle']) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-//start self
-if (wsmsg['text'] === ".self") { // Show the user's info
-    const handle = wsmsg['handle'];
-    const user = userNicknames[handle];
+        //start self
+        if (wsmsg['text'] === ".self") { // Show the user's info
+            const handle = wsmsg['handle'];
+            const user = userNicknames[handle];
 
-    if (user) {
-        // Retrieve total time spent in chat from userTimes
-        const totalTime = userTimes[handle] ? userTimes[handle].totalTime : 0;
-        const totalTimeFormatted = (totalTime / 1000).toFixed(2); // Convert to seconds and format to 2 decimals
-
-        this._send(JSON.stringify({
-            stumble: "msg",
-            text: `🤖 Your Info:\nNickname: ${user.nickname}\nHandle: ${user.handle}\nUsername: ${user.username}\nStatus: ${user.modStatus}\nTotal Time in Chat: ${totalTimeFormatted} seconds`
-        }));
-    } else {
-        this._send(JSON.stringify({
-            stumble: "msg",
-            text: "🤖 Sorry, I couldn't find your information."
-        }));
-    }
-}
+            if (user) {
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: `🤖 Your Info:\nNickname: ${user.nickname}\nUsername: ${user.username}\nStatus: ${user.modStatus}\nHandle: ${user.handle}`
+                }));
+            } else {
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: "🤖 Sorry, I couldn't find your information."
+                }));
+            }
+        }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -692,6 +791,27 @@ if (wsmsg['text'] === ".self") { // Show the user's info
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+        // start usa commands
+        if (wsmsg['text'] === ".usa" || wsmsg['text'] === ".murica" || wsmsg['text'] === ".america") {
+            this._send('{"stumble":"msg","text":"https://i.imgur.com/tYeS04g.gif"}');
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // start greyson
+        if (wsmsg['text'] === ".g") {
+            this._send('{"stumble":"msg","text":"https://i.imgur.com/k2Oq3yb.jpeg"}');
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // start pup
+        if (wsmsg['text'] === ".pup") {
+            this._send('{"stumble":"msg","text":"https://i.imgur.com/kKlUBVR.png"}');
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
         // start orange juice
         if (wsmsg['text'] === ".oj") {
             this._send('{"stumble":"msg","text":"https://i.imgur.com/pTMweVs.gif"}');
@@ -730,13 +850,6 @@ if (wsmsg['text'] === ".self") { // Show the user's info
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // Start owner
-        if (wsmsg['text'].startsWith(".owner")) {
-            this._send('{"stumble":"msg","text": "YOU ARE NOW THE ROOM OWNER!"}');
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
         //start jedi
         if (wsmsg['text'] === ".jedi") {
             this._send('{"stumble":"msg","text": "https://i.imgur.com/MCSGgcI.gif"}')
@@ -747,6 +860,13 @@ if (wsmsg['text'] === ".self") { // Show the user's info
         //start lola
         if (wsmsg['text'] === ".lola") {
             this._send('{"stumble":"msg","text": "https://i.imgur.com/flta89w.png"}')
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        //start mous
+        if (wsmsg['text'] === ".mous") {
+            this._send('{"stumble":"msg","text": "https://i.imgur.com/3aLJAbE.gif"}')
         }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -804,6 +924,18 @@ if (wsmsg['text'] === ".self") { // Show the user's info
         if (wsmsg['text'] === ".carfart") {
             this._send('{"stumble":"msg","text": "https://i.imgur.com/GxUAMV9.gif"}')
         }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    if (wsmsg['text'] === ".hasbula") {
+        this._send('{"stumble":"msg","text":"https://i.imgur.com/y73umR3.gif"}');
+        setTimeout(() => {
+            this._send('{"stumble":"msg","text":"https://i.imgur.com/ZZ7jwlM.gif"}');
+        }, 30000);
+        setTimeout(() => {
+            this._send('{"stumble":"msg","text":"https://i.imgur.com/CsoQte6.gif"}');
+        }, 60000);
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -1215,9 +1347,17 @@ if (wsmsg['text'] === ".self") { // Show the user's info
 //-----------------------------------------------------------------------------------------------------------------------------------
 
         // Curse word check command
-        /*if (/\b(shit|fuck|bitch|asshole|damn|bastard|cock|pussy|dick|cunt|slut|fag|twat|douche|motherfucker|prick|gay|retard|nigger|whore|bastard)\b/i.test(wsmsg['text'])) {
+        //if (/\b(shit|fuck|bitch|asshole|damn|bastard|cock|pussy|dick|cunt|slut|fag|twat|douche|motherfucker|prick|gay|retard|nigger|whore|bastard)\b/i.test(wsmsg['text'])) {
+        if (/\b(cunt|slut|fag|retard|nigger|whore)\b/i.test(wsmsg['text'])) {
             this._send('{"stumble":"msg","text":"LE GASP!!"}');
-        }*/
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Assfuckery GIF command
+        if (wsmsg['text'] === "assfuckery") {
+            this._send('{"stumble":"msg","text":"https://i.imgur.com/8v3YYBo.gif"}');
+        }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -1238,11 +1378,11 @@ if (wsmsg['text'] === ".self") { // Show the user's info
 //-----------------------------------------------------------------------------------------------------------------------------------
 
         // bran and goji
-        if (wsmsg['text'] === "bran") {
+        /*if (wsmsg['text'] === "bran") {
             setTimeout(() => this._send('{"stumble":"msg","text":"🤖 Bran farted on you!"}'), 1000);
         } else if (wsmsg['text'] === "goji") {
             setTimeout(() => this._send('{"stumble":"msg","text":"🤖 Goji farted on you!"}'), 1000);
-        }
+        }*/
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -1305,6 +1445,8 @@ if (wsmsg['text'] === ".self") { // Show the user's info
             'ganbei': ['Ganbei! Let’s make today unforgettable!', 'Ganbei! Cheers to good times!', 'Ganbei! To memories we’ll cherish forever!'],
             'na zdrowie': ['Na zdrowie! To lasting friendships!', 'Na zdrowie! To health and happiness!', 'Na zdrowie! To many more cheers!'],
             'cheers': ['Cheers! Here’s to good times!', 'Cheers to you!', 'Cheers to great moments ahead!'],
+            'chrs': ['Chrs! Short and sweet—here’s to the good times!', 'Chrs to you! Keep the vibes high!', 'Chrs! Let’s make some memories!'],
+            'chr': ['Chr! Quick shout to good vibes!', 'Chr to you! Simple but meaningful!', 'Chr! Here’s to the little moments that matter!'],
             'char': ['Char! To all the good things in life!', 'Char to you!', 'Char to unforgettable moments ahead!'],
             'charrr': ['Charrr! To the adventure ahead!', 'Charrr! To all the amazing moments!', 'Charrr to good times with friends!'],
             'cheers to that': ['Cheers to that! To unforgettable memories!', 'Cheers to that! Here’s to everything worth celebrating!', 'Cheers to that! Let’s make this one special!'],
@@ -2010,60 +2152,59 @@ if (wsmsg['text'] === ".self") { // Show the user's info
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-if (wsmsg['text'].startsWith(".calc ")) {
-    setTimeout(() => {
-        const expression = wsmsg['text'].slice(6).trim();
-        let exp = expression.replace(/\^/g, '**');
-
-        try {
-            let steps = [];
-
-            // Parsing and step-by-step operations
-            // Square roots
-            exp = exp.replace(/sqrt\(([^)]+)\)/g, (match, innerExp) => {
-                const innerResult = Math.sqrt(eval(innerExp));
-                steps.push(`sqrt(${innerExp}) = ${innerResult}`);
-                return innerResult;
-            });
-
-            // Trigonometric functions
-            exp = exp.replace(/sin\(([^)]+)\)/g, (match, innerExp) => {
-                const innerResult = Math.sin(eval(innerExp));
-                steps.push(`sin(${innerExp}) = ${innerResult}`);
-                return innerResult;
-            });
-
-            // Split operations for detailed steps
-            let result = eval(exp);
-            let formattedExp = exp.replace(/\*/g, ' * ').replace(/\//g, ' / ').replace(/\+/g, ' + ').replace(/-/g, ' - ');
-
-            steps.push(`🧮 Evaluating: ${formattedExp}`);
-            steps.push(`🤖 Final result: ${result}`);
-
-            // Send each step with a 1-second delay
-            let delay = 1000;
-            steps.forEach((step) => {
-                setTimeout(() => {
-                    this._send(`{"stumble":"msg","text":"${step}"}`);
-                }, delay);
-                delay += 1000;
-            });
-
-            // Add the Wolfram Alpha link to the final step
-            const wolframLink = `https://www.wolframalpha.com/input?i=${encodeURIComponent(expression)}`;
+        if (wsmsg['text'].startsWith(".calc ")) {
             setTimeout(() => {
-                this._send(JSON.stringify({
-                    stumble: "msg",
-                    text: `For more details, check out: ${wolframLink}`
-                }));
-            }, delay);
+                const expression = wsmsg['text'].slice(6).trim();
+                let exp = expression.replace(/\^/g, '**');
 
-        } catch (error) {
-            this._send('{"stumble":"msg","text":"🤖 Invalid calculation"}');
+                try {
+                    let steps = [];
+
+                    // Parsing and step-by-step operations
+                    // Square roots
+                    exp = exp.replace(/sqrt\(([^)]+)\)/g, (match, innerExp) => {
+                        const innerResult = Math.sqrt(eval(innerExp));
+                        steps.push(`sqrt(${innerExp}) = ${innerResult}`);
+                        return innerResult;
+                    });
+
+                    // Trigonometric functions
+                    exp = exp.replace(/sin\(([^)]+)\)/g, (match, innerExp) => {
+                        const innerResult = Math.sin(eval(innerExp));
+                        steps.push(`sin(${innerExp}) = ${innerResult}`);
+                        return innerResult;
+                    });
+
+                    // Split operations for detailed steps
+                    let result = eval(exp);
+                    let formattedExp = exp.replace(/\*/g, ' * ').replace(/\//g, ' / ').replace(/\+/g, ' + ').replace(/-/g, ' - ');
+
+                    steps.push(`🧮 Evaluating: ${formattedExp}`);
+                    steps.push(`🤖 Final result: ${result}`);
+
+                    // Send each step with a 1-second delay
+                    let delay = 1000;
+                    steps.forEach((step) => {
+                        setTimeout(() => {
+                            this._send(`{"stumble":"msg","text":"${step}"}`);
+                        }, delay);
+                        delay += 1000;
+                    });
+
+                    // Add the Wolfram Alpha link to the final step
+                    const wolframLink = `https://www.wolframalpha.com/input?i=${encodeURIComponent(expression)}`;
+                    setTimeout(() => {
+                        this._send(JSON.stringify({
+                            stumble: "msg",
+                            text: `For more details, check out: ${wolframLink}`
+                        }));
+                    }, delay);
+
+                } catch (error) {
+                    this._send('{"stumble":"msg","text":"🤖 Invalid calculation"}');
+                }
+            }, 1000);
         }
-    }, 1000);
-}
-
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
