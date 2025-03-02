@@ -88,3 +88,83 @@ This **UserScript**, written in JavaScript, enhances **StumbleChat** by adding c
 ### **Summary**
 SuperStumbleBot is a feature-rich, humorous enhancement for StumbleChat, adding custom commands, media playback, and interactive responses. It’s well-organized, leveraging WebSocket manipulation, LocalStorage, and regex for a seamless and entertaining chat experience. The bot now includes personalized commands, welcome messages, nickname management, and a universal notes system, making it even more engaging and user-friendly.
 
+---
+
+# Chatbot Feature Ideas
+
+## Core Features
+- **Message Filtering** – Ensure the bot only responds when appropriate.
+- **Rate Limiting** – Prevent spam by limiting how often users can trigger commands.
+- **Cooldowns** – Add per-command cooldowns to avoid excessive triggering.
+- **Auto-Responses** – Set responses for specific words or phrases (e.g., bot replies with "Bless you!" when someone types "sneeze").
+- **Alias Commands** – Shorter versions of frequently used commands.
+- **Help Command** – List available commands and brief descriptions.
+- **Status Indicator** – Shows if the bot is online, idle, or in cooldown mode.
+- **Message Logging** – Optional logs of all commands used for debugging.
+
+## User Interaction & Utility
+- **.notes Command** – Users can save and retrieve notes.
+- **.remind Command** – Let users set reminders for themselves.
+- **.define Command** – Basic dictionary definitions for words.
+- **.calc Command** – Simple math calculations.
+- **.weather Command** – Fetch basic weather info for a given location.
+- **.whois Command** – Provides basic info on a user (e.g., first seen, note history).
+- **.seen Command** – Shows the last time a user was active.
+- **.poll Command** – Lets users vote on simple polls.
+- **.time Command** – Shows the current time in a given timezone.
+- **.convert Command** – Converts units (e.g., inches to cm, Fahrenheit to Celsius).
+- **.translate Command** – Translates text between languages.
+- **.shorten Command** – Shortens long URLs using a URL shortener.
+- **.reminder Command** – Notifies a user after a set time.
+
+## Fun & Engagement
+- **.8ball Command** – Randomized fortune-telling response.
+- **.roll Command** – Rolls a dice (e.g., 1d6, 1d20).
+- **.choose Command** – Picks a random option from a list.
+- **.quote Command** – Random Pink Floyd lyric (or expand to more).
+- **.joke Command** – Fetches a random joke.
+- **.fact Command** – Posts a random fun fact.
+- **.rps Command** – Play Rock, Paper, Scissors against the bot.
+- **.hangman Command** – Simple game where users guess letters.
+- **.trivia Command** – Asks a random trivia question.
+- **.story Command** – Bot generates a short random story.
+- **.meme Command** – Fetches a random meme image.
+- **.roast Command** – Roasts the user with a lighthearted insult.
+- **.compliment Command** – Compliments the user.
+- **.mock Command** – Mimics a user’s message in spongebob-case.
+- **.dadjoke Command** – Posts a dad joke.
+- **.spoiler Command** – Hides a message in a spoiler tag.
+
+## Customization & Admin Tools
+- **Custom Triggers** – Let users add or edit simple response triggers.
+- **User Blacklist** – Prevent certain users from triggering commands.
+- **Logging** – Store logs of interactions for debugging or moderation.
+- **Configurable Responses** – Allow easy editing of response texts.
+- **Custom Prefix** – Allow changing the bot’s command prefix.
+- **Permission Levels** – Certain commands only work for specific users.
+- **Keyword Alerts** – Notify the bot owner if certain words are used.
+- **Auto-Mute** – Temporarily disable commands if spam is detected.
+- **.setwelcome Command** – Custom welcome message for new users.
+- **.ignore Command** – Stop the bot from responding to certain users or keywords.
+
+## Enhancements to Existing Features
+- **Better GojiBux Tracking** – Expand GojiBux functionality (leaderboard, spending).
+- **.710 & .420 Commands** – Maybe expand them with random messages or effects.
+- **Image/GIF Responses** – Expand Imgur link support for more commands.
+- **Time-Based Responses** – Custom messages that trigger at certain times.
+- **More .8ball Responses** – Add more creative responses to the Magic 8-ball.
+- **Expanded .quote Command** – Include quotes from other artists, movies, or historical figures.
+- **Themed Days** – Custom bot responses on certain days (e.g., Star Wars Day, 4/20, Friday the 13th).
+- **User Reputation System** – Track and display user activity or fun stats.
+- **GojiBux Upgrades** –  
+  - **Betting System** – Gamble GojiBux on dice rolls or coin flips.  
+  - **Shop System** – Let users "spend" GojiBux on fun perks.  
+  - **Daily Streaks** – Earn bonus GojiBux for using the bot daily.
+
+## Miscellaneous Ideas
+- **ASCII Art Generator** – Converts text into ASCII art.
+- **Reverse Text** – Flips a message backward.
+- **Emojify** – Converts words into emojis where possible.
+- **Fake News Generator** – Bot makes up a ridiculous fake headline.
+- **Random Wikipedia Article** – Posts a link to a random Wikipedia page.
+- **Guess the Song** – Posts lyrics and users try to guess the song.
