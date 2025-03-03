@@ -333,88 +333,9 @@ function handleMessage(msg) {
         }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
-
-        // Universal Notes Storage
-        let universalNotes = JSON.parse(localStorage.getItem("universalNotes")) || [];
-
-        // Handle .note command to add a new note
-        if (wsmsg['text'] && wsmsg['text'].startsWith(".note ")) {
-            const note = wsmsg['text'].slice(6).trim(); // Extract the note text
-
-            if (note) {
-                // Limit notes to 6, remove the oldest if full
-                if (universalNotes.length >= 26) {
-                    universalNotes.shift(); // Remove the first (oldest) note
-                }
-
-                universalNotes.push(note);
-                localStorage.setItem("universalNotes", JSON.stringify(universalNotes));
-
-                respondWithMessage.call(this, "🤖 Note added!");
-            } else {
-                respondWithMessage.call(this, "🤖 Usage: .note [your note]");
-            }
-        }
-
-        // Handle .notes command to display all notes
-        if (wsmsg['text'] === ".notes") {
-            if (universalNotes.length === 0) {
-                respondWithMessage.call(this, "🤖 No notes available.");
-            } else {
-                universalNotes.forEach((note, index) => {
-                    setTimeout(() => {
-                        respondWithMessage.call(this, `${index + 1}. ${note}`);
-                    }, index * 1000); // 1000ms delay per note
-                });
-            }
-        }
-
-        // Handle .clearNotes command to wipe all notes
-        if (wsmsg['text'] === ".clearNotes") {
-            universalNotes = [];
-            localStorage.removeItem("universalNotes");
-            respondWithMessage.call(this, "🤖 All notes cleared.");
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
 // Bot Commands ---------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // Handle the ".commands list" command to output the commands link
-        if (wsmsg['text'].toLowerCase() === '.commands list') {
-            this._send(`{"stumble":"msg","text":"🤖 Bot Commands: https://github.com/GojiBran/SuperStumbleBot-Commands"}`);
-        }
-
-
-        // Handle the ".commands" command to output the list of commands in batches of 6 lines with line breaks
-        if (wsmsg['text'].toLowerCase() === '.commands') {
-            // Define the commands
-            const commandsList = [
-                "- .yt with a link or query",
-                "- .c is Cheers",
-                "- .420 is 4:20",
-                "- .sc is Sub Cheers",
-                "- .h is Heatin",
-                "- .d is Dabbin",
-                "- .j is Joint",
-                "- .p is Packin",
-                "- .s is Set",
-                "- .tits shows boobs gifs",
-                "- .ass shows butt gifs"
-            ];
-
-            // Function to send commands in batches of 6 lines with line breaks
-            const sendCommandsInBatches = (list, index = 0) => {
-                if (index < list.length) {
-                    const batch = list.slice(index, index + 6).join("\\n");
-                    this._send(`{"stumble":"msg","text":"${batch}"}`);
-                    setTimeout(() => sendCommandsInBatches(list, index + 6), 1000); // Delay 1000ms before sending the next batch
-                }
-            };
-
-            // Start sending the commands in batches
-            sendCommandsInBatches(commandsList);
-        }
 
 // YouTube --------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -516,6 +437,51 @@ function handleMessage(msg) {
                 text: "🤖 All stored users have been cleared."
             }));
         }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Universal Notes Storage
+        let universalNotes = JSON.parse(localStorage.getItem("universalNotes")) || [];
+
+        // Handle .note command to add a new note
+        if (wsmsg['text'] && wsmsg['text'].startsWith(".note ")) {
+            const note = wsmsg['text'].slice(6).trim(); // Extract the note text
+
+            if (note) {
+                // Limit notes to 6, remove the oldest if full
+                if (universalNotes.length >= 26) {
+                    universalNotes.shift(); // Remove the first (oldest) note
+                }
+
+                universalNotes.push(note);
+                localStorage.setItem("universalNotes", JSON.stringify(universalNotes));
+
+                respondWithMessage.call(this, "🤖 Note added!");
+            } else {
+                respondWithMessage.call(this, "🤖 Usage: .note [your note]");
+            }
+        }
+
+        // Handle .notes command to display all notes
+        if (wsmsg['text'] === ".notes") {
+            if (universalNotes.length === 0) {
+                respondWithMessage.call(this, "🤖 No notes available.");
+            } else {
+                universalNotes.forEach((note, index) => {
+                    setTimeout(() => {
+                        respondWithMessage.call(this, `${index + 1}. ${note}`);
+                    }, index * 1000); // 1000ms delay per note
+                });
+            }
+        }
+
+        // Handle .clearNotes command to wipe all notes
+        if (wsmsg['text'] === ".clearNotes") {
+            universalNotes = [];
+            localStorage.removeItem("universalNotes");
+            respondWithMessage.call(this, "🤖 All notes cleared.");
+        }
+
 //-----------------------------------------------------------------------------------------------------------------------------------
 
         // Command: .me (Strictly requires ".me " plus a message)
@@ -731,23 +697,6 @@ function handleMessage(msg) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // Command: goji and bran (case-insensitive and works anywhere in a sentence) [MUST FIX TO NOT REPLY TO SELF]
-        /*if (/goji|bran/i.test(wsmsg['text'])) {
-            const handle = wsmsg['handle']; // Get the handle
-            const username = wsmsg['username']; // Get the username to find the nickname
-            const nickname = userNicknames[handle]?.nickname || "YOU"; // Use handle to get the nickname
-
-            // Determine whether "goji" or "bran" was used in the text
-            const wordUsed = /goji/i.test(wsmsg['text']) ? "GOJI" : "BRAN";
-
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: `${wordUsed} FARTED ON 💨 ${nickname}!`
-            }));
-        }*/
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
         // Command: .penis
         if (wsmsg['text'].startsWith(".penis")) {
             const handle = wsmsg['handle']; // Get the handle
@@ -888,53 +837,44 @@ function handleMessage(msg) {
             }, 1000 * index); // 1000ms delay between each line
         });
         }
-        // end Bot repo
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        //start choose
-        if (wsmsg['text'].startsWith(".choose")) // Choose from a list
-        {
-            const options = wsmsg['text'].slice(7).split(',').map(option => option.trim()); // Remove ".choose" and split by commas
-
-            if (options.length > 0) {
-                // Randomly choose an option
-                const choice = options[Math.floor(Math.random() * options.length)];
-
-                this._send(JSON.stringify({
-                    stumble: "msg",
-                    text: `🤖 I choose: ${choice}!`
-                }));
-            } else {
-                this._send(JSON.stringify({
-                    stumble: "msg",
-                    text: "🤖 Please provide some options to choose from! (apple, orange, banana)"
-                }));
-            }
+        // Handle the ".commands list" command to output the commands link
+        if (wsmsg['text'].toLowerCase() === '.commands list') {
+            this._send(`{"stumble":"msg","text":"🤖 Bot Commands: https://github.com/GojiBran/SuperStumbleBot-Commands"}`);
         }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // start .suggest command
-        if (wsmsg['text'] === ".suggest") {
-            const lines = [
-                "🤖 To suggest a new command for StumbleBot, please follow this format:",
-                "Command: The name of the command (.cheers)",
-                "Result: What you expect StumbleBot to do (This command outputs a cheers message)",
-                "Example Suggestion:",
-                "'.cheers'",
-                "'Cheers!'",
-                "Thank you for your suggestion!"
+        // Handle the ".commands" command to output the list of commands in batches of 6 lines with line breaks
+        if (wsmsg['text'].toLowerCase() === '.commands') {
+            // Define the commands
+            const commandsList = [
+                "- .yt with a link or query",
+                "- .c is Cheers",
+                "- .420 is 4:20",
+                "- .sc is Sub Cheers",
+                "- .h is Heatin",
+                "- .d is Dabbin",
+                "- .j is Joint",
+                "- .p is Packin",
+                "- .s is Set",
+                "- .tits shows boobs gifs",
+                "- .ass shows butt gifs"
             ];
 
-            let delay = 1000; // 1000ms delay
+            // Function to send commands in batches of 6 lines with line breaks
+            const sendCommandsInBatches = (list, index = 0) => {
+                if (index < list.length) {
+                    const batch = list.slice(index, index + 6).join("\\n");
+                    this._send(`{"stumble":"msg","text":"${batch}"}`);
+                    setTimeout(() => sendCommandsInBatches(list, index + 6), 1000); // Delay 1000ms before sending the next batch
+                }
+            };
 
-            // Send each line with a delay
-            lines.forEach((line, index) => {
-                setTimeout(() => {
-                    this._send('{"stumble":"msg","text":"' + line + '"}');
-                }, index * delay);
-            });
+            // Start sending the commands in batches
+            sendCommandsInBatches(commandsList);
         }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -1061,29 +1001,29 @@ function handleMessage(msg) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        //start baked
-        if (wsmsg['text'] === ".baked") {
-            this._send('{"stumble":"msg","text": "https://i.imgur.com/mPfCDtI.gif"}')
-        }
+    //start baked
+    if (wsmsg['text'] === ".baked") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/mPfCDtI.gif"}')
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        //start beans
-        if (wsmsg['text'] === ".beans") {
-            this._send('{"stumble":"msg","text": "https://i.imgur.com/YASZc8X.png"}')
-        }
+    //start beans
+    if (wsmsg['text'] === ".beans") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/YASZc8X.png"}')
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-//start kappa
-if (wsmsg['text'] === ".kappa") {
-    this._send('{"stumble":"msg","text": "https://i.imgur.com/Qu6ksP7.png"}')
-}
+    //start kappa
+    if (wsmsg['text'] === ".kappa") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/Qu6ksP7.png"}')
+    }
 
-//start klappa
-if (wsmsg['text'] === ".klappa") {
-    this._send('{"stumble":"msg","text": "https://i.imgur.com/m4IwqPy.png"}')
-}
+    //start klappa
+    if (wsmsg['text'] === ".klappa") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/m4IwqPy.png"}')
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -1461,44 +1401,6 @@ if (wsmsg['text'] === ".klappa") {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        if (wsmsg['text'].startsWith(".floyd")) {
-            const pinkFloydLyrics = [
-                { quote: "We don’t need no education.", song: "Another Brick in the Wall" },
-                { quote: "All in all, it’s just another brick in the wall.", song: "Another Brick in the Wall" },
-                { quote: "The lunatic is on the grass.", song: "Brain Damage" },
-                { quote: "Wish you were here.", song: "Wish You Were Here" },
-                { quote: "Shine on you crazy diamond.", song: "Shine On You Crazy Diamond" },
-                { quote: "Time is on my side, yes it is.", song: "Time" },
-                { quote: "Money, it’s a crime. Share it fairly but don’t take a slice of my pie.", song: "Money" },
-                { quote: "Isn’t this where we came in?", song: "Echoes" },
-                { quote: "I have become comfortably numb.", song: "Comfortably Numb" },
-                { quote: "So, so you think you can tell Heaven from Hell?", song: "Wish You Were Here" },
-                { quote: "And if the band you’re in starts playing different tunes, I’ll see you on the dark side of the moon.", song: "Brain Damage" },
-                { quote: "The time is gone, the song is over, thought I had something more to say.", song: "Eclipse" },
-                { quote: "You are the one who’ll make the rules.", song: "Mother" },
-                { quote: "And the eyes in the sky look up to the day.", song: "The Great Gig in the Sky" },
-                { quote: "I’m not the one you think I am.", song: "In The Flesh?" },
-                { quote: "And I will see you on the dark side of the moon.", song: "Brain Damage" },
-                { quote: "I’m a little bit of a cowboy, baby.", song: "Breathe" },
-                { quote: "Everything under the sun is in tune, but the sun is eclipsed by the moon.", song: "Eclipse" },
-                { quote: "You can’t have any pudding if you don’t eat your meat!", song: "Another Brick in the Wall" },
-                { quote: "There is no pain, you are receding.", song: "Comfortably Numb" },
-                { quote: "The show must go on.", song: "The Show Must Go On" },
-                { quote: "I’m just a little black spot on the sun today.", song: "Pigs (Three Different Ones)" }
-            ];
-
-            const randomLyric = pinkFloydLyrics[Math.floor(Math.random() * pinkFloydLyrics.length)];
-
-            this._send(`{"stumble":"msg","text":"🎸 ${randomLyric.quote} 🎶"}`);
-
-            // Delay for song title
-            setTimeout(() => {
-                this._send(`{"stumble":"msg","text":"– ${randomLyric.song}"}`);
-            }, 1000);
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
         // Start labyrinth if the message contains ".labyrinth"
         if (wsmsg['text'] === ".labyrinth") {
             // Create an array of GIF URLs
@@ -1567,15 +1469,6 @@ if (wsmsg['text'] === ".klappa") {
         } else if (wsmsg['text'] === "packed") {
             setTimeout(() => this._send('{"stumble":"msg","text":"🤖 Let\'s toke!"}'), 1000);
         }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        // bran and goji
-        /*if (wsmsg['text'] === "bran") {
-            setTimeout(() => this._send('{"stumble":"msg","text":"🤖 Bran farted on you!"}'), 1000);
-        } else if (wsmsg['text'] === "goji") {
-            setTimeout(() => this._send('{"stumble":"msg","text":"🤖 Goji farted on you!"}'), 1000);
-        }*/
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -2242,123 +2135,434 @@ if (wsmsg['text'] === ".klappa") {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-// start tim
-if (wsmsg['text'] === ".tim") {
-    // Create an array of quotes
-    const quotes = [
-        "You sure about that? You sure about that that's why?",
-        "We're all trying to find the guy who did this!",
-        "You have no good car ideas!",
-        "I don’t even want to be around anymore.",
-        "The bones are their money, so are the worms.",
-        "We’re all having a good time, and then there’s a monster!",
-        "Oh my god, he admit it!",
-        "I'm worried the baby thinks people can't change.",
-        "The steering wheel flies off!",
-        "I don’t want to do this anymore… I’m scared.",
-        "They need to let me do more.",
-        "I hope that this doesn’t take up the whole day.",
-        "I had a hamburger for lunch!",
-        "It’s a pay-it-forward coffee!",
-        "You can’t skip lunch, you’ll get headaches!",
-        "It's the good steak. The steak that you like.",
-        "That's a Chunky!",
-        "Don't let the hat slam the door on the way out!",
-        "You have no idea how long this took!",
-        "Triples is best. Triples is safe.",
-        "I don't want anybody to see me, I have too much fucking shit on me!",
-        "I’m just gonna grab a sloppy steak at Trefoni’s.",
-        "I need two minutes, two minutes tops!",
-        "Give me that. I need it.",
-        "No one’s ever done this before! We’re making history!",
-        "I just want to show you my perfectly normal tables.",
-        "I thought you were doing a bit. I thought you were doing a funny joke.",
-        "I used to be a piece of shit.",
-        "I just wanna hit that!",
-        "This is a classic setup!",
-        "You need to do something with your hair!",
-        "You need to fix your order, sir.",
-        "I'm worried my house is haunted by my grandma.",
-        "You can't change horses midstream!",
-        "I'm not paying for the hamburger sketch.",
-        "This place is a fucking nightmare.",
-        "I love my job. My job is my life!",
-        "Are you driving the car from the future?",
-        "I ordered the fully loaded nachos!",
-        "The rules don’t make any sense!",
-        "Who cares? I don’t live here.",
-        "Why’d you take his dice?",
-        "It’s a complicated order.",
-        "We're not allowed to swear.",
-        "The car does not belong to my brother.",
-        "I had a weird night last night.",
-        "This shirt used to be a nice shirt!",
-        "He’s supposed to be my best friend!",
-        "No, you can’t take it home.",
-        "It's not illegal. It's just frowned upon.",
-        "You have the tables, you have the best tables.",
-        "I swear to God, if you fucking touch that...",
-        "I'm not eating it unless you make it right.",
-        "I'm scared of how much I need wine.",
-        "I bought too much fucking stuff!",
-        "It's not a joke. It's not a bit.",
-        "You don't want the real me to come out.",
-        "This guy sucks! No offense.",
-        "You think this is slicked back? This is pushed back.",
-        "I'm gonna be around for a long, long time.",
-        "Get that baby out of here!",
-        "The suit's too big because it's funny!",
-        "I don’t want to be around anymore. Just let me go.",
-        "Don’t mess with me! I don’t even want to be around anymore!",
-        "No, I’m not joking. You really do owe me for this burger.",
-        "His name is Bart Harley Jarvis!",
-        "I thought there'd be a bigger deal made about me.",
-        "I got a really small slice!",
-        "This is why I don’t even try anymore.",
-        "I can’t believe I was fired for being the bad boy of the office.",
-        "What is this, an intervention or something?",
-        "I was here first. I was in line first!",
-        "These tables are what everyone’s raving about!",
-        "We used to make fun of my dad for this.",
-        "You're not part of the turbo team. Don't run!",
-        "You don’t even know what that is, do you?",
-        "We’re gonna take our shirts off and start fightin’!",
-        "It’s not a joke. I’m serious!",
-        "You don’t have a good car idea? Then shut up.",
-        "I was scaring my kids too much.",
-        "I don’t know how to drive. It’s killing my wife.",
-        "I drove my car through a Burger King!",
-        "I wish I was dead.",
-        "You have no good steak ideas!",
-        "My wife left me because of my driving!",
-        "I can’t believe how much this sucks!",
-        "They think it’s funny. I’m the only one who doesn’t get it!",
-        "You’re ruining my life, and I don’t even know your name!",
-        "We're just talking. We're not married!",
-        "The pattern is making me sick!",
-        "I don’t even have time for this!",
-        "It was supposed to be funny, but I guess it’s not.",
-        "My kids hate me now!",
-        "Stop laughing! It’s not funny!",
-        "I’m just gonna grab a sloppy steak. What’s the problem?",
-        "I really needed that. I was dying over here.",
-        "It’s over. Just leave me alone.",
-        "I used to be cool. Now look at me.",
-        "I wish I never came here.",
-        "I should’ve never trusted you with my lunch order!",
-        "We’re not doing this again!",
-        "You said you knew what you were doing!",
-        "The manager said I had to leave!",
-        "I thought I was gonna be the main guy.",
-        "I don’t want to be here anymore. I’m out."
-    ];
+        if (wsmsg['text'].startsWith(".floyd")) {
+            const pinkFloydLyrics = [
+                { quote: "We don’t need no education.", song: "Another Brick in the Wall" },
+                { quote: "All in all, it’s just another brick in the wall.", song: "Another Brick in the Wall" },
+                { quote: "The lunatic is on the grass.", song: "Brain Damage" },
+                { quote: "Wish you were here.", song: "Wish You Were Here" },
+                { quote: "Shine on you crazy diamond.", song: "Shine On You Crazy Diamond" },
+                { quote: "Time is on my side, yes it is.", song: "Time" },
+                { quote: "Money, it’s a crime. Share it fairly but don’t take a slice of my pie.", song: "Money" },
+                { quote: "Isn’t this where we came in?", song: "Echoes" },
+                { quote: "I have become comfortably numb.", song: "Comfortably Numb" },
+                { quote: "So, so you think you can tell Heaven from Hell?", song: "Wish You Were Here" },
+                { quote: "And if the band you’re in starts playing different tunes, I’ll see you on the dark side of the moon.", song: "Brain Damage" },
+                { quote: "The time is gone, the song is over, thought I had something more to say.", song: "Eclipse" },
+                { quote: "You are the one who’ll make the rules.", song: "Mother" },
+                { quote: "And the eyes in the sky look up to the day.", song: "The Great Gig in the Sky" },
+                { quote: "I’m not the one you think I am.", song: "In The Flesh?" },
+                { quote: "And I will see you on the dark side of the moon.", song: "Brain Damage" },
+                { quote: "I’m a little bit of a cowboy, baby.", song: "Breathe" },
+                { quote: "Everything under the sun is in tune, but the sun is eclipsed by the moon.", song: "Eclipse" },
+                { quote: "You can’t have any pudding if you don’t eat your meat!", song: "Another Brick in the Wall" },
+                { quote: "There is no pain, you are receding.", song: "Comfortably Numb" },
+                { quote: "The show must go on.", song: "The Show Must Go On" },
+                { quote: "I’m just a little black spot on the sun today.", song: "Pigs (Three Different Ones)" }
+            ];
 
-    // Select a random quote from the array
-    const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+            const randomLyric = pinkFloydLyrics[Math.floor(Math.random() * pinkFloydLyrics.length)];
 
-    // Send the random quote with a bot emoji prefix
-    this._send(`{"stumble":"msg","text": "🤖 ${randomQuote}"}`);
-}
+            this._send(`{"stumble":"msg","text":"🎸 ${randomLyric.quote} 🎶"}`);
+
+            // Delay for song title
+            setTimeout(() => {
+                this._send(`{"stumble":"msg","text":"– ${randomLyric.song}"}`);
+            }, 1000);
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start tim
+    if (wsmsg['text'] === ".tim") {
+        // Create an array of quotes
+        const quotes = [
+            "You sure about that? You sure about that that's why?",
+            "We're all trying to find the guy who did this!",
+            "You have no good car ideas!",
+            "I don’t even want to be around anymore.",
+            "The bones are their money, so are the worms.",
+            "We’re all having a good time, and then there’s a monster!",
+            "Oh my god, he admit it!",
+            "I'm worried the baby thinks people can't change.",
+            "The steering wheel flies off!",
+            "I don’t want to do this anymore… I’m scared.",
+            "They need to let me do more.",
+            "I hope that this doesn’t take up the whole day.",
+            "I had a hamburger for lunch!",
+            "It’s a pay-it-forward coffee!",
+            "You can’t skip lunch, you’ll get headaches!",
+            "It's the good steak. The steak that you like.",
+            "That's a Chunky!",
+            "Don't let the hat slam the door on the way out!",
+            "You have no idea how long this took!",
+            "Triples is best. Triples is safe.",
+            "I don't want anybody to see me, I have too much fucking shit on me!",
+            "I’m just gonna grab a sloppy steak at Trefoni’s.",
+            "I need two minutes, two minutes tops!",
+            "Give me that. I need it.",
+            "No one’s ever done this before! We’re making history!",
+            "I just want to show you my perfectly normal tables.",
+            "I thought you were doing a bit. I thought you were doing a funny joke.",
+            "I used to be a piece of shit.",
+            "I just wanna hit that!",
+            "This is a classic setup!",
+            "You need to do something with your hair!",
+            "You need to fix your order, sir.",
+            "I'm worried my house is haunted by my grandma.",
+            "You can't change horses midstream!",
+            "I'm not paying for the hamburger sketch.",
+            "This place is a fucking nightmare.",
+            "I love my job. My job is my life!",
+            "Are you driving the car from the future?",
+            "I ordered the fully loaded nachos!",
+            "The rules don’t make any sense!",
+            "Who cares? I don’t live here.",
+            "Why’d you take his dice?",
+            "It’s a complicated order.",
+            "We're not allowed to swear.",
+            "The car does not belong to my brother.",
+            "I had a weird night last night.",
+            "This shirt used to be a nice shirt!",
+            "He’s supposed to be my best friend!",
+            "No, you can’t take it home.",
+            "It's not illegal. It's just frowned upon.",
+            "You have the tables, you have the best tables.",
+            "I swear to God, if you fucking touch that...",
+            "I'm not eating it unless you make it right.",
+            "I'm scared of how much I need wine.",
+            "I bought too much fucking stuff!",
+            "It's not a joke. It's not a bit.",
+            "You don't want the real me to come out.",
+            "This guy sucks! No offense.",
+            "You think this is slicked back? This is pushed back.",
+            "I'm gonna be around for a long, long time.",
+            "Get that baby out of here!",
+            "The suit's too big because it's funny!",
+            "I don’t want to be around anymore. Just let me go.",
+            "Don’t mess with me! I don’t even want to be around anymore!",
+            "No, I’m not joking. You really do owe me for this burger.",
+            "His name is Bart Harley Jarvis!",
+            "I thought there'd be a bigger deal made about me.",
+            "I got a really small slice!",
+            "This is why I don’t even try anymore.",
+            "I can’t believe I was fired for being the bad boy of the office.",
+            "What is this, an intervention or something?",
+            "I was here first. I was in line first!",
+            "These tables are what everyone’s raving about!",
+            "We used to make fun of my dad for this.",
+            "You're not part of the turbo team. Don't run!",
+            "You don’t even know what that is, do you?",
+            "We’re gonna take our shirts off and start fightin’!",
+            "It’s not a joke. I’m serious!",
+            "You don’t have a good car idea? Then shut up.",
+            "I was scaring my kids too much.",
+            "I don’t know how to drive. It’s killing my wife.",
+            "I drove my car through a Burger King!",
+            "I wish I was dead.",
+            "You have no good steak ideas!",
+            "My wife left me because of my driving!",
+            "I can’t believe how much this sucks!",
+            "They think it’s funny. I’m the only one who doesn’t get it!",
+            "You’re ruining my life, and I don’t even know your name!",
+            "We're just talking. We're not married!",
+            "The pattern is making me sick!",
+            "I don’t even have time for this!",
+            "It was supposed to be funny, but I guess it’s not.",
+            "My kids hate me now!",
+            "Stop laughing! It’s not funny!",
+            "I’m just gonna grab a sloppy steak. What’s the problem?",
+            "I really needed that. I was dying over here.",
+            "It’s over. Just leave me alone.",
+            "I used to be cool. Now look at me.",
+            "I wish I never came here.",
+            "I should’ve never trusted you with my lunch order!",
+            "We’re not doing this again!",
+            "You said you knew what you were doing!",
+            "The manager said I had to leave!",
+            "I thought I was gonna be the main guy.",
+            "I don’t want to be here anymore. I’m out."
+        ];
+
+        // Select a random quote from the array
+        const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+
+        // Send the random quote with a bot emoji prefix
+        this._send(`{"stumble":"msg","text": "🤖 ${randomQuote}"}`);
+    }
+
+//Fun Commands ----------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        //start choose
+        if (wsmsg['text'].startsWith(".choose")) // Choose from a list
+        {
+            const options = wsmsg['text'].slice(7).split(',').map(option => option.trim()); // Remove ".choose" and split by commas
+
+            if (options.length > 0) {
+                // Randomly choose an option
+                const choice = options[Math.floor(Math.random() * options.length)];
+
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: `🤖 I choose: ${choice}!`
+                }));
+            } else {
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: "🤖 Please provide some options to choose from! (apple, orange, banana)"
+                }));
+            }
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // start .suggest command
+        if (wsmsg['text'] === ".suggest") {
+            const lines = [
+                "🤖 To suggest a new command for StumbleBot, please follow this format:",
+                "Command: The name of the command (.cheers)",
+                "Result: What you expect StumbleBot to do (This command outputs a cheers message)",
+                "Example Suggestion:",
+                "'.cheers'",
+                "'Cheers!'",
+                "Thank you for your suggestion!"
+            ];
+
+            let delay = 1000; // 1000ms delay
+
+            // Send each line with a delay
+            lines.forEach((line, index) => {
+                setTimeout(() => {
+                    this._send('{"stumble":"msg","text":"' + line + '"}');
+                }, index * delay);
+            });
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Command: .roll (Dice Roll)
+        if (wsmsg['text'].startsWith(".roll")) {
+            const handle = wsmsg['handle']; // Get the handle
+            const username = wsmsg['username']; // Get the username to find the nickname
+            const nickname = userNicknames[handle]?.nickname || ""; // Get the nickname, or leave blank
+
+            // Extract the dice notation (e.g., "1d6") from the command
+            let args = wsmsg['text'].split(' ')[1]; // Get the part after ".roll"
+
+            // Default values for number of dice and faces
+            let numDice = 1;
+            let maxFace = 6;
+
+            // Parse the dice notation if it exists
+            if (args && args.includes('d')) {
+                let parts = args.split('d');
+                numDice = parseInt(parts[0]) || 1; // Number before 'd', default to 1
+                maxFace = parseInt(parts[1]) || 6; // Number after 'd', default to 6
+            }
+
+            let rolls = [];
+            let total = 0;
+            const diceSymbols = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+
+            // Roll the dice
+            for (let i = 0; i < numDice; i++) {
+                let roll = Math.floor(Math.random() * maxFace) + 1;
+                if (maxFace <= 6) {
+                    rolls.push(diceSymbols[roll - 1]); // Use only the symbol
+                } else {
+                    rolls.push(roll); // Use numbers for higher face dice
+                }
+                total += roll; // Add to the total
+            }
+
+            // Format roll output
+            let rollText = maxFace <= 6 ? rolls.join(' ') : rolls.join(', ');
+
+            // Construct the message
+            let rollMessage = nickname ? `🎲 ${nickname} Rolled: ${rollText}` : `🎲 Rolled: ${rollText}`;
+
+            // Send the rolled results
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: rollMessage
+            }));
+
+            // If more than one die is rolled, send the total after 1000ms delay
+            if (numDice > 1) {
+                setTimeout(() => {
+                    this._send(JSON.stringify({
+                        stumble: "msg",
+                        text: `🎲 Total: ${total}`
+                    }));
+                }, 1000);
+            }
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Command: .8ball (Magic 8-Ball)
+        if (wsmsg['text'].startsWith(".8ball")) {
+            const handle = wsmsg['handle']; // Get the handle
+            const username = wsmsg['username']; // Get the username to find the nickname
+            const nickname = userNicknames[handle]?.nickname || ""; // Get the nickname, or leave blank
+
+            // Extract the question from the command (everything after ".8ball")
+            let question = wsmsg['text'].slice(7).trim(); // Get the part after ".8ball"
+
+            // If no question is provided
+            if (!question) {
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: `${nickname ? nickname : 'You'} gotta ask something first! 🤷‍♂️ The 8-ball can't read your mind, especially not without a blunt in hand! 🌿`
+                }));
+                return;
+            }
+
+            // List of possible 8-ball responses with a humorous and weed-themed twist
+            const eightBallResponses = [
+                "Yes, and you should definitely do it. 💯✨",
+                "No, and you should probably rethink your life choices... or take a dab. 💨",
+                "Maybe, but don’t hold your breath. 🫣 Maybe puff a joint first?",
+                "Ask again later... after the munchies kick in. 🍕🌮",
+                "I don't know... I’m just a ball. 🤔 But I could use a good toke.",
+                "Definitely, but only if you bring snacks. 🍿🌿",
+                "I'm not sure, but I'd bet on you... especially after a bong rip. 💨",
+                "Outlook good, but the universe is kinda trippy. 🌌🚀",
+                "Cannot predict now, please try again after 5pm... or after a nap. 🛋️",
+                "My sources say no... but they were high when they said it. 🤡💚",
+                "Yes, but only if you hit that blunt first. 🔥",
+                "No way, bro. Maybe after a dab. 💨🔥",
+                "Ask again after you’ve shared that joint. 🌿🚬",
+                "Yes, but keep it chill, like a relaxed smoke session. 🛋️🌿",
+                "The answer is a cloud of smoke... blurry and unpredictable. ☁️💨"
+            ];
+
+            // Pick a random response
+            const randomResponse = eightBallResponses[Math.floor(Math.random() * eightBallResponses.length)];
+
+            // Construct the response message
+            let responseMessage = nickname ? `🤖 ${nickname} asks: ${question} 🤔\n🎱 The 8-ball says: ${randomResponse}` : `🤖 Someone asks: ${question} 🤔\n🎱 The 8-ball says: ${randomResponse}`;
+
+            // Send the magic 8-ball result
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: responseMessage
+            }));
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Command: .rps (Use handle to get nickname and process user input)
+        if (wsmsg['text'].startsWith(".rps")) {
+            const handle = wsmsg['handle']; // Get the handle
+            const username = wsmsg['username']; // Get the username to find the nickname
+            const nickname = userNicknames[handle]?.nickname || "User"; // Use handle to get the nickname
+
+            // Get the user's choice (after the command, e.g., ".rps rock")
+            const userChoice = wsmsg['text'].split(' ')[1];
+            const validChoices = ['rock', 'paper', 'scissors'];
+
+            // Check if the user's choice is valid
+            if (!validChoices.includes(userChoice)) {
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: `🤖 Hey ${nickname}, please choose 'rock', 'paper', or 'scissors'.`
+                }));
+            } else {
+                // Function to randomly choose between rock, paper, and scissors
+                function getBotChoice() {
+                    const choices = ['rock', 'paper', 'scissors'];
+                    return choices[Math.floor(Math.random() * choices.length)];
+                }
+
+                // Function to determine the winner
+                function determineWinner(userChoice, botChoice) {
+                    if (userChoice === botChoice) {
+                        return "It's a tie!";
+                    } else if (
+                        (userChoice === 'rock' && botChoice === 'scissors') ||
+                        (userChoice === 'paper' && botChoice === 'rock') ||
+                        (userChoice === 'scissors' && botChoice === 'paper')
+                    ) {
+                        return "You win!";
+                    } else {
+                        return "I win!";
+                    }
+                }
+
+                // Get bot's choice and determine the winner
+                const botChoice = getBotChoice();
+                const result = determineWinner(userChoice, botChoice);
+
+                // Send the result back to the chat
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: `🤖 ${nickname}, you chose ${userChoice}. I chose ${botChoice}. ${result}`
+                }));
+            }
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Command: .hangman (Start or play the Hangman game)
+        if (wsmsg['text'].startsWith(".hangman")) {
+            const handle = wsmsg['handle']; // Get the handle
+            const nickname = userNicknames[handle]?.nickname || "Someone"; // Use handle to get the nickname
+
+            if (wsmsg['text'].includes("start")) {
+                const message = handleStartGame(handle, nickname);
+                this._send(JSON.stringify({ stumble: "msg", text: message }));
+            } else if (wsmsg['text'].includes("guess")) {
+                // Handle word guessing
+                const wordGuess = wsmsg['text'].split(' ')[1]; // Get the word guess (e.g., .hangman guess javascript)
+                const message = handleWordGuess(handle, wordGuess);
+                this._send(JSON.stringify({ stumble: "msg", text: message }));
+            } else {
+                // Handle letter guessing
+                const letterGuess = wsmsg['text'].split(' ')[1]; // Get the letter guess (e.g., .hangman a)
+                const message = handleGuess(handle, letterGuess);
+                this._send(JSON.stringify({ stumble: "msg", text: message }));
+            }
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Initialize GojiBux value from localStorage or set to 1
+        let gojiBuxValue = parseInt(localStorage.getItem('gojiBuxValue')) || 1;
+
+        // .gojibux command: Increases GojiBux value
+        if (wsmsg['text'] === ".gojibux") {
+            const randomIncrease = Math.floor(Math.random() * (2000 - 20 + 1)) + 20;
+            gojiBuxValue += randomIncrease;
+
+            // Save the updated value in localStorage
+            localStorage.setItem('gojiBuxValue', gojiBuxValue);
+
+            // Send the message with the updated value
+            this._send(`{"stumble":"msg","text": "📈 GojiBux is now worth 💵 ${gojiBuxValue.toLocaleString()} USD per 1 GBX!"}`);
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // .$NARF command: Displays the negative value of GojiBux
+        if (wsmsg['text'] === ".$NARF") {
+            const narfValue = -gojiBuxValue; // $NRF is the negative of GBX
+            this._send(`{"stumble":"msg","text": "📉 $NARF is now worth 💵 ${narfValue.toLocaleString()} USD per 1 $NRF!"}`);
+        }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+        // Reset GojiBux command
+        if (wsmsg['text'] === ".resetGojiBux") {
+            gojiBuxValue = 1;
+
+            // Save the reset value in localStorage
+            localStorage.setItem('gojiBuxValue', gojiBuxValue);
+
+            // Send the message to confirm the reset
+            this._send(`{"stumble":"msg","text": "🤖 GojiBux has been reset to ${gojiBuxValue} USD per 1 GBX."}`);
+        }
 
 // Utility Commands -----------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -2619,231 +2823,6 @@ if (wsmsg['text'] === ".tim") {
             } else {
                 this._send('{"stumble":"msg","text":"🤖 Invalid format. Use: .convert [value] [unit] to [unit]."}');
             }
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        // Command: .roll (Dice Roll)
-        if (wsmsg['text'].startsWith(".roll")) {
-            const handle = wsmsg['handle']; // Get the handle
-            const username = wsmsg['username']; // Get the username to find the nickname
-            const nickname = userNicknames[handle]?.nickname || ""; // Get the nickname, or leave blank
-
-            // Extract the dice notation (e.g., "1d6") from the command
-            let args = wsmsg['text'].split(' ')[1]; // Get the part after ".roll"
-
-            // Default values for number of dice and faces
-            let numDice = 1;
-            let maxFace = 6;
-
-            // Parse the dice notation if it exists
-            if (args && args.includes('d')) {
-                let parts = args.split('d');
-                numDice = parseInt(parts[0]) || 1; // Number before 'd', default to 1
-                maxFace = parseInt(parts[1]) || 6; // Number after 'd', default to 6
-            }
-
-            let rolls = [];
-            let total = 0;
-            const diceSymbols = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
-
-            // Roll the dice
-            for (let i = 0; i < numDice; i++) {
-                let roll = Math.floor(Math.random() * maxFace) + 1;
-                if (maxFace <= 6) {
-                    rolls.push(diceSymbols[roll - 1]); // Use only the symbol
-                } else {
-                    rolls.push(roll); // Use numbers for higher face dice
-                }
-                total += roll; // Add to the total
-            }
-
-            // Format roll output
-            let rollText = maxFace <= 6 ? rolls.join(' ') : rolls.join(', ');
-
-            // Construct the message
-            let rollMessage = nickname ? `🎲 ${nickname} Rolled: ${rollText}` : `🎲 Rolled: ${rollText}`;
-
-            // Send the rolled results
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: rollMessage
-            }));
-
-            // If more than one die is rolled, send the total after 1000ms delay
-            if (numDice > 1) {
-                setTimeout(() => {
-                    this._send(JSON.stringify({
-                        stumble: "msg",
-                        text: `🎲 Total: ${total}`
-                    }));
-                }, 1000);
-            }
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        // Command: .8ball (Magic 8-Ball)
-        if (wsmsg['text'].startsWith(".8ball")) {
-            const handle = wsmsg['handle']; // Get the handle
-            const username = wsmsg['username']; // Get the username to find the nickname
-            const nickname = userNicknames[handle]?.nickname || ""; // Get the nickname, or leave blank
-
-            // Extract the question from the command (everything after ".8ball")
-            let question = wsmsg['text'].slice(7).trim(); // Get the part after ".8ball"
-
-            // If no question is provided
-            if (!question) {
-                this._send(JSON.stringify({
-                    stumble: "msg",
-                    text: `${nickname ? nickname : 'You'} gotta ask something first! 🤷‍♂️ The 8-ball can't read your mind, especially not without a blunt in hand! 🌿`
-                }));
-                return;
-            }
-
-            // List of possible 8-ball responses with a humorous and weed-themed twist
-            const eightBallResponses = [
-                "Yes, and you should definitely do it. 💯✨",
-                "No, and you should probably rethink your life choices... or take a dab. 💨",
-                "Maybe, but don’t hold your breath. 🫣 Maybe puff a joint first?",
-                "Ask again later... after the munchies kick in. 🍕🌮",
-                "I don't know... I’m just a ball. 🤔 But I could use a good toke.",
-                "Definitely, but only if you bring snacks. 🍿🌿",
-                "I'm not sure, but I'd bet on you... especially after a bong rip. 💨",
-                "Outlook good, but the universe is kinda trippy. 🌌🚀",
-                "Cannot predict now, please try again after 5pm... or after a nap. 🛋️",
-                "My sources say no... but they were high when they said it. 🤡💚",
-                "Yes, but only if you hit that blunt first. 🔥",
-                "No way, bro. Maybe after a dab. 💨🔥",
-                "Ask again after you’ve shared that joint. 🌿🚬",
-                "Yes, but keep it chill, like a relaxed smoke session. 🛋️🌿",
-                "The answer is a cloud of smoke... blurry and unpredictable. ☁️💨"
-            ];
-
-            // Pick a random response
-            const randomResponse = eightBallResponses[Math.floor(Math.random() * eightBallResponses.length)];
-
-            // Construct the response message
-            let responseMessage = nickname ? `🤖 ${nickname} asks: ${question} 🤔\n🎱 The 8-ball says: ${randomResponse}` : `🤖 Someone asks: ${question} 🤔\n🎱 The 8-ball says: ${randomResponse}`;
-
-            // Send the magic 8-ball result
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: responseMessage
-            }));
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        // Command: .rps (Use handle to get nickname and process user input)
-        if (wsmsg['text'].startsWith(".rps")) {
-            const handle = wsmsg['handle']; // Get the handle
-            const username = wsmsg['username']; // Get the username to find the nickname
-            const nickname = userNicknames[handle]?.nickname || "User"; // Use handle to get the nickname
-
-            // Get the user's choice (after the command, e.g., ".rps rock")
-            const userChoice = wsmsg['text'].split(' ')[1];
-            const validChoices = ['rock', 'paper', 'scissors'];
-
-            // Check if the user's choice is valid
-            if (!validChoices.includes(userChoice)) {
-                this._send(JSON.stringify({
-                    stumble: "msg",
-                    text: `🤖 Hey ${nickname}, please choose 'rock', 'paper', or 'scissors'.`
-                }));
-            } else {
-                // Function to randomly choose between rock, paper, and scissors
-                function getBotChoice() {
-                    const choices = ['rock', 'paper', 'scissors'];
-                    return choices[Math.floor(Math.random() * choices.length)];
-                }
-
-                // Function to determine the winner
-                function determineWinner(userChoice, botChoice) {
-                    if (userChoice === botChoice) {
-                        return "It's a tie!";
-                    } else if (
-                        (userChoice === 'rock' && botChoice === 'scissors') ||
-                        (userChoice === 'paper' && botChoice === 'rock') ||
-                        (userChoice === 'scissors' && botChoice === 'paper')
-                    ) {
-                        return "You win!";
-                    } else {
-                        return "I win!";
-                    }
-                }
-
-                // Get bot's choice and determine the winner
-                const botChoice = getBotChoice();
-                const result = determineWinner(userChoice, botChoice);
-
-                // Send the result back to the chat
-                this._send(JSON.stringify({
-                    stumble: "msg",
-                    text: `🤖 ${nickname}, you chose ${userChoice}. I chose ${botChoice}. ${result}`
-                }));
-            }
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        // Command: .hangman (Start or play the Hangman game)
-        if (wsmsg['text'].startsWith(".hangman")) {
-            const handle = wsmsg['handle']; // Get the handle
-            const nickname = userNicknames[handle]?.nickname || "Someone"; // Use handle to get the nickname
-
-            if (wsmsg['text'].includes("start")) {
-                const message = handleStartGame(handle, nickname);
-                this._send(JSON.stringify({ stumble: "msg", text: message }));
-            } else if (wsmsg['text'].includes("guess")) {
-                // Handle word guessing
-                const wordGuess = wsmsg['text'].split(' ')[1]; // Get the word guess (e.g., .hangman guess javascript)
-                const message = handleWordGuess(handle, wordGuess);
-                this._send(JSON.stringify({ stumble: "msg", text: message }));
-            } else {
-                // Handle letter guessing
-                const letterGuess = wsmsg['text'].split(' ')[1]; // Get the letter guess (e.g., .hangman a)
-                const message = handleGuess(handle, letterGuess);
-                this._send(JSON.stringify({ stumble: "msg", text: message }));
-            }
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        // Initialize GojiBux value from localStorage or set to 1
-        let gojiBuxValue = parseInt(localStorage.getItem('gojiBuxValue')) || 1;
-
-        // .gojibux command: Increases GojiBux value
-        if (wsmsg['text'] === ".gojibux") {
-            const randomIncrease = Math.floor(Math.random() * (2000 - 20 + 1)) + 20;
-            gojiBuxValue += randomIncrease;
-
-            // Save the updated value in localStorage
-            localStorage.setItem('gojiBuxValue', gojiBuxValue);
-
-            // Send the message with the updated value
-            this._send(`{"stumble":"msg","text": "📈 GojiBux is now worth 💵 ${gojiBuxValue.toLocaleString()} USD per 1 GBX!"}`);
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        // .$NARF command: Displays the negative value of GojiBux
-        if (wsmsg['text'] === ".$NARF") {
-            const narfValue = -gojiBuxValue; // $NRF is the negative of GBX
-            this._send(`{"stumble":"msg","text": "📉 $NARF is now worth 💵 ${narfValue.toLocaleString()} USD per 1 $NRF!"}`);
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        // Reset GojiBux command
-        if (wsmsg['text'] === ".resetGojiBux") {
-            gojiBuxValue = 1;
-
-            // Save the reset value in localStorage
-            localStorage.setItem('gojiBuxValue', gojiBuxValue);
-
-            // Send the message to confirm the reset
-            this._send(`{"stumble":"msg","text": "🤖 GojiBux has been reset to ${gojiBuxValue} USD per 1 GBX."}`);
         }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
