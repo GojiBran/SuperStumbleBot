@@ -231,6 +231,8 @@ function handleMessage(msg) {
                 welcomeMessage = "🤖 Pinche Vato! Siempre chingando. 🌮🔥";
             } else if (username === "The1nkedRabbit") {
                 welcomeMessage = "🤖 You fell down the Rabbit hole! 🐇";
+            } else if (username === "theinkedrabbit") {
+                welcomeMessage = "🤖 You fell down the Rabbit hole! 🐇";
             } else if (username === "anonymousstoner") {
                 welcomeMessage = "🤖 Le Mous is here, time to get your throat coat 🔥🔥🔥🔥";
             } else if (username === "AkwRdtrTl3") {
@@ -383,7 +385,7 @@ function handleMessage(msg) {
 //-----------------------------------------------------------------------------------------------------------------------------------
 
         // Command: .users (List all users with delay)
-        if (wsmsg['text'] === ".users") {
+        /*if (wsmsg['text'] === ".users") {
             const usersArray = Object.values(userNicknames)
                 .filter((v, i, a) => a.findIndex(t => t.username === v.username) === i) // Remove duplicates
                 .map(user => `Nickname: ${user.nickname}, Username: ${user.username}, Status: ${user.modStatus}`);
@@ -403,7 +405,7 @@ function handleMessage(msg) {
                     }, index * 1000); // Delay each message by 1000ms
                 });
             }
-        }
+        }*/
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -428,7 +430,7 @@ function handleMessage(msg) {
 //-----------------------------------------------------------------------------------------------------------------------------------
 
         // Command: .clearUsers (Clear stored users)
-        if (wsmsg['text'] === ".clearUsers") {
+        /*if (wsmsg['text'] === ".clearUsers") {
             userNicknames = {}; // Reset the user data
             localStorage.removeItem('userNicknames'); // Clear from localStorage
 
@@ -436,51 +438,91 @@ function handleMessage(msg) {
                 stumble: "msg",
                 text: "🤖 All stored users have been cleared."
             }));
-        }
+        }*/
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // Universal Notes Storage
-        let universalNotes = JSON.parse(localStorage.getItem("universalNotes")) || [];
+    // Universal Notes Storage (ensure backward compatibility)
+    let universalNotes = JSON.parse(localStorage.getItem("universalNotes")) || [];
 
-        // Handle .note command to add a new note
-        if (wsmsg['text'] && wsmsg['text'].startsWith(".note ")) {
-            const note = wsmsg['text'].slice(6).trim(); // Extract the note text
+    // Handle .note command to add a new note
+    if (wsmsg['text'] && wsmsg['text'].startsWith(".note ")) {
+        const noteText = wsmsg['text'].slice(6).trim(); // Extract the note text
+        const handle = wsmsg['handle']; // Get session handle
+        const user = userNicknames[handle]; // Retrieve user info
 
-            if (note) {
-                // Limit notes to 6, remove the oldest if full
-                if (universalNotes.length >= 26) {
-                    universalNotes.shift(); // Remove the first (oldest) note
-                }
+        if (!user || !user.username) {
+            respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+            return;
+        }
 
-                universalNotes.push(note);
-                localStorage.setItem("universalNotes", JSON.stringify(universalNotes));
-
-                respondWithMessage.call(this, "🤖 Note added!");
-            } else {
-                respondWithMessage.call(this, "🤖 Usage: .note [your note]");
+        if (noteText.length === 0) {
+            respondWithMessage.call(this, "🤖 Usage: .note [your note]");
+        } else {
+            // Limit notes to 26; remove the oldest if full
+            if (universalNotes.length >= 26) {
+                universalNotes.shift(); // Remove the first (oldest) note
             }
+
+            // Store note with persistent username
+            universalNotes.push({ username: user.username, note: noteText });
+            localStorage.setItem("universalNotes", JSON.stringify(universalNotes));
+
+            respondWithMessage.call(this, "🤖 Note added!");
+        }
+    }
+
+    // Handle .notes command to display all notes with delay
+    if (wsmsg['text'] === ".notes") {
+        if (universalNotes.length === 0) {
+            respondWithMessage.call(this, "🤖 No notes available.");
+        } else {
+            respondWithMessage.call(this, "🤖 Retrieving notes...");
+
+            universalNotes.forEach((entry, index) => {
+                setTimeout(() => {
+                    // Output without username for now
+                    if (typeof entry === "string") {
+                        respondWithMessage.call(this, `${index + 1}. ${entry}`);
+                    } else {
+                        respondWithMessage.call(this, `${index + 1}. ${entry.note}`);
+                    }
+                }, index * 1000); // 1-second delay per note
+            });
+        }
+    }
+
+    // Handle .mynotes command to display only the user's notes with delay
+    if (wsmsg['text'] === ".mynotes") {
+        const handle = wsmsg['handle']; // Get session handle
+        const user = userNicknames[handle]; // Retrieve user info
+
+        if (!user || !user.username) {
+            respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+            return;
         }
 
-        // Handle .notes command to display all notes
-        if (wsmsg['text'] === ".notes") {
-            if (universalNotes.length === 0) {
-                respondWithMessage.call(this, "🤖 No notes available.");
-            } else {
-                universalNotes.forEach((note, index) => {
-                    setTimeout(() => {
-                        respondWithMessage.call(this, `${index + 1}. ${note}`);
-                    }, index * 1000); // 1000ms delay per note
-                });
-            }
-        }
+        const userNotes = universalNotes.filter(entry => typeof entry !== "string" && entry.username === user.username);
 
-        // Handle .clearNotes command to wipe all notes
-        if (wsmsg['text'] === ".clearNotes") {
-            universalNotes = [];
-            localStorage.removeItem("universalNotes");
-            respondWithMessage.call(this, "🤖 All notes cleared.");
+        if (userNotes.length === 0) {
+            respondWithMessage.call(this, "🤖 You have no saved notes.");
+        } else {
+            respondWithMessage.call(this, "🤖 Retrieving your notes...");
+
+            userNotes.forEach((entry, index) => {
+                setTimeout(() => {
+                    respondWithMessage.call(this, `${index + 1}. ${entry.note}`);
+                }, index * 1000); // 1-second delay per note
+            });
         }
+    }
+
+    // Handle .clearNotes command to wipe all notes
+    if (wsmsg['text'] === ".clearNotes") {
+        universalNotes = [];
+        localStorage.removeItem("universalNotes");
+        respondWithMessage.call(this, "🤖 All notes cleared.");
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
