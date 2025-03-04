@@ -77,6 +77,37 @@ This **UserScript**, written in JavaScript, enhances **StumbleChat** by adding c
 
 ---
 
+# 🌿 StumbleFarm - A Chat-Based Weed Growing Game
+
+**StumbleFarm** lets the chat collaborate to **grow, harvest, and smoke** virtual weed! 🚬🔥
+
+## 🎮 How to Play
+| Command | Description |
+|---------|------------|
+| `.grow plantseed` / `.g plantseed` | 🌱 Plant a new seed (randomized name) |
+| `.grow plant` / `.g plant` | 🔍 Check the plant's status |
+| `.grow water` / `.g water` | 💦 Water the plant |
+| `.grow joint` / `.g joint` | 🚬 Roll a joint |
+| `.grow smoke` / `.g smoke` | 💨 Smoke a joint |
+
+🚀 **Persistent stats** (weed stash, joints) with **LocalStorage**.  
+🔥 **Fully randomized plant names** include **grower's name or chat references**.  
+
+### 🔥 Features:
+- 🌱 **Grow a plant from seed to harvest**
+- 🌾 **Go through realistic growth stages**
+- ✂️ **Dry, cure, and trim for best results**
+- 🚬 **Roll & smoke joints together**
+- 💾 **Data is saved with LocalStorage for persistence**
+- 🎮 **Works with `.grow` and `.g` command prefixes**
+
+## 💾 **Data Persistence**
+- 🌱 **Weed stash, joints, and plant progress are saved in LocalStorage**
+- 🔄 **Even if the bot reloads, progress remains**
+- 🚫 **If you want to reset, manually clear LocalStorage**
+
+---
+
 ### **Technical Details**
 - **WebSocket Override**: Intercepts and manipulates WebSocket messages.
 - **LocalStorage**: Stores user nicknames, GojiBux values, and universal notes.
