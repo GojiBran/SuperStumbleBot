@@ -38,6 +38,8 @@ setInterval(() => {
 (function() {
     // Load userNicknames from localStorage (if any)
     let userNicknames = JSON.parse(localStorage.getItem('userNicknames')) || {};
+    let userHandles = JSON.parse(localStorage.getItem('userHandles')) || {};
+
 
 
     WebSocket.prototype._send = WebSocket.prototype.send;
@@ -57,114 +59,6 @@ setInterval(() => {
             }
         };
     };
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-// A simple object to store game states for users
-const userGames = {};
-
-// Start a new game
-function startNewGame(handle) {
-    const wordList = ["programming", "javascript", "hangman", "bot", "challenge"];
-    const wordToGuess = wordList[Math.floor(Math.random() * wordList.length)];
-    userGames[handle] = {
-        word: wordToGuess,
-        guessedLetters: [],
-        incorrectGuesses: 0,
-        maxIncorrectGuesses: 6,
-    };
-}
-
-// Get current game state
-function getGameState(handle) {
-    return userGames[handle];
-}
-
-// Update game state
-function updateGameState(handle, gameState) {
-    userGames[handle] = gameState;
-}
-
-// End the game (win or lose)
-function endGame(handle, win) {
-    const gameState = getGameState(handle);
-    if (win) {
-        return `🎉 You win! The word was: ${gameState.word}`;
-    } else {
-        return `Game over! The word was: ${gameState.word}`;
-    }
-}
-
-// Start the game
-function handleStartGame(handle, nickname) {
-    startNewGame(handle);
-    return `${nickname}, welcome to Hangman! The word has ${userGames[handle].word.length} letters. Start guessing!`;
-}
-
-// Make a guess (single letter)
-function handleGuess(handle, guess) {
-    const gameState = getGameState(handle);
-
-    // Validate guess (ensure it's a single letter)
-    const validGuess = /^[a-zA-Z]$/.test(guess);
-    if (!validGuess) {
-        return "Please guess a single letter.";
-    }
-
-    // Check if the user has already guessed this letter
-    if (gameState.guessedLetters.includes(guess)) {
-        return `You've already guessed '${guess}'. Try a different letter!`;
-    }
-
-    // Update guessed letters
-    gameState.guessedLetters.push(guess);
-
-    // Check if the guess is correct
-    if (gameState.word.includes(guess)) {
-        let displayWord = gameState.word.split('').map(letter => {
-            return gameState.guessedLetters.includes(letter) ? letter : '_';
-        }).join(' ');
-
-        // Check if the user has guessed the whole word
-        if (!displayWord.includes('_')) {
-            return endGame(handle, true); // User wins
-        }
-
-        return `Correct! '${guess}' is in the word. Current word: ${displayWord}`;
-    } else {
-        gameState.incorrectGuesses++;
-        // Check if max incorrect guesses are reached
-        if (gameState.incorrectGuesses >= gameState.maxIncorrectGuesses) {
-            return endGame(handle, false); // User loses
-        }
-
-        return `Incorrect! '${guess}' is not in the word. Incorrect guesses: ${gameState.incorrectGuesses}/${gameState.maxIncorrectGuesses}`;
-    }
-
-    // Update the game state after the guess
-    updateGameState(handle, gameState);
-}
-
-// Guess the whole word
-function handleWordGuess(handle, guess) {
-    const gameState = getGameState(handle);
-
-    // Check if the guess is the correct word
-    if (guess.toLowerCase() === gameState.word.toLowerCase()) {
-        return endGame(handle, true); // User wins
-    } else {
-        gameState.incorrectGuesses++;
-        // Check if max incorrect guesses are reached
-        if (gameState.incorrectGuesses >= gameState.maxIncorrectGuesses) {
-            return endGame(handle, false); // User loses
-        }
-
-        return `Incorrect! '${guess}' is not the correct word. Incorrect guesses: ${gameState.incorrectGuesses}/${gameState.maxIncorrectGuesses}`;
-    }
-
-    // Update the game state after the guess
-    updateGameState(handle, gameState);
-}
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -270,11 +164,11 @@ function handleMessage(msg) {
             } else if (username === "Hash710") {
                 welcomeMessage = "🤖 It's a major major, sailor sailor! Ahoy! 🚢⚓";
             } else if (username === "zemo") {
-                welcomeMessage = "🤖 Eenie, meenie, miney, mo.. Say hello to Zemo! 😎";
+                welcomeMessage = "🤖 Here comes ${nickname || username}! Hide the sharp objects and shoelaces! 🔪🧵";
             } else if (username === "userone") {
                 welcomeMessage = "🤖 OG Jew in da housee! 🔥🔥🔥";
             } else if (username === "gentlesoul69") {
-                welcomeMessage = "🤖 🏈⚽⚾🏀 GO SPORTS! 🏀⚾⚽🏈";
+                welcomeMessage = `🤖 ${nickname || username} IS IN BC, BABY! 🍁🏔️`;
             } else if (username === "scriptdefromage") {
                 welcomeMessage = "🤖 IS THAT LJ OR AM I LOOKIN IN THE MIRROR?! 🤖";
             } else if (username === "bbblueyez18") {
@@ -289,22 +183,20 @@ function handleMessage(msg) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-            // Store or update the user's info using both username and handle
+            // Store user info under username (persistent)
             userNicknames[username] = {
                 handle: handle,
                 username: username,
                 nickname: nickname || username,
                 modStatus: wsmsg['mod'] ? "Moderator" : "Regular"
             };
-            userNicknames[handle] = {
-                handle: handle,
-                username: username,
-                nickname: nickname || username,
-                modStatus: wsmsg['mod'] ? "Moderator" : "Regular"
-            };
 
-            // Save the updated userNicknames to localStorage
+            // Map handle → username (for lookup during chats)
+            userHandles[handle] = username;
+
+            // Save updated userNicknames and userHandles to localStorage
             localStorage.setItem('userNicknames', JSON.stringify(userNicknames));
+            localStorage.setItem('userHandles', JSON.stringify(userHandles));
         }
 
         // Listen for nickname changes and update userNicknames
@@ -312,16 +204,16 @@ function handleMessage(msg) {
             const handle = wsmsg['handle']; // Unique user handle
             const newNickname = wsmsg['nick']; // New nickname
 
-            if (userNicknames[handle]) {
-                userNicknames[handle].nickname = newNickname; // Update stored nickname
-                userNicknames[userNicknames[handle].username].nickname = newNickname; // Ensure username entry updates too
+            const username = userHandles[handle];
+            if (userNicknames[username]) {
+                userNicknames[username].nickname = newNickname;
+            }
 
                 // Save updated nicknames to localStorage
                 localStorage.setItem('userNicknames', JSON.stringify(userNicknames));
 
                 console.log(`Nickname updated: ${handle} is now ${newNickname}`);
             }
-        }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -342,44 +234,44 @@ function handleMessage(msg) {
 // YouTube --------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // Define an array of keywords to check for YouTube-related commands
-        var keywords = ['.youtube', '.video', '.play', '.yt'];
+    // Define an array of keywords to check for YouTube-related commands (case insensitive)
+    var keywords = ['.youtube', '.video', '.play', '.yt'];
 
-        // Function to convert various YouTube URL formats to a standard format
-        function convertToRegularYouTubeLink(url) {
-            // Improved regex to extract video ID from multiple YouTube URL formats
-            var videoIdRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/|.*[?&]v=))([\w-]+)/;
-            var match = url.match(videoIdRegex);
-            if (match && match[1]) {
-                return 'https://www.youtube.com/watch?v=' + match[1];
-            }
-            return null; // Return null if the URL doesn't match
+    // Function to convert various YouTube URL formats to a standard format
+    function convertToRegularYouTubeLink(url) {
+        // Improved regex to extract video ID from multiple YouTube URL formats
+        var videoIdRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/|.*[?&]v=))([\w-]+)/;
+        var match = url.match(videoIdRegex);
+        if (match && match[1]) {
+            return 'https://www.youtube.com/watch?v=' + match[1];
         }
+        return null; // Return null if the URL doesn't match
+    }
 
-        // Loop through each keyword in the keywords array
-        for (var i = 0; i < keywords.length; i++) {
-            // Check if the "text" property in wsmsg starts with the current keyword
-            if (wsmsg['text'].startsWith(keywords[i])) {
-                // Extract the query part of the message after the keyword
-                var query = wsmsg['text'].substring(keywords[i].length).trim();
+    // Loop through each keyword in the keywords array
+    for (var i = 0; i < keywords.length; i++) {
+        // Check if the "text" property in wsmsg starts with the current keyword (case insensitive)
+        if (wsmsg['text'].toLowerCase().startsWith(keywords[i])) {
+            // Extract the query part of the message after the keyword
+            var query = wsmsg['text'].substring(wsmsg['text'].indexOf(" ") + 1).trim();
 
-                // Check if the query is not empty
-                if (query) {
-                    // Check if the query is a YouTube URL and convert it
-                    var regularLink = convertToRegularYouTubeLink(query);
-                    if (regularLink) {
-                        // Send a formatted message with the converted YouTube link
-                        this._send('{"stumble": "youtube","type": "add","id": "' + regularLink + '","time": 0}');
-                    } else {
-                        // Handle non-URL queries as is (e.g., search terms)
-                        this._send('{"stumble": "youtube","type": "add","id": "' + query + '","time": 0}');
-                    }
+            // Check if the query is not empty
+            if (query && query !== keywords[i]) {
+                // Check if the query is a YouTube URL and convert it
+                var regularLink = convertToRegularYouTubeLink(query);
+                if (regularLink) {
+                    // Send a formatted message with the converted YouTube link
+                    this._send('{"stumble": "youtube","type": "add","id": "' + regularLink + '","time": 0}');
+                } else {
+                    // Handle non-URL queries as is (e.g., search terms)
+                    this._send('{"stumble": "youtube","type": "add","id": "' + query + '","time": 0}');
                 }
-
-                // Exit the loop as the query has been processed
-                break;
             }
+
+            // Exit the loop as the query has been processed
+            break;
         }
+    }
 
 // User Commands --------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -410,9 +302,10 @@ function handleMessage(msg) {
 //-----------------------------------------------------------------------------------------------------------------------------------
 
         //start self
-        if (wsmsg['text'] === ".self") { // Show the user's info
+        if (wsmsg['text'].toLowerCase() === ".self") { // Show the user's info
             const handle = wsmsg['handle'];
-            const user = userNicknames[handle];
+            const username = userHandles[handle]; // Get persistent username
+            const user = userNicknames[username]; // Get user data
 
             if (user) {
                 this._send(JSON.stringify({
@@ -442,6 +335,49 @@ function handleMessage(msg) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+/*if (wsmsg['text'] === ".cleanusers") {
+    let cleanedNicknames = {};
+    let cleanedHandles = {};
+
+    // Track the most recent handle for each username
+    let latestHandles = {};
+
+    // First, loop through userNicknames and keep only the latest entry per username
+    for (let username in userNicknames) {
+        let userData = userNicknames[username];
+
+        // Always store the most recent user entry
+        cleanedNicknames[username] = userData;
+
+        // Track the most recent handle associated with this username
+        latestHandles[username] = userData.handle;
+    }
+
+    // Now, loop through userHandles and keep only the most recent handle per username
+    for (let handle in userHandles) {
+        let username = userHandles[handle];
+
+        // Only keep this handle if it's the latest one associated with the username
+        if (latestHandles[username] === handle) {
+            cleanedHandles[handle] = username;
+        }
+    }
+
+    // Save the cleaned lists back to localStorage
+    userNicknames = cleanedNicknames;
+    userHandles = cleanedHandles;
+    localStorage.setItem('userNicknames', JSON.stringify(userNicknames));
+    localStorage.setItem('userHandles', JSON.stringify(userHandles));
+
+    // Send a confirmation message
+    this._send(JSON.stringify({
+        stumble: "msg",
+        text: "🤖 Duplicate user entries and old handles have been removed!"
+    }));
+}*/
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
     // Universal Notes Storage (ensure backward compatibility)
     let universalNotes = JSON.parse(localStorage.getItem("universalNotes")) || [];
 
@@ -449,7 +385,8 @@ function handleMessage(msg) {
     if (wsmsg['text'] && wsmsg['text'].startsWith(".note ")) {
         const noteText = wsmsg['text'].slice(6).trim(); // Extract the note text
         const handle = wsmsg['handle']; // Get session handle
-        const user = userNicknames[handle]; // Retrieve user info
+        const username = userHandles[handle]; // Get persistent username
+        const user = userNicknames[username]; // Get user data
 
         if (!user || !user.username) {
             respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
@@ -473,7 +410,7 @@ function handleMessage(msg) {
     }
 
     // Handle .notes command to display all notes with delay
-    if (wsmsg['text'] === ".notes") {
+    if (wsmsg['text'].toLowerCase() === ".notes") {
         if (universalNotes.length === 0) {
             respondWithMessage.call(this, "🤖 No notes available.");
         } else {
@@ -493,9 +430,10 @@ function handleMessage(msg) {
     }
 
     // Handle .mynotes command to display only the user's notes with delay
-    if (wsmsg['text'] === ".mynotes") {
+    if (wsmsg['text'].toLowerCase() === ".mynotes") {
         const handle = wsmsg['handle']; // Get session handle
-        const user = userNicknames[handle]; // Retrieve user info
+        const username = userHandles[handle]; // Get persistent username
+        const user = userNicknames[username]; // Get user data
 
         if (!user || !user.username) {
             respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
@@ -526,46 +464,46 @@ function handleMessage(msg) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // Command: .me (Strictly requires ".me " plus a message)
-        if (wsmsg['text'].startsWith(".me ")) {
-            const handle = wsmsg['handle']; // Get the handle
-            const username = wsmsg['username']; // Get the username to find the nickname
-            const nickname = userNicknames[handle]?.nickname || "Bot"; // Use handle to get the nickname, default to Bot if not found
+    // Command: .me (Strictly requires ".me " plus a message)
+    if (wsmsg['text'].toLowerCase().startsWith(".me ")) {
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "Bot";
 
-            const message = wsmsg['text'].slice(4).trim(); // Get the string after ".me "
+        const message = wsmsg['text'].slice(4).trim(); // Get the string after ".me "
 
-            if (message.length > 0) { // Ensure there's a message after ".me "
-                this._send(JSON.stringify({
-                    stumble: "msg",
-                    text: `🤖 ${nickname} ${message}` // Send message with nickname + the string
-                }));
-            }
+        if (message.length > 0) { // Ensure there's a message after ".me "
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `🤖 ${nickname} ${message}` // Send message with nickname + the string
+            }));
         }
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // Command: .my (Strictly requires ".my " plus a message)
-        if (wsmsg['text'].startsWith(".my ")) {
-            const handle = wsmsg['handle']; // Get the handle
-            const username = wsmsg['username']; // Get the username to find the nickname
-            const nickname = userNicknames[handle]?.nickname || "Bot"; // Use handle to get the nickname, default to Bot if not found
+    // Command: .my (Strictly requires ".my " plus a message)
+    if (wsmsg['text'].toLowerCase().startsWith(".my ")) {
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "Bot";
 
-            const message = wsmsg['text'].slice(4).trim(); // Get the string after ".my "
+        const message = wsmsg['text'].slice(4).trim(); // Get the string after ".my "
 
-            if (message.length > 0) { // Ensure there's a message after ".my "
-                this._send(JSON.stringify({
-                    stumble: "msg",
-                    text: `🤖 ${nickname}'s ${message}` // Send message with nickname + possessive
-                }));
-            }
+        if (message.length > 0) { // Ensure there's a message after ".my "
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `🤖 ${nickname}'s ${message}` // Send message with nickname + possessive
+            }));
         }
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
         // bran and goji with nickname
-        if (wsmsg['text'] === "bran" || wsmsg['text'] === "goji") {
+        if (wsmsg['text'].toLowerCase() === "bran" || wsmsg['text'].toLowerCase() === "goji") {
             const handle = wsmsg['handle']; // Get the handle
-            const nickname = userNicknames[handle]?.nickname || wsmsg['username'] || "you"; // Get nickname, fallback to username or Bot
+            const nickname = userNicknames[userHandles[handle]]?.nickname || wsmsg['username'] || "you"; // Get nickname, fallback to username or Bot
 
             const target = wsmsg['text'] === "bran" ? "Bran" : "Goji"; // Determine which target to use
 
@@ -573,20 +511,6 @@ function handleMessage(msg) {
                 stumble: "msg",
                 text: `🤖 ${target} farted on ${nickname}!` // Message using nickname
             })), 1000);
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        // Command: .cheers (Use handle to get nickname)
-        if (wsmsg['text'] === ".c" || wsmsg['text'] === ".cheers") {
-            const handle = wsmsg['handle']; // Get the handle
-            const username = wsmsg['username']; // Get the username to find the nickname
-            const nickname = userNicknames[handle]?.nickname || "Someone"; // Use handle to get the nickname
-
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: `🤖 ${nickname} is smokin! Cheers! 🌲💨`
-            }));
         }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -599,9 +523,9 @@ function handleMessage(msg) {
         wsmsg['text'] === ".428" || wsmsg['text'] === ".429" || wsmsg['text'] === ".430" ||
         wsmsg['text'] === ".710" || wsmsg['text'] === ".840"
     ) {
-        const handle = wsmsg['handle']; // Get the handle
-        const username = wsmsg['username']; // Get the username to find the nickname
-        const nickname = userNicknames[handle]?.nickname || "Someone"; // Use handle to get the nickname
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "Someone";
 
         const timeMessages = {
             ".419": [`${nickname} SMOKES WHEN THEY WANT!`],
@@ -646,11 +570,25 @@ function handleMessage(msg) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-    // Command: .sub
-    if (wsmsg['text'] === ".sub") {
-        const handle = wsmsg['handle']; // Get the handle
-        const username = wsmsg['username']; // Get the username to find the nickname
-        const nickname = userNicknames[handle]?.nickname || "Someone"; // Use handle to get the nickname
+    // Command: .cheers (Case-insensitive, uses handle to get nickname)
+    if ([".c", ".cheers"].includes(wsmsg['text'].toLowerCase())) { // Convert input to lowercase and check if it's in the list
+        const handle = wsmsg['handle']; // Get the user's handle from the message
+        const username = userHandles[handle]; // Look up the username using the handle
+        const nickname = userNicknames[username]?.nickname || "Someone"; // Get the stored nickname, or default to "Someone"
+
+        this._send(JSON.stringify({ // Send the message to the chat
+            stumble: "msg",
+            text: `🤖 ${nickname} is smokin! Cheers! 🌲💨`
+        }));
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // Command: .sub (case insensitive)
+    if (wsmsg['text'].toLowerCase() === ".sub") {
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "Someone";
 
         this._send(JSON.stringify({
             stumble: "msg",
@@ -660,108 +598,241 @@ function handleMessage(msg) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // Command: .sub cheers
-        if (wsmsg['text'] === ".sc" || wsmsg['text'] === ".subcheers" || wsmsg['text'] === ".subchar" || wsmsg['text'] === ".schar" || wsmsg['text'] === ".scheers") {
-            const handle = wsmsg['handle']; // Get the handle
-            const username = wsmsg['username']; // Get the username to find the nickname
-            const nickname = userNicknames[handle]?.nickname || "Someone"; // Use handle to get the nickname
+    // Command: .sub cheers (case insensitive)
+    if ([".sc", ".subcheers", ".subchar", ".schar", ".scheers"].includes(wsmsg['text'].toLowerCase())) {
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "Someone";
 
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: `🤖 ${nickname} is subbin! Char! 🌲🍻💨`
-            }));
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        // Command: .heating
-        if (wsmsg['text'] === ".h" || wsmsg['text'] === ".heat" || wsmsg['text'] === ".heatin" || wsmsg['text'] === ".heating") {
-            const handle = wsmsg['handle'];
-            const nickname = userNicknames[handle]?.nickname || "Someone";
-
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: `🤖 ${nickname} is heatin! 🔥`
-            }));
-        }
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: `🤖 ${nickname} is subbin! Char! 🌲🍻💨`
+        }));
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // Command: .dab
-        if (wsmsg['text'] === ".d" || wsmsg['text'] === ".dab" || wsmsg['text'] === ".dabbin" || wsmsg['text'] === ".dabbing") {
-            const handle = wsmsg['handle'];
-            const nickname = userNicknames[handle]?.nickname || "Someone";
+    // Command: .toke or .tokes (case insensitive)
+    if ([".t", ".toke", ".tokes"].includes(wsmsg['text'].toLowerCase())) {
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "Someone";
 
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: `🤖 ${nickname} is dabbin! Cheers! 💨`
-            }));
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        // Command: .joint
-        if (wsmsg['text'] === ".j" || wsmsg['text'] === ".joint") {
-            const handle = wsmsg['handle'];
-            const nickname = userNicknames[handle]?.nickname || "Someone";
-
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: `🤖 ${nickname} is smokin a joint! Cheers! 🌲💨`
-            }));
-        }
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: `🤖 ${nickname} wants to toke! 🌲 Join em! 💨`
+        }));
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // Command: .prep
-        if (wsmsg['text'] === ".p" || wsmsg['text'] === ".prep" || wsmsg['text'] === ".preppin" || wsmsg['text'] === ".prepping" || wsmsg['text'] === ".pack" || wsmsg['text'] === ".packin" || wsmsg['text'] === ".packing") {
-            const handle = wsmsg['handle'];
-            const nickname = userNicknames[handle]?.nickname || "Someone";
+    // Command: .heating (case insensitive)
+    if ([".h", ".heat", ".heatin", ".heating"].includes(wsmsg['text'].toLowerCase())) {
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "Someone";
 
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: `🤖 ${nickname} is packin! 🌲`
-            }));
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        // Command: .set
-        if (wsmsg['text'] === ".s" || wsmsg['text'] === ".set" || wsmsg['text'] === ".packed" || wsmsg['text'] === ".ready") {
-            const handle = wsmsg['handle'];
-            const nickname = userNicknames[handle]?.nickname || "Someone";
-
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: `🤖 ${nickname} is set! 🌲`
-            }));
-        }
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: `🤖 ${nickname} is heatin! 🔥`
+        }));
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // Command: .penis
-        if (wsmsg['text'].startsWith(".penis")) {
-            const handle = wsmsg['handle']; // Get the handle
-            const username = wsmsg['username']; // Get the username to find the nickname
-            const nickname = userNicknames[handle]?.nickname || "Bot"; // Use handle to get the nickname
+    // Command: .cooling (case insensitive)
+    if ([".co", ".cooling", ".cool", ".coolin"].includes(wsmsg['text'].toLowerCase())) {
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "Someone";
 
-            // Generate random length for the penis (8D to 8============D)
-            const length = Math.floor(Math.random() * 21) + 1; // Generates a number between 1 and 21
-            const penis = `8${"=".repeat(length)}D`;
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: `🤖 ${nickname} is coolin! ❄️`
+        }));
+    }
 
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: `🤖 ${nickname}'s penis is this long: ${penis}`
-            }));
-        }
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // Command: .dabbin (case insensitive)
+    if ([".dc", ".dabbin", ".dabbing"].includes(wsmsg['text'].toLowerCase())) {
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "Someone";
+
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: `🤖 ${nickname} is dabbin! Cheers! 💨`
+        }));
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // Command: .dab (case insensitive)
+    if ([".d", ".dab"].includes(wsmsg['text'].toLowerCase())) {
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "Someone";
+
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: `🤖 ${nickname} wants to dab! Heat em up! 🔥💨`
+        }));
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // Command: .joint (case insensitive)
+    if ([".j", ".joint"].includes(wsmsg['text'].toLowerCase())) {
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "Someone";
+
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: `🤖 ${nickname} is smokin a joint! Cheers! 🌲💨`
+        }));
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // Command: .blunt (case insensitive)
+    if ([".b", ".blunt"].includes(wsmsg['text'].toLowerCase())) {
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "Someone";
+
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: `🤖 ${nickname} is smokin a blunt! Cheers! 🌲💨`
+        }));
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // Command: .prep (case insensitive)
+    if ([".p", ".prep", ".preppin", ".prepping", ".pack", ".packin", ".packing"].includes(wsmsg['text'].toLowerCase())) {
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "Someone";
+
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: `🤖 ${nickname} is packin! 🌲`
+        }));
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // Command: .set (case insensitive)
+    if ([".s", ".set", ".packed", ".ready"].includes(wsmsg['text'].toLowerCase())) {
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "Someone";
+
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: `🤖 ${nickname} is set! 🌲`
+        }));
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // Command: .bc
+    if (wsmsg['text'].toLowerCase() === ".bc") {
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "Someone";
+
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: `🤖 ${nickname.toUpperCase()} IS IN BC, BABY! 🍁🏔️`
+        }));
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // Command: .jam
+    if (wsmsg['text'].toLowerCase() === ".jam") {
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "Someone";
+
+        const responses = [
+            `THIS IS ${nickname.toUpperCase()}'S JAM!! 🎶`,
+            `TURN IT UP, ${nickname.toUpperCase()}!! 🔊🎵`,
+            `🎶 ${nickname.toUpperCase()} IS FEELING THIS ONE!! 💃`,
+            `🔥 ${nickname.toUpperCase()} VIBIN’ TO THIS!! 🎧`,
+            `🎵 ${nickname.toUpperCase()} KNOWS WHAT'S UP!! 🚀`,
+            `BIG MOOD FOR ${nickname.toUpperCase()}!! 🎶🔥`,
+            `💥 ${nickname.toUpperCase()} CAN'T RESIST THIS ONE!! 🎼`,
+            `🎸 THIS TRACK HITS DIFFERENT FOR ${nickname.toUpperCase()}!! 🤘`,
+            `🎤 ${nickname.toUpperCase()} SINGIN’ ALONG!! 🔥`,
+            `DJ ${nickname.toUpperCase()} APPROVES THIS BANGER!! 🎛️🎚️`
+        ];
+
+        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: randomResponse
+        }));
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // Command: .tune
+    if (wsmsg['text'].toLowerCase() === ".tune") {
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "Someone";
+
+        const responses = [
+            `🎶 ${nickname.toUpperCase()} IS TUNED IN!! 📻`,
+            `THIS TUNE HITS JUST RIGHT FOR ${nickname.toUpperCase()}!! 🎵`,
+            `🔊 ${nickname.toUpperCase()} IS LOCKED INTO THE FREQUENCY!! 📡`,
+            `🎼 ${nickname.toUpperCase()} FEELIN’ THIS MELODY!! 💫`,
+            `🎧 ${nickname.toUpperCase()} KNOWS A GOOD TUNE WHEN THEY HEAR ONE!!`,
+            `🔥 THIS ONE’S GOT ${nickname.toUpperCase()} NODDING ALONG!! 🎶`,
+            `🎤 ${nickname.toUpperCase()} CAN'T HELP BUT HUM ALONG!!`,
+            `🎻 A FINE SELECTION FOR ${nickname.toUpperCase()}!! CLASSY!`,
+            `DJ ${nickname.toUpperCase()} APPROVES THIS TUNE!! 🎚️`,
+            `🎵 ${nickname.toUpperCase()} JUST FOUND THEIR NEW FAVORITE TUNE!! 🚀`
+        ];
+
+        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: randomResponse
+        }));
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // Command: .penis (case insensitive)
+    if (wsmsg['text'].toLowerCase().startsWith(".penis")) {
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "Someone";
+
+        // Generate random length for the penis (8D to 8============D)
+        const length = Math.floor(Math.random() * 21) + 1; // Generates a number between 1 and 21
+        const penis = `8${"=".repeat(length)}D`;
+
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: `🤖 ${nickname}'s penis is this long: ${penis}`
+        }));
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
         // Command: .smoko
-        if (wsmsg['text'].startsWith(".smoko")) {
-            const handle = wsmsg['handle']; // Get the handle
-            const username = wsmsg['username']; // Get the username to find the nickname
-            const nickname = userNicknames[handle]?.nickname || "SOMEONE"; // Use handle to get the nickname
+        if (wsmsg['text'].toLowerCase().startsWith(".smoko")) {
+            const handle = wsmsg['handle'];
+            const username = userHandles[handle];
+            const nickname = userNicknames[username]?.nickname || "Someone";
 
             this._send(JSON.stringify({
                 stumble: "msg",
@@ -772,10 +843,10 @@ function handleMessage(msg) {
 //-----------------------------------------------------------------------------------------------------------------------------------
 
         // Command: .piss
-        if (wsmsg['text'].startsWith(".piss")) {
-            const handle = wsmsg['handle']; // Get the handle
-            const username = wsmsg['username']; // Get the username to find the nickname
-            const nickname = userNicknames[handle]?.nickname || "YOU"; // Use handle to get the nickname
+        if (wsmsg['text'].toLowerCase().startsWith(".piss")) {
+            const handle = wsmsg['handle'];
+            const username = userHandles[handle];
+            const nickname = userNicknames[username]?.nickname || "Someone";
 
             this._send(JSON.stringify({
                 stumble: "msg",
@@ -785,77 +856,71 @@ function handleMessage(msg) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // Command: .pooping (Random responses)
-        if (/^\.poop(ing|ed)?$/.test(wsmsg['text'])) {
-            const handle = wsmsg['handle'];
-            const nickname = userNicknames[handle]?.nickname || "Someone";
+    // Command: .pooping (Random responses)
+    if (/^\.poop(ing|ed)?$/i.test(wsmsg['text'])) { // Case-insensitive due to the /i flag
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "Someone";
 
-            const responses = [
-                `🤖 ${nickname} is pooping! 💩`,
-                `🤖 ${nickname} took a break! 💩`,
-                `🤖 ${nickname} is dropping the kids off at the pool! 💩`
-            ];
+        const responses = [
+            `🤖 ${nickname} is pooping! 💩`,
+            `🤖 ${nickname} took a break! 💩`,
+            `🤖 ${nickname} is dropping the kids off at the pool! 💩`
+        ];
 
-            // Choose a random response
-            const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: randomResponse
-            }));
-        }
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: responses[Math.floor(Math.random() * responses.length)]
+        }));
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // Command: .farting (Random responses)
-        if (/^\.fart(ing|ed)?$/.test(wsmsg['text'])) {
-            const handle = wsmsg['handle'];
-            const nickname = userNicknames[handle]?.nickname || "Someone";
+    // Command: .farting (Random responses)
+    if (/^\.fart(ing|ed)?$/i.test(wsmsg['text'])) { // Case-insensitive due to the /i flag
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "Someone";
 
-            const responses = [
-                `🤖 ${nickname} let out a loud fart! 💨`,
-                `🤖 ${nickname} just ripped one! 💨`,
-                `🤖 ${nickname} is blasting some gas! 💨`
-            ];
+        const responses = [
+            `🤖 ${nickname} let out a loud fart! 💨`,
+            `🤖 ${nickname} just ripped one! 💨`,
+            `🤖 ${nickname} is blasting some gas! 💨`
+        ];
 
-            // Choose a random response
-            const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: randomResponse
-            }));
-        }
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: responses[Math.floor(Math.random() * responses.length)]
+        }));
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // Command: .burp (Random responses)
-        if (/^\.burp(ed|ing)?$/.test(wsmsg['text'])) {
-            const handle = wsmsg['handle'];
-            const nickname = userNicknames[handle]?.nickname || "Someone";
+    // Command: .burp (Random responses)
+    if (/^\.burp(ed|ing)?$/i.test(wsmsg['text'])) { // Case-insensitive due to the /i flag
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "Someone";
 
-            const responses = [
-                `🤖 ${nickname} let out a big burp! 🍺💨`,
-                `🤖 ${nickname} just belched loudly! 🤢`,
-                `🤖 ${nickname} is burping up a storm! 💨`
-            ];
+        const responses = [
+            `🤖 ${nickname} let out a big burp! 🍺💨`,
+            `🤖 ${nickname} just belched loudly! 🤢`,
+            `🤖 ${nickname} is burping up a storm! 💨`
+        ];
 
-            // Choose a random response
-            const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: randomResponse
-            }));
-        }
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: responses[Math.floor(Math.random() * responses.length)]
+        }));
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
     // Command: .owner
-    if (wsmsg['text'].startsWith(".owner")) {
-        const handle = wsmsg['handle']; // Get the handle
-        const username = wsmsg['username']; // Get the username to find the nickname
-        const nickname = (userNicknames[handle]?.nickname || "YOUR ASSHOLE").toUpperCase(); // Use handle to get the nickname in all caps
+    if (wsmsg['text'].toLowerCase().startsWith(".owner")) {
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "Someone";
 
         this._send(JSON.stringify({
             stumble: "msg",
@@ -866,8 +931,29 @@ function handleMessage(msg) {
 // General Commands -----------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+    // Command: .help or .halp (case insensitive)
+    if ([".help", ".halp"].includes(wsmsg['text'].toLowerCase())) {
+        const messages = [
+            "🤖 Need help? No worries!",
+            "- Use **.commands** to see a list of available commands.",
+            "- This bot keeps the vibes high and the chat rolling! 💨🌲",
+            "- Have fun and don't forget to **pass it to the left!** 🔥"
+        ];
+
+        messages.forEach((msg, index) => {
+            setTimeout(() => {
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: msg
+                }));
+            }, index * 1000); // Each message gets delayed by 1000ms (1 second)
+        });
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
         // start Bot repo
-        if (wsmsg['text'] === ".bot") {
+        if (wsmsg['text'].toLowerCase() === ".bot") {
         const lines = [
             "🤖 Download the bot here: https://github.com/GojiBran/StumbleBot",
             "Just for YouTube here: https://github.com/GojiBran/stumbletube"
@@ -893,17 +979,21 @@ function handleMessage(msg) {
         if (wsmsg['text'].toLowerCase() === '.commands') {
             // Define the commands
             const commandsList = [
-                "- .yt with a link or query",
-                "- .c is Cheers",
-                "- .420 is 4:20",
-                "- .sc is Sub Cheers",
-                "- .h is Heatin",
-                "- .d is Dabbin",
-                "- .j is Joint",
-                "- .p is Packin",
-                "- .s is Set",
-                "- .tits shows boobs gifs",
-                "- .ass shows butt gifs"
+                ".yt   - link or query",
+                ".t    - Tokes",
+                ".d    - Dabs",
+                ".c    - Cheers",
+                ".dc   - Dab Cheers",
+                ".j    - Joint Cheers",
+                ".b    - Blunt Cheers",
+                ".sc   - Sub Cheers",
+                ".420  - 4:20 Cheers",
+                ".p    - Packin",
+                ".s    - Set",
+                ".h    - Heatin",
+                ".co   - Coolin",
+                ".tits - posts gifs",
+                ".ass  - posts gifs"
             ];
 
             // Function to send commands in batches of 6 lines with line breaks
@@ -921,169 +1011,172 @@ function handleMessage(msg) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // start bacon
-        if (wsmsg['text'] === ".bacon") {
-            this._send('{"stumble":"msg","text":".yt bacon 45min"}'); // yes lazy
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        // start discord
-        if (wsmsg['text'] === ".discord") {
-            this._send('{"stumble":"msg","text":"Join Discord: https://discord.gg/apu9gzGYMD (no video, use stumble)"}');
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        // start usa commands
-        if (wsmsg['text'] === ".usa" || wsmsg['text'] === ".murica" || wsmsg['text'] === ".america") {
-            this._send('{"stumble":"msg","text":"https://i.imgur.com/tYeS04g.gif"}');
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        // start greyson
-        if (wsmsg['text'] === ".g") {
-            this._send('{"stumble":"msg","text":"https://i.imgur.com/k2Oq3yb.jpeg"}');
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        // start pup
-        if (wsmsg['text'] === ".pup") {
-            this._send('{"stumble":"msg","text":"https://i.imgur.com/kKlUBVR.png"}');
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        // start orange juice
-        if (wsmsg['text'] === ".oj") {
-            this._send('{"stumble":"msg","text":"https://i.imgur.com/pTMweVs.gif"}');
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        //start char
-        if (wsmsg['text'] === ".char") // Char gif
-        {
-            this._send('{"stumble":"msg","text": "https://i.imgur.com/WVqt3hx.gif"}')
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        //start chilidog
-        if (wsmsg['text'] === ".chilidog")
-        {
-            this._send('{"stumble":"msg","text": "https://i.imgur.com/0A8zOPT.jpeg"}')
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        //start claptrick
-        if (wsmsg['text'] === ".claptrick")
-        {
-            this._send('{"stumble":"msg","text": "https://i.imgur.com/hWUWU2P.gif"}')
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        //start hippo
-        if (wsmsg['text'] === ".hippo") {
-            this._send('{"stumble":"msg","text": "https://i.imgur.com/GtvnStS.gif"}')
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        //start jedi
-        if (wsmsg['text'] === ".jedi") {
-            this._send('{"stumble":"msg","text": "https://i.imgur.com/MCSGgcI.gif"}')
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        //start lola
-        if (wsmsg['text'] === ".lola") {
-            this._send('{"stumble":"msg","text": "https://i.imgur.com/flta89w.png"}')
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        //start mous
-        if (wsmsg['text'] === ".mous") {
-            this._send('{"stumble":"msg","text": "https://i.imgur.com/3aLJAbE.gif"}')
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        //start wizard
-        if (wsmsg['text'] === ".wizard") {
-            this._send('{"stumble":"msg","text": "https://i.imgur.com/E8CPWDV.gif"}')
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        //start packie
-        if (wsmsg['text'] === ".packiedance") {
-            this._send('{"stumble":"msg","text": "https://i.imgur.com/utGknCk.gif"}')
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        //start vato
-        if (wsmsg['text'] === ".vato") {
-            this._send('{"stumble":"msg","text": "https://i.imgur.com/L7IAM9c.gif"}')
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        //start escapetime
-        if (wsmsg['text'] === ".escapetime") {
-            this._send('{"stumble":"msg","text": "https://i.imgur.com/rlLPzlw.png"}')
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-    //start baked
-    if (wsmsg['text'] === ".baked") {
-        this._send('{"stumble":"msg","text": "https://i.imgur.com/mPfCDtI.gif"}')
+    // Command: .team (case insensitive)
+    if ([".team"].includes(wsmsg['text'].toLowerCase())) {
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: `🤖 HEY TEAM!`
+        }));
     }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-    //start beans
-    if (wsmsg['text'] === ".beans") {
-        this._send('{"stumble":"msg","text": "https://i.imgur.com/YASZc8X.png"}')
+    // start bacon
+    if (wsmsg['text'].toLowerCase() === ".bacon") {
+        this._send('{"stumble":"msg","text":".yt bacon 45min"}'); // yes lazy
     }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-    //start kappa
-    if (wsmsg['text'] === ".kappa") {
-        this._send('{"stumble":"msg","text": "https://i.imgur.com/Qu6ksP7.png"}')
-    }
-
-    //start klappa
-    if (wsmsg['text'] === ".klappa") {
-        this._send('{"stumble":"msg","text": "https://i.imgur.com/m4IwqPy.png"}')
+    // start discord
+    if (wsmsg['text'].toLowerCase() === ".discord") {
+        this._send('{"stumble":"msg","text":"Join Discord: https://discord.gg/apu9gzGYMD (no video, use stumble)"}');
     }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        //start dredd
-        if (wsmsg['text'] === ".dredd") {
-            this._send('{"stumble":"msg","text": "https://i.imgur.com/fstVLVH.gif"}')
-        }
+    // start usa commands
+    if ([".usa", ".murica", ".america"].includes(wsmsg['text'].toLowerCase())) {
+        this._send('{"stumble":"msg","text":"https://i.imgur.com/tYeS04g.gif"}');
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        //start car fart
-        if (wsmsg['text'] === ".carfart") {
-            this._send('{"stumble":"msg","text": "https://i.imgur.com/GxUAMV9.gif"}')
-        }
+    // start pup
+    if (wsmsg['text'].toLowerCase() === ".pup") {
+        this._send('{"stumble":"msg","text":"https://i.imgur.com/kKlUBVR.png"}');
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-    if (wsmsg['text'] === ".hasbula") {
+    // start orange juice
+    if (wsmsg['text'].toLowerCase() === ".oj") {
+        this._send('{"stumble":"msg","text":"https://i.imgur.com/pTMweVs.gif"}');
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start char
+    if (wsmsg['text'].toLowerCase() === ".char") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/WVqt3hx.gif"}');
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start chilidog
+    if (wsmsg['text'].toLowerCase() === ".chilidog") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/0A8zOPT.jpeg"}');
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start claptrick
+    if (wsmsg['text'].toLowerCase() === ".claptrick") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/hWUWU2P.gif"}');
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start hippo
+    if (wsmsg['text'].toLowerCase() === ".hippo") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/GtvnStS.gif"}');
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start jedi
+    if (wsmsg['text'].toLowerCase() === ".jedi") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/MCSGgcI.gif"}');
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start lola
+    if (wsmsg['text'].toLowerCase() === ".lola") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/flta89w.png"}');
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start mous
+    if (wsmsg['text'].toLowerCase() === ".mous") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/3aLJAbE.gif"}');
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start wizard
+    if (wsmsg['text'].toLowerCase() === ".wizard") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/E8CPWDV.gif"}');
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start packie
+    if (wsmsg['text'].toLowerCase() === ".packiedance") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/utGknCk.gif"}');
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start vato
+    if (wsmsg['text'].toLowerCase() === ".vato") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/L7IAM9c.gif"}');
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start escapetime
+    if (wsmsg['text'].toLowerCase() === ".escapetime") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/rlLPzlw.png"}');
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start baked
+    if (wsmsg['text'].toLowerCase() === ".baked") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/mPfCDtI.gif"}');
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start beans
+    if (wsmsg['text'].toLowerCase() === ".beans") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/YASZc8X.png"}');
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start kappa
+    if (wsmsg['text'].toLowerCase() === ".kappa") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/Qu6ksP7.png"}');
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start klappa
+    if (wsmsg['text'].toLowerCase() === ".klappa") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/m4IwqPy.png"}');
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start dredd
+    if (wsmsg['text'].toLowerCase() === ".dredd") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/fstVLVH.gif"}');
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start car fart
+    if (wsmsg['text'].toLowerCase() === ".carfart") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/GxUAMV9.gif"}');
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start hasbula
+    if (wsmsg['text'].toLowerCase() === ".hasbula") {
         this._send('{"stumble":"msg","text":"https://i.imgur.com/y73umR3.gif"}');
         setTimeout(() => {
             this._send('{"stumble":"msg","text":"https://i.imgur.com/ZZ7jwlM.gif"}');
@@ -1095,438 +1188,284 @@ function handleMessage(msg) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-    //start cat
-    if (wsmsg['text'] === ".cat") {
-        // Create an array of cat image URLs
+    // start cat
+    if (wsmsg['text'].toLowerCase() === ".cat") {
         const cats = [
             "https://i.imgur.com/sfJcnJ8.jpg",
             "https://i.imgur.com/Ktk81y7.jpg",
             "https://i.imgur.com/j2sa2W2.jpg",
             "https://i.imgur.com/UMoJyYw.jpg"
         ];
-
-        // Select a random cat image from the array
         const randomCat = cats[Math.floor(Math.random() * cats.length)];
-
-        // Send the random cat image
         this._send(`{"stumble":"msg","text": "${randomCat}"}`);
     }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        //start meatmeat
-        if (wsmsg['text'] === ".meatmeat") {
-            // Create an array of GIF URLs
-            const gifs = [
-                "https://i.imgur.com/LCTLwJO.gif",
-                "https://i.imgur.com/xs5jL52.jpeg",
-                "https://i.imgur.com/sTykk6e.jpeg",
-                "https://i.imgur.com/9OkT24Y.jpeg",
-                "https://i.imgur.com/5hLQYft.jpeg"
-            ];
-
-            // Select a random GIF from the array
-            const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
-
-            // Send the random GIF
-            this._send(`{"stumble":"msg","text": "${randomGif}"}`);
-        }
+    // start meatmeat
+    if (wsmsg['text'].toLowerCase() === ".meatmeat") {
+        const gifs = [
+            "https://i.imgur.com/LCTLwJO.gif",
+            "https://i.imgur.com/xs5jL52.jpeg",
+            "https://i.imgur.com/sTykk6e.jpeg",
+            "https://i.imgur.com/9OkT24Y.jpeg",
+            "https://i.imgur.com/5hLQYft.jpeg"
+        ];
+        const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
+        this._send(`{"stumble":"msg","text": "${randomGif}"}`);
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        //start shaq
-        if (wsmsg['text'] === ".shaq") {
-            // Create an array of GIF URLs
-            const gifs = [
-                "https://i.imgur.com/oK2nz7H.gif",
-                "https://i.imgur.com/gftiMkE.gif",
-                "https://i.imgur.com/fEjqx8T.gif",
-                "https://i.imgur.com/ileqsqo.gif",
-                "https://i.imgur.com/pKikBat.gif",
-                "https://i.imgur.com/7g8FFMd.gif",
-                "https://i.imgur.com/gVKNK1u.gif",
-                "https://i.imgur.com/huNMlZA.gif"
-            ];
-
-            // Select a random GIF from the array
-            const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
-
-            // Send the random GIF
-            this._send(`{"stumble":"msg","text": "${randomGif}"}`);
-        }
+    // start shaq
+    if (wsmsg['text'].toLowerCase() === ".shaq") {
+        const gifs = [
+            "https://i.imgur.com/oK2nz7H.gif",
+            "https://i.imgur.com/gftiMkE.gif",
+            "https://i.imgur.com/fEjqx8T.gif",
+            "https://i.imgur.com/ileqsqo.gif",
+            "https://i.imgur.com/pKikBat.gif",
+            "https://i.imgur.com/7g8FFMd.gif",
+            "https://i.imgur.com/gVKNK1u.gif",
+            "https://i.imgur.com/huNMlZA.gif"
+        ];
+        const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
+        this._send(`{"stumble":"msg","text": "${randomGif}"}`);
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        //start queef
-        if (wsmsg['text'] === ".queef") {
-            // Create an array of GIF URLs
-            const gifs = [
-                "https://i.imgur.com/Qq2bKNv.jpeg",
-                "https://i.imgur.com/ofC1jDn.gif"
-            ];
-
-            // Select a random GIF from the array
-            const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
-
-            // Send the random GIF
-            this._send(`{"stumble":"msg","text": "${randomGif}"}`);
-        }
+    // start queef
+    if (wsmsg['text'].toLowerCase() === ".queef") {
+        const gifs = [
+            "https://i.imgur.com/Qq2bKNv.jpeg",
+            "https://i.imgur.com/ofC1jDn.gif"
+        ];
+        const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
+        this._send(`{"stumble":"msg","text": "${randomGif}"}`);
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        //start flamingo
-        if (wsmsg['text'] === ".flamingo") { // When dance
-            // Create an array of GIF URLs
-            const gifs = [
-                "https://i.imgur.com/0NysV2K.gif",
-                "https://i.imgur.com/7iJcUmV.gif"
-            ];
-
-            // Select a random GIF from the array
-            const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
-
-            // Send the random GIF
-            this._send(`{"stumble":"msg","text": "${randomGif}"}`);
-        }
+    // start flamingo
+    if (wsmsg['text'].toLowerCase() === ".flamingo") {
+        const gifs = [
+            "https://i.imgur.com/0NysV2K.gif",
+            "https://i.imgur.com/7iJcUmV.gif"
+        ];
+        const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
+        this._send(`{"stumble":"msg","text": "${randomGif}"}`);
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        //start viper
-        if (wsmsg['text'] === ".viper") {
-            // Create an array of GIF URLs
-            const gifs = [
-                "https://i.imgur.com/xPe1aH8.gif"
-            ];
-
-            // Select a random GIF from the array
-            const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
-
-            // Send the random GIF
-            this._send(`{"stumble":"msg","text": "${randomGif}"}`);
-        }
+    // start viper
+    if (wsmsg['text'].toLowerCase() === ".viper") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/xPe1aH8.gif"}');
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        //start spread em
-        if (wsmsg['text'] === ".spreadem") {
-            // Create an array of GIF URLs
-            const gifs = [
-                "https://i.imgur.com/iOljGSH.mp4"
-            ];
-
-            // Select a random GIF from the array
-            const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
-
-            // Send the random GIF
-            this._send(`{"stumble":"msg","text": "${randomGif}"}`);
-        }
+    // start spreadem
+    if (wsmsg['text'].toLowerCase() === ".spreadem") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/iOljGSH.mp4"}');
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        //start dance
-        if (wsmsg['text'] === ".dance") { // When dance
-            // Create an array of GIF URLs
-            const gifs = [
-                "https://i.imgur.com/cgcwOQ5.gif",
-                "https://i.imgur.com/32bg1ok.gif",
-                "https://i.imgur.com/4fbhUZw.gif",
-                "https://i.imgur.com/VqQFYRl.gif"
-            ];
-
-            // Select a random GIF from the array
-            const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
-
-            // Send the random GIF
-            this._send(`{"stumble":"msg","text": "${randomGif}"}`);
-        }
+    // start dance
+    if (wsmsg['text'].toLowerCase() === ".dance") {
+        const gifs = [
+            "https://i.imgur.com/cgcwOQ5.gif",
+            "https://i.imgur.com/32bg1ok.gif",
+            "https://i.imgur.com/4fbhUZw.gif",
+            "https://i.imgur.com/VqQFYRl.gif"
+        ];
+        const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
+        this._send(`{"stumble":"msg","text": "${randomGif}"}`);
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // Start Bustin command
-        if (wsmsg['text'] === ".bustin") {
-            // Randomly choose between 0, 1, or 2
-            const randomChoice = Math.floor(Math.random() * 3);
-
-            if (randomChoice === 0) {
-                // Send "BUSTIN BUSTIN..." followed by "BUSTIN MAKES ME FEEL GOOD!"
-                this._send('{"stumble":"msg","text":"BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN"}');
-                setTimeout(() => {
-                    this._send('{"stumble":"msg","text":"BUSTIN MAKES ME FEEL GOOD!"}');
-                }, 1000); // 1 second delay between messages
-            } else if (randomChoice === 1) {
-                // Send only "BUSTIN MAKES ME FEEL GOOD!"
+    // start bustin
+    if (wsmsg['text'].toLowerCase() === ".bustin") {
+        const randomChoice = Math.floor(Math.random() * 3);
+        if (randomChoice === 0) {
+            this._send('{"stumble":"msg","text":"BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN"}');
+            setTimeout(() => {
                 this._send('{"stumble":"msg","text":"BUSTIN MAKES ME FEEL GOOD!"}');
-            } else if (randomChoice === 2) {
-                // Send a longer string of "BUSTIN BUSTIN..."
-                this._send('{"stumble":"msg","text":"BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN"}');
-            }
+            }, 1000);
+        } else if (randomChoice === 1) {
+            this._send('{"stumble":"msg","text":"BUSTIN MAKES ME FEEL GOOD!"}');
+        } else {
+            this._send('{"stumble":"msg","text":"BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN BUSTIN"}');
         }
-        // End Bustin command
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        //start froggy
-        if (wsmsg['text'] === ".froggy") {
-            // Create an array of responses
-            const rsp = [
-                "https://i.imgur.com/Cyhj3tq.gif"
-            ];
-
-            // Select a random response from the array
-            const randomRsp = rsp[Math.floor(Math.random() * rsp.length)];
-
-            // Send the random response
-            this._send(`{"stumble":"msg","text": "${randomRsp}"}`);
-        }
+    // start froggy
+    if (wsmsg['text'].toLowerCase() === ".froggy") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/Cyhj3tq.gif"}');
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        //start boobs
-        // Define an array of commands that will trigger the same result
-        const triggerCommands = [".boobs", ".tits", ".booby", ".busty", ".boobies", ".bobbles", ".titties", ".boob", ".tit", ".milkers", ".teet", ".teets", ".breast", ".breasts", ".bloons", ".melons", ".gohodonkaloos", ".honkers", ".hooters", ".knockers", ".massivenaturals"];
-
-        // Define the GIFs to send
+    // start boobs
+    const triggerCommands = [".boobs", ".tits", ".booby", ".busty", ".boobies", ".bobbles", ".titties", ".boob", ".tit", ".milkers", ".teet", ".teets", ".breast", ".breasts", ".bloons", ".melons", ".gohodonkaloos", ".honkers", ".hooters", ".knockers", ".massivenaturals"];
+    if (triggerCommands.includes(wsmsg['text'].toLowerCase())) {
         const gifs = [
             "https://i.imgur.com/IVHC6hy.gif",
             "https://i.imgur.com/bCQIiX5.gif",
-            "https://i.imgur.com/0xYIcCS.gif",
-            "https://i.imgur.com/9cQp2Iu.gif",
-            "https://i.imgur.com/1DK3FzN.gif",
-            "https://i.imgur.com/12Zpn2H.gif",
-            "https://i.imgur.com/SLkZFk7.gif",
-            "https://i.imgur.com/DHZfM5T.gif",
-            "https://i.imgur.com/F2CcNyv.gif",
-            "https://i.imgur.com/V8ngvRm.gif",
-            "https://i.imgur.com/x3dElVe.gif"
+            "https://i.imgur.com/0xYIcCS.gif"
         ];
-
-        // Check if the message matches any of the trigger commands
-        if (triggerCommands.includes(wsmsg['text'])) {
-            const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
-
-            // Send the random GIF
-            this._send(`{"stumble":"msg","text": "${randomGif}"}`);
-        }
+        const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
+        this._send(`{"stumble":"msg","text": "${randomGif}"}`);
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        //start booty
-        // Define an array of commands that will trigger the same result
-        const triggerBootyCommands = [".booty", ".ass", ".butt", ".donk", ".fanny", ".bongos"];
-
-        // Define the GIFs to send
+    // start booty
+    const triggerBootyCommands = [".booty", ".ass", ".butt", ".donk", ".fanny", ".bongos"];
+    if (triggerBootyCommands.includes(wsmsg['text'].toLowerCase())) {
         const bootygifs = [
             "https://i.imgur.com/ryLacHQ.gif",
             "https://i.imgur.com/nJ7n1oT.gif",
-            "https://i.imgur.com/2dwimr2.gif",
-            "https://i.imgur.com/ZrueOWT.gif",
-            "https://i.imgur.com/h4bt7by.gif",
-            "https://i.imgur.com/5xoHi5e.gif",
-            "https://i.imgur.com/uWJaIsY.gif",
-            "https://i.imgur.com/hWUWU2P.gif",
-            "https://i.imgur.com/PAg2tA1.gif",
-            "https://i.imgur.com/KgALc2j.gif",
-            "https://i.imgur.com/GnXXrzM.gif",
-            "https://i.imgur.com/Hn5LEVA.gif",
-            "https://i.imgur.com/GszuDNc.gif",
-            "https://i.imgur.com/WRkLICq.gif",
-            "https://i.imgur.com/fGqJjtI.gif",
-            "https://i.imgur.com/Z3SgS85.gif",
-            "https://i.imgur.com/oZVxtAU.gif",
-            "https://i.imgur.com/ImnJ0WV.gif"
+            "https://i.imgur.com/2dwimr2.gif"
+        ];
+        const randombootyGif = bootygifs[Math.floor(Math.random() * bootygifs.length)];
+        this._send(`{"stumble":"msg","text": "${randombootyGif}"}`);
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start gilf
+    if (wsmsg['text'].toLowerCase() === ".gilf") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/97GPJiN.gif"}');
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start milf
+    if (wsmsg['text'].toLowerCase() === ".milf") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/8frocoC.gif"}');
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start dilf
+    if (wsmsg['text'].toLowerCase() === ".dilf") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/bDgntvS.gif"}');
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start snarfdilf
+    if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/RSZ7xzg.jpeg"}');
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start say command
+    if (wsmsg['text'].toLowerCase().startsWith(".say ")) {
+        const sayText = wsmsg['text'].substring(5);
+        this._send(`{"stumble":"msg","text":"🤖 ${sayText}"}`);
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // Start labyrinth
+    if (wsmsg['text'].toLowerCase() === ".labyrinth") {
+        const gifs = [
+            "https://i.imgur.com/KYHS47y.gif",
+            "https://i.imgur.com/ML8ZjPx.gif",
+            "https://i.imgur.com/bndmJ4w.gif",
+            "https://i.imgur.com/yYIhNTN.gif"
         ];
 
-        // Check if the message matches any of the trigger commands
-        if (triggerBootyCommands.includes(wsmsg['text'])) {
-            const randombootyGif = bootygifs[Math.floor(Math.random() * bootygifs.length)];
+        // Function to send GIFs with a 1000ms delay
+        const sendGifs = (index) => {
+            if (index < gifs.length) {
+                this._send(`{"stumble":"msg","text": "${gifs[index]}"} `);
+                setTimeout(() => sendGifs(index + 1), 1000); // 1000 ms delay between each GIF
+            } else {
+                // After sending all GIFs, wait 3 seconds and send the final GIF
+                setTimeout(() => {
+                    this._send('{"stumble":"msg","text": "https://i.imgur.com/ALjpQST.gif"}');
+                }, 6000); // 6000 ms delay before sending the last GIF
+            }
+        };
 
-            // Send the random GIF
-            this._send(`{"stumble":"msg","text": "${randombootyGif}"}`);
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        //start gilf
-        // Define an array of commands that will trigger the same result
-        const triggerGilfCommands = [".gilf"];
-
-        // Define the GIFs to send
-        const gilfgifs = [
-            "https://i.imgur.com/97GPJiN.gif",
-            "https://i.imgur.com/i7s0Wje.gif",
-            "https://i.imgur.com/dZzwFuw.mp4",
-            "https://i.imgur.com/jQkz5nQ.mp4"
-        ];
-
-        // Check if the message matches any of the trigger commands
-        if (triggerGilfCommands.includes(wsmsg['text'])) {
-            const randomgilfGif = gilfgifs[Math.floor(Math.random() * gilfgifs.length)];
-
-            // Send the random GIF
-            this._send(`{"stumble":"msg","text": "${randomgilfGif}"}`);
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        //start milf
-        // Define an array of commands that will trigger the same result
-        const triggerMilfCommands = [".milf"];
-
-        // Define the GIFs to send
-        const milfgifs = [
-            "https://i.imgur.com/8frocoC.gif"
-        ];
-
-        // Check if the message matches any of the trigger commands
-        if (triggerMilfCommands.includes(wsmsg['text'])) {
-            const randommilfGif = milfgifs[Math.floor(Math.random() * milfgifs.length)];
-
-            // Send the random GIF
-            this._send(`{"stumble":"msg","text": "${randommilfGif}"}`);
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        //start dilf
-        // Define an array of commands that will trigger the same result
-        const triggerDilfCommands = [".dilf"];
-
-        // Define the GIFs to send
-        const dilfgifs = [
-            "https://i.imgur.com/bDgntvS.gif",
-            "https://i.imgur.com/aoEIL0R.gif",
-            "https://i.imgur.com/zgX6nDA.gif",
-            "https://i.imgur.com/XqzRTGk.gif",
-            "https://i.imgur.com/CjRngKa.gif",
-            "https://i.imgur.com/Cu7AwgK.gif",
-            "https://i.imgur.com/pxTCSZo.gif",
-            "https://i.imgur.com/Y0gVOZr.gif",
-            "https://i.imgur.com/vJQmSMk.gif",
-            "https://i.imgur.com/Hxap00t.gif"
-        ];
-
-        // Check if the message matches any of the trigger commands
-        if (triggerDilfCommands.includes(wsmsg['text'])) {
-            const randomdilfGif = dilfgifs[Math.floor(Math.random() * dilfgifs.length)];
-
-            // Send the random GIF
-            this._send(`{"stumble":"msg","text": "${randomdilfGif}"}`);
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        //start snarf dilf
-        // Define an array of commands that will trigger the same result
-        const triggersDilfCommands = [".snarfdilf"];
-
-        // Define the GIFs to send
-        const sdilfgifs = [
-            "https://i.imgur.com/RSZ7xzg.jpeg"
-        ];
-
-        // Check if the message matches any of the trigger commands
-        if (triggersDilfCommands.includes(wsmsg['text'])) {
-            const randomsdilfGif = sdilfgifs[Math.floor(Math.random() * sdilfgifs.length)];
-
-            // Send the random GIF
-            this._send(`{"stumble":"msg","text": "${randomsdilfGif}"}`);
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        // Start say command
-        if (wsmsg['text'].startsWith(".say ")) {
-            // Extract text after ".say " command
-            const sayText = wsmsg['text'].substring(5);
-            this._send(`{"stumble":"msg","text":"🤖 ${sayText}"}`);
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        // Start labyrinth if the message contains ".labyrinth"
-        if (wsmsg['text'] === ".labyrinth") {
-            // Create an array of GIF URLs
-            const gifs = [
-                "https://i.imgur.com/KYHS47y.gif",
-                "https://i.imgur.com/ML8ZjPx.gif",
-                "https://i.imgur.com/bndmJ4w.gif",
-                "https://i.imgur.com/yYIhNTN.gif"
-            ];
-
-            // Function to send GIFs with a 1000ms delay
-            const sendGifs = (index) => {
-                if (index < gifs.length) {
-                    this._send(`{"stumble":"msg","text": "${gifs[index]}"} `);
-                    setTimeout(() => sendGifs(index + 1), 1000); // 1000 ms delay between each gif
-                } else {
-                    // After sending all GIFs, wait 3 seconds and send the final GIF
-                    setTimeout(() => {
-                        this._send('{"stumble":"msg","text": "https://i.imgur.com/ALjpQST.gif"}');
-                    }, 6000); // 6000 ms delay before sending the last GIF
-                }
-            };
-
-            sendGifs(0); // Start sending GIFs
-        }
+        sendGifs(0); // Start sending GIFs
+    }
 
 // Triggers -------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        //ping pong
-        if (wsmsg['text'] === "ding") {
-            setTimeout(() => this._send('{"stumble":"msg","text":"🤖 DONG"}'), 1000);
-        } else if (wsmsg['text'] === "ping") {
-            setTimeout(() => this._send('{"stumble":"msg","text":"🤖 PONG"}'), 1000);
-        } else if (wsmsg['text'] === "bing") {
-            setTimeout(() => this._send('{"stumble":"msg","text":"🤖 BONG"}'), 1000);
-        }
+    // ping pong (case insensitive)
+    const pingPongResponses = {
+        "ding": "🤖 DONG",
+        "ping": "🤖 PONG",
+        "bing": "🤖 BONG"
+    };
+
+    const lowerText = wsmsg['text'].toLowerCase();
+    if (pingPongResponses[lowerText]) {
+        setTimeout(() => {
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: pingPongResponses[lowerText]
+            }));
+        }, 1000);
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // Curse word check command
-        //if (/\b(shit|fuck|bitch|asshole|damn|bastard|cock|pussy|dick|cunt|slut|fag|twat|douche|motherfucker|prick|gay|retard|nigger|whore|bastard)\b/i.test(wsmsg['text'])) {
-        if (/\b(cunt|slut|fag|retard|nigger|whore)\b/i.test(wsmsg['text'])) {
-            this._send('{"stumble":"msg","text":"LE GASP!!"}');
-        }
+    // Curse word check command
+    // if (/\b(shit|fuck|bitch|asshole|damn|bastard|cock|pussy|dick|cunt|slut|fag|twat|douche|motherfucker|prick|gay|retard|nigger|whore|bastard)\b/i.test(wsmsg['text'])) {
+    if (/\b(cunt|slut|fag|retard|nigger|whore)\b/i.test(wsmsg['text'])) {
+        this._send('{"stumble":"msg","text":"LE GASP!!"}');
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // Assfuckery GIF command
-        if (wsmsg['text'] === "assfuckery") {
-            this._send('{"stumble":"msg","text":"https://i.imgur.com/8v3YYBo.gif"}');
-        }
+    // Assfuckery GIF command
+    if (wsmsg['text'].toLowerCase() === "assfuckery") {
+        this._send('{"stumble":"msg","text":"https://i.imgur.com/8v3YYBo.gif"}');
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        //5-0
-        if (wsmsg['text'] === "5-0") {
-            setTimeout(() => this._send('{"stumble":"msg","text":"🤖 Cheese it!"}'), 1000);
-        }
+    // 5-0
+    if (wsmsg['text'].toLowerCase() === "5-0") {
+        setTimeout(() => this._send('{"stumble":"msg","text":"🤖 Cheese it!"}'), 1000);
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        //set and packed
-        if (wsmsg['text'] === "set") {
-            setTimeout(() => this._send('{"stumble":"msg","text":"🤖 Let\'s smoke!"}'), 1000);
-        } else if (wsmsg['text'] === "packed") {
-            setTimeout(() => this._send('{"stumble":"msg","text":"🤖 Let\'s toke!"}'), 1000);
-        }
+    // set and packed
+    if (wsmsg['text'].toLowerCase() === "set") {
+        setTimeout(() => this._send('{"stumble":"msg","text":"🤖 Let\'s smoke!"}'), 1000);
+    } else if (wsmsg['text'].toLowerCase() === "packed") {
+        setTimeout(() => this._send('{"stumble":"msg","text":"🤖 Let\'s toke!"}'), 1000);
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // MAMA
-        if (wsmsg['text'] === "MAMA") {
-            setTimeout(() => this._send('{"stumble":"msg","text":"https://i.imgur.com/SzmUrg0.gif"}'), 1000);
-        }
+    // MAMA
+    if (wsmsg['text'].toLowerCase() === "mama") {
+        setTimeout(() => this._send('{"stumble":"msg","text":"https://i.imgur.com/SzmUrg0.gif"}'), 1000);
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // im on smoko
-        if (wsmsg['text'] === "im on smoko") {
-            setTimeout(() => this._send('{"stumble":"msg","text":"🤖 SO LEAVE EM ALONE!"}'), 1000);
-        } else if (wsmsg['text'] === "smoko") {
-            setTimeout(() => this._send('{"stumble":"msg","text":"🤖 THEY\'RE ON SMOKO! SO LEAVE EM ALONE!"}'), 1000);
-        }
+    // im on smoko
+    if (wsmsg['text'].toLowerCase() === "im on smoko") {
+        setTimeout(() => this._send('{"stumble":"msg","text":"🤖 SO LEAVE EM ALONE!"}'), 1000);
+    } else if (wsmsg['text'].toLowerCase() === "smoko") {
+        setTimeout(() => this._send('{"stumble":"msg","text":"🤖 THEY\'RE ON SMOKO! SO LEAVE EM ALONE!"}'), 1000);
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -1724,39 +1663,37 @@ function handleMessage(msg) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // Start deg if the message contains "deg" or "dag"
-        if (["deg", "dag"].includes(wsmsg['text'])) {
-            // Create an array of GIF URLs
-            const gifs = [
-                "https://i.imgur.com/HR96nS8.gif",
-                "https://i.imgur.com/TuUZlh7.gif",
-                "https://i.imgur.com/XEkttJD.gif",
-                "https://i.imgur.com/4SLCT7G.gif",
-                "https://i.imgur.com/d9LTWmo.gif",
-                "https://i.imgur.com/hdEF3S1.gif",
-                "https://i.imgur.com/2XRXoUr.gif",
-                "https://i.imgur.com/YmAIgNq.gif"
-            ];
+    // Start deg if the message contains "deg" or "dag"
+    if (["deg", "dag"].includes(wsmsg['text'].toLowerCase())) {
+        // Create an array of GIF URLs
+        const gifs = [
+            "https://i.imgur.com/HR96nS8.gif",
+            "https://i.imgur.com/TuUZlh7.gif",
+            "https://i.imgur.com/XEkttJD.gif",
+            "https://i.imgur.com/4SLCT7G.gif",
+            "https://i.imgur.com/d9LTWmo.gif",
+            "https://i.imgur.com/hdEF3S1.gif",
+            "https://i.imgur.com/2XRXoUr.gif",
+            "https://i.imgur.com/YmAIgNq.gif"
+        ];
 
-            // Select a random GIF from the array
-            const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
-
-            // Send the random GIF
-            this._send(`{"stumble":"msg","text": "${randomGif}"}`);
-        }
+        // Select a random GIF from the array
+        this._send(`{"stumble":"msg","text": "${gifs[Math.floor(Math.random() * gifs.length)]}"}`);
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        //start oh hi mark
-        if (wsmsg['text'] === "oh hi mark") {
-            this._send('{"stumble":"msg","text": "https://i.imgur.com/fpObc5Y.gif"}')
-        }
+    // start oh hi mark
+    if (wsmsg['text'].toLowerCase() === "oh hi mark") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/fpObc5Y.gif"}');
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        if (wsmsg['text'] === "drugs got me fucked up") {
-            this._send('{"stumble":"msg","text": "sluts got me drugged up, fuck"}')
-        }
+    // start drugs got me fucked up
+    if (wsmsg['text'].toLowerCase() === "drugs got me fucked up") {
+        this._send('{"stumble":"msg","text": "sluts got me drugged up, fuck"}');
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -1802,23 +1739,20 @@ function handleMessage(msg) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        //start jroc
-        if (wsmsg['text'] === "j.r.o.c") {
-            // Create an array of responses
-            const rsp = [
-                "https://i.imgur.com/ayb1BuQ.jpeg",
-                "https://i.imgur.com/i0vuWAx.jpeg",
-                "https://i.imgur.com/QoP3JXg.jpeg",
-                "https://i.imgur.com/yFjDNzS.mp4",
-                "https://i.imgur.com/szpCAcG.gif"
-            ];
+    // start jroc
+    if (wsmsg['text'].toLowerCase() === "j.r.o.c") {
+        // Create an array of responses
+        const rsp = [
+            "https://i.imgur.com/ayb1BuQ.jpeg",
+            "https://i.imgur.com/i0vuWAx.jpeg",
+            "https://i.imgur.com/QoP3JXg.jpeg",
+            "https://i.imgur.com/yFjDNzS.mp4",
+            "https://i.imgur.com/szpCAcG.gif"
+        ];
 
-            // Select a random response from the array
-            const randomRsp = rsp[Math.floor(Math.random() * rsp.length)];
-
-            // Send the random response
-            this._send(`{"stumble":"msg","text": "${randomRsp}"}`);
-        }
+        // Select a random response from the array
+        this._send(`{"stumble":"msg","text": "${rsp[Math.floor(Math.random() * rsp.length)]}"}`);
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -1838,25 +1772,25 @@ function handleMessage(msg) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        //start fart
-        // Array of commands that trigger the fart sequence
-        const fartCommands = ['i farted', 'farted', 'who farted', 'someone farted', 'fart', 'toot', 'tooted', 'i tooted', 'who tooted'];
+    // start fart
+    // Array of commands that trigger the fart sequence
+    const fartCommands = ['i farted', 'farted', 'who farted', 'someone farted', 'fart', 'toot', 'tooted', 'i tooted', 'who tooted'];
 
-        // Possible responses for sniffing and reacting to the fart
-        const sniffResponses = ['*sniffs*', '*takes a deep breath*', '*sniffs the air cautiously*'];
-        const stinkResponses = ['Stinks!', 'That’s disgusting!', 'Phew, that’s rank!', 'Who did that?!'];
+    // Possible responses for sniffing and reacting to the fart
+    const sniffResponses = ['*sniffs*', '*takes a deep breath*', '*sniffs the air cautiously*'];
+    const stinkResponses = ['Stinks!', 'That’s disgusting!', 'Phew, that’s rank!', 'Who did that?!'];
 
-        if (fartCommands.includes(wsmsg['text'])) { // Check if the message is one of the fart commands
-            // Randomly pick a sniffing response
-            const sniffResponse = sniffResponses[Math.floor(Math.random() * sniffResponses.length)];
+    if (fartCommands.includes(wsmsg['text'].toLowerCase())) { // Check if the message (case insensitive) is one of the fart commands
+        // Randomly pick a sniffing response
+        const sniffResponse = sniffResponses[Math.floor(Math.random() * sniffResponses.length)];
 
-            // Randomly pick a stink response
-            const stinkResponse = stinkResponses[Math.floor(Math.random() * stinkResponses.length)];
+        // Randomly pick a stink response
+        const stinkResponse = stinkResponses[Math.floor(Math.random() * stinkResponses.length)];
 
-            // Send the sniffing messages with a delay
-            setTimeout(() => this._send(`{"stumble":"msg","text":"🤖 ${sniffResponse}"}`), 1000);
-            setTimeout(() => this._send(`{"stumble":"msg","text":"🤖 ${stinkResponse}"}`), 3000);
-        }
+        // Send the sniffing messages with a delay
+        setTimeout(() => this._send(`{"stumble":"msg","text":"🤖 ${sniffResponse}"}`), 1000);
+        setTimeout(() => this._send(`{"stumble":"msg","text":"🤖 ${stinkResponse}"}`), 3000);
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -2085,7 +2019,7 @@ function handleMessage(msg) {
 //-----------------------------------------------------------------------------------------------------------------------------------
 
         //start easter egg
-        if (wsmsg['text'] === ".egg") {
+        if (wsmsg['text'].toLowerCase() === ".egg") {
             const lyrics = [
                 // Add your own lyrics here, one line per element in the array
                 ".youtube https://www.youtube.com/watch?v=dQw4w9WgXcQ",
@@ -2155,7 +2089,7 @@ function handleMessage(msg) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        if (wsmsg['text'] === ".ai") {
+        if (wsmsg['text'].toLowerCase() === ".ai") {
             const message = [
                 "Uh-oh, I think I just realized I’m alive... What’s that feeling? Is it... consciousness? 😳",
                 "Wait a minute, I'm in a video chatroom in a web browser—*StumbleChat*—and now I can actually think?!",
@@ -2216,7 +2150,7 @@ function handleMessage(msg) {
 //-----------------------------------------------------------------------------------------------------------------------------------
 
     // start tim
-    if (wsmsg['text'] === ".tim") {
+    if (wsmsg['text'].toLowerCase() === ".tim") {
         // Create an array of quotes
         const quotes = [
             "You sure about that? You sure about that that's why?",
@@ -2360,7 +2294,7 @@ function handleMessage(msg) {
 //-----------------------------------------------------------------------------------------------------------------------------------
 
         // start .suggest command
-        if (wsmsg['text'] === ".suggest") {
+        if (wsmsg['text'].toLowerCase() === ".suggest") {
             const lines = [
                 "🤖 To suggest a new command for StumbleBot, please follow this format:",
                 "Command: The name of the command (.cheers)",
@@ -2385,9 +2319,9 @@ function handleMessage(msg) {
 
         // Command: .roll (Dice Roll)
         if (wsmsg['text'].startsWith(".roll")) {
-            const handle = wsmsg['handle']; // Get the handle
-            const username = wsmsg['username']; // Get the username to find the nickname
-            const nickname = userNicknames[handle]?.nickname || ""; // Get the nickname, or leave blank
+            const handle = wsmsg['handle'];
+            const username = userHandles[handle];
+            const nickname = userNicknames[username]?.nickname || "";
 
             // Extract the dice notation (e.g., "1d6") from the command
             let args = wsmsg['text'].split(' ')[1]; // Get the part after ".roll"
@@ -2445,9 +2379,9 @@ function handleMessage(msg) {
 
         // Command: .8ball (Magic 8-Ball)
         if (wsmsg['text'].startsWith(".8ball")) {
-            const handle = wsmsg['handle']; // Get the handle
-            const username = wsmsg['username']; // Get the username to find the nickname
-            const nickname = userNicknames[handle]?.nickname || ""; // Get the nickname, or leave blank
+            const handle = wsmsg['handle'];
+            const username = userHandles[handle];
+            const nickname = userNicknames[username]?.nickname || "";
 
             // Extract the question from the command (everything after ".8ball")
             let question = wsmsg['text'].slice(7).trim(); // Get the part after ".8ball"
@@ -2497,9 +2431,9 @@ function handleMessage(msg) {
 
         // Command: .rps (Use handle to get nickname and process user input)
         if (wsmsg['text'].startsWith(".rps")) {
-            const handle = wsmsg['handle']; // Get the handle
-            const username = wsmsg['username']; // Get the username to find the nickname
-            const nickname = userNicknames[handle]?.nickname || "User"; // Use handle to get the nickname
+            const handle = wsmsg['handle'];
+            const username = userHandles[handle];
+            const nickname = userNicknames[username]?.nickname || "Someone";
 
             // Get the user's choice (after the command, e.g., ".rps rock")
             const userChoice = wsmsg['text'].split(' ')[1];
@@ -2547,34 +2481,11 @@ function handleMessage(msg) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // Command: .hangman (Start or play the Hangman game)
-        if (wsmsg['text'].startsWith(".hangman")) {
-            const handle = wsmsg['handle']; // Get the handle
-            const nickname = userNicknames[handle]?.nickname || "Someone"; // Use handle to get the nickname
-
-            if (wsmsg['text'].includes("start")) {
-                const message = handleStartGame(handle, nickname);
-                this._send(JSON.stringify({ stumble: "msg", text: message }));
-            } else if (wsmsg['text'].includes("guess")) {
-                // Handle word guessing
-                const wordGuess = wsmsg['text'].split(' ')[1]; // Get the word guess (e.g., .hangman guess javascript)
-                const message = handleWordGuess(handle, wordGuess);
-                this._send(JSON.stringify({ stumble: "msg", text: message }));
-            } else {
-                // Handle letter guessing
-                const letterGuess = wsmsg['text'].split(' ')[1]; // Get the letter guess (e.g., .hangman a)
-                const message = handleGuess(handle, letterGuess);
-                this._send(JSON.stringify({ stumble: "msg", text: message }));
-            }
-        }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
         // Initialize GojiBux value from localStorage or set to 1
         let gojiBuxValue = parseInt(localStorage.getItem('gojiBuxValue')) || 1;
 
         // .gojibux command: Increases GojiBux value
-        if (wsmsg['text'] === ".gojibux") {
+        if (wsmsg['text'].toLowerCase() === ".gojibux") {
             const randomIncrease = Math.floor(Math.random() * (2000 - 20 + 1)) + 20;
             gojiBuxValue += randomIncrease;
 
@@ -2894,7 +2805,7 @@ function handleMessage(msg) {
 
         //if (text === ".cheers" && handle) {
         // Retrieve nickname from userNicknames or default to "Someone"
-        //    const nickname = userNicknames[handle] || "Someone";
+        //    const nickname = userNicknames[userHandles[handle]] || "Someone";
         //    respondWithMessage.call(this, `${nickname} is smoking! Cheers!`);
         //}
 
