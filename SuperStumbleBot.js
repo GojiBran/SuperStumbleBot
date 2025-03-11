@@ -9,7 +9,7 @@
 // ==/UserScript==
 
 // Notes ---
-// update all lists in commands [x]
+
 
 
 (function() {
@@ -119,7 +119,7 @@ function handleMessage(msg) {
                 welcomeMessage = "🤖 Cave has entered the game. Controls are janky, devs are dumb, 2/10 experience. 🎮⚠️";
             } else if (username === "SemperZombie") {
                 welcomeMessage = "🤖 SemperZombie rises again! Remember: It's better to cum in the sink than sink in the cum. 🧟‍♀️💦";
-            } else if (username === "Indica") {
+            } else if (username === "indica") {
                 welcomeMessage = "🤖 Indica's here! Assume the position! 💋🔥";
             } else if (username === "DSexpress") {
                 welcomeMessage = "🤖 DS is in the building! Beats, gloves, and vibes ready to drop. 🎧🥊🎶";
@@ -153,8 +153,8 @@ function handleMessage(msg) {
                 welcomeMessage = "🤖 LE GASP!!";
             } else if (username === "MisterKors") {
                 welcomeMessage = "🤖 Hide the french, hide the dutch, Belgium is in the hut! 🧇🧇🧇";
-            } else if (username === "DrPatCakes") {
-                welcomeMessage = "🤖 Don't get the shakes, but here comes DrPatCakes! 😨";
+            } else if (username === "DrPatTCakes") {
+                welcomeMessage = "🤖 Don't get the shakes, but here comes DrPatTCakes! 😨";
             } else if (username === "StarshineCity") {
                 welcomeMessage = "🤖 Long skin? Short skin? No skin? OminousForeskin! 😎😎😎";
             } else if (username === "smokeyredhead420") {
@@ -177,6 +177,18 @@ function handleMessage(msg) {
                 welcomeMessage = "🤖 IS THAT LJ OR AM I LOOKIN IN THE MIRROR?! 🤖";
             } else if (username === "bbblueyez18") {
                 welcomeMessage = `🤖 The Crazy Flamingo Lady ${nickname || username} has arrived! 🤪🦩💙`;
+            } else if (username === "LilNapkin") {
+                welcomeMessage = `🤖 ${nickname || username} is in da house! 🏠`;
+            } else if (username === "PostNutTranscendence") {
+                welcomeMessage = `🤖 It's time to get jazzy! ${nickname || username} just nutted! 💦🎺🍤`;
+            } else if (username === "kay10007") {
+                welcomeMessage = "🤖 O KAY! 😆";
+            } else if (username === "FROGGY") {
+                welcomeMessage = "🤖 FEELIN FROGGY?! 🐸";
+            } else if (username === "Thing2") {
+                welcomeMessage = `🤖 I know a ${nickname || username} or seven! ⚔`;
+            } else if (username === "jstme") {
+                welcomeMessage = `🤖 Is it us? No, it's ${nickname || username}! 🧔`;
             } else if (userNicknames[username]) {
                 welcomeMessage = `🤖 Welcome back to Let's Get High, ${nickname || username}! 🎉`;
             } else {
@@ -222,13 +234,13 @@ function handleMessage(msg) {
 //-----------------------------------------------------------------------------------------------------------------------------------
 
         // Send 420 alert
-        if (shouldSendMessage) {
+        /*if (shouldSendMessage) {
             shouldSendMessage = false; // Reset the flag immediately to prevent multiple sends
 
             setTimeout(() => {
                 this._send('{"stumble":"msg","text": "🤖 It\'s 4:20 somewhere! Smoke em if you got em! 💨"}');
             }, 1000); // 1-second delay to send at HH:20:01
-        }
+        }*/
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 // Bot Commands ---------------------------------------------------------------------------------------------------------------------
@@ -239,7 +251,7 @@ function handleMessage(msg) {
 //-----------------------------------------------------------------------------------------------------------------------------------
 
     // Define an array of keywords to check for YouTube-related commands (case insensitive)
-    var keywords = ['.youtube', '.video', '.play', '.yt'];
+    /*var keywords = ['.youtube', '.video', '.play', '.yt'];
 
     // Function to convert various YouTube URL formats to a standard format
     function convertToRegularYouTubeLink(url) {
@@ -275,7 +287,98 @@ function handleMessage(msg) {
             // Exit the loop as the query has been processed
             break;
         }
+    }*/
+
+// Define an array of keywords to check for YouTube-related commands (case insensitive)
+var keywords = ['.youtube', '.video', '.play', '.yt'];
+
+// Universal YouTube History Storage (ensure backward compatibility)
+let youtubeHistory = JSON.parse(localStorage.getItem("youtubeHistory")) || [];
+
+// Function to convert various YouTube URL formats to a standard format
+function convertToRegularYouTubeLink(url) {
+    var videoIdRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/|.*[?&]v=))([\w-]+)/;
+    var match = url.match(videoIdRegex);
+    return match && match[1] ? 'https://www.youtube.com/watch?v=' + match[1] : null;
+}
+
+// Function to save the last 10 played tracks
+function saveToHistory(requester, trackName) {
+    if (!trackName) return;  // Prevent saving if track is missing
+
+    youtubeHistory.push({
+        requester: requester || null,  // Store username or null if bot
+        track: trackName
+    });
+
+    // Keep only the last 10 entries
+    if (youtubeHistory.length > 10) {
+        youtubeHistory.shift();
     }
+
+    // Save to localStorage
+    localStorage.setItem("youtubeHistory", JSON.stringify(youtubeHistory));
+}
+
+// Detect user invoking a YouTube command
+for (var i = 0; i < keywords.length; i++) {
+    if (wsmsg['text'].toLowerCase().startsWith(keywords[i])) {
+        var query = wsmsg['text'].substring(wsmsg['text'].indexOf(" ") + 1).trim();
+        if (query && query !== keywords[i]) {
+            var finalLink = convertToRegularYouTubeLink(query) || query;
+
+            // Send the YouTube link
+            this._send('{"stumble": "youtube","type": "add","id": "' + finalLink + '","time": 0}');
+        }
+        break;
+    }
+}
+
+// Detect system message confirming YouTube track added
+if (wsmsg['stumble'] === "sysmsg" && wsmsg['text'].includes("has added YouTube track:")) {
+    let lines = wsmsg['text'].split("\n");
+    let trackName = lines.pop().trim();  // Extract track name
+
+    if (!trackName) return;
+
+    let firstLine = lines[0];  // Extract first line for requester info
+    let requester = null;
+
+    let match = firstLine.match(/^(.*?) \((.*?)\) has added YouTube track:/);
+    if (match) {
+        requester = match[2];  // Extract username if available
+    }
+
+    // Save to history
+    saveToHistory(requester, trackName);
+}
+
+    // Handle .history command to display the last 10 played tracks
+    if (wsmsg['text'].trim().toLowerCase() === ".history") {
+        if (youtubeHistory.length === 0) {
+            respondWithMessage.call(this, "🤖 No recent YouTube tracks played.");
+        } else {
+            respondWithMessage.call(this, "🤖 Retrieving last 10 played tracks...");
+
+            youtubeHistory.forEach((entry, index) => {
+                setTimeout(() => {
+                    let nickname = userNicknames[entry.requester]?.nickname || entry.requester;
+                    if (entry.requester) {
+                        respondWithMessage.call(this, `${index + 1}. ${nickname} played: ${entry.track}`);
+                    } else {
+                        respondWithMessage.call(this, `${index + 1}. ${entry.track}`);
+                    }
+                }, index * 1000);
+            });
+        }
+    }
+
+// Handle .clearHistory command to wipe all history
+if (wsmsg['text'].toLowerCase() === ".clearHistory") {
+    youtubeHistory = [];
+    localStorage.setItem("youtubeHistory", JSON.stringify(youtubeHistory));
+    respondWithMessage.call(this, "🤖 YouTube history cleared.");
+}
 
 // User Commands --------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -566,6 +669,45 @@ if (wsmsg["text"].toLowerCase() === ".gojibux") {
             respondWithMessage.call(this, msg);
         }, index * 1000);
     });
+}
+
+// 💰 `.admin givebux` - Give all users a specified amount of GojiBux (default: 500)
+if (wsmsg["text"].toLowerCase().startsWith(".admin givebux")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+
+    if (!username) {
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        return;
+    }
+
+    const adminUsers = ["Goji"]; // Replace with your admin username(s)
+
+    if (!adminUsers.includes(username)) {
+        respondWithMessage.call(this, "⛔ You do not have permission to use this command.");
+        return;
+    }
+
+    // Extract amount from message (e.g., ".givebux 10000")
+    const args = wsmsg["text"].split(" ");
+    let amount = parseInt(args[1]);
+
+    // If no valid number is given, default to 500 GBX
+    if (isNaN(amount) || amount <= 0) {
+        amount = 500;
+    }
+
+    let userCount = 0;
+    for (const user in userBalances) {
+        if (userBalances.hasOwnProperty(user)) {
+            userBalances[user].balance += amount;
+            userCount++;
+        }
+    }
+
+    saveBalances();
+
+    respondWithMessage.call(this, `💰 All ${userCount} users just received ${amount.toLocaleString()} GojiBux! 🤑💵`);
 }
 
 // 💸 `.snarfbux` - Lose a random amount of GojiBux (LGH Bank gains)
@@ -1433,6 +1575,83 @@ if (wsmsg["text"].toLowerCase() === ".grow") {
     respondWithMessage.call(this, response);
 }
 
+// 💨 `.admin giveweed` - Give all users a specified amount of weed (default: 420g)
+if (wsmsg["text"].toLowerCase().startsWith(".admin giveweed")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+
+    if (!username) {
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        return;
+    }
+
+    const adminUsers = ["Goji"]; // Replace with your admin username(s)
+
+    if (!adminUsers.includes(username)) {
+        respondWithMessage.call(this, "⛔ You do not have permission to use this command.");
+        return;
+    }
+
+    // Extract amount from message (e.g., ".giveweed 1000")
+    const args = wsmsg["text"].split(" ");
+    let amount = parseInt(args[1]);
+
+    // If no valid number is given, default to 420 grams
+    if (isNaN(amount) || amount <= 0) {
+        amount = 420;
+    }
+
+    let userCount = 0;
+    for (const user in userWeedStashes) {
+        if (userWeedStashes.hasOwnProperty(user)) {
+            userWeedStashes[user] = (userWeedStashes[user] || 0) + amount;
+            userCount++;
+        }
+    }
+
+    saveWeedStashes();
+
+    respondWithMessage.call(this, `🚀 All ${userCount} users just got ${amount.toLocaleString()} grams of premium bud! 🌿🔥`);
+}
+
+// 🌿 4:20 Auto-Weed Giveaway
+setInterval(() => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const currentSecond = now.getSeconds();
+
+    // Ensure the message is only scheduled once per hour at HH:20:00
+    if (currentMinute === 20 && currentSecond === 0 && lastSentHour !== currentHour && !shouldSendMessage) {
+        lastSentHour = currentHour;
+        shouldSendMessage = true; // Set flag
+    }
+
+    // Send 4:20 alert and give everyone 420g of weed
+    if (shouldSendMessage) {
+        shouldSendMessage = false; // Reset the flag immediately to prevent multiple sends
+
+        setTimeout(() => {
+            this._send('{"stumble":"msg","text": "🤖 It\'s 4:20 somewhere! Smoke em if you got em! 💨"}');
+
+            setTimeout(() => {
+                // Give everyone 420g of weed
+                let userCount = 0;
+                for (const user in userWeedStashes) {
+                    if (userWeedStashes.hasOwnProperty(user)) {
+                        userWeedStashes[user] = (userWeedStashes[user] || 0) + 420;
+                        userCount++;
+                    }
+                }
+
+                saveWeedStashes();
+
+                this._send(`{"stumble":"msg","text": "🌿 All ${userCount} users just got 420 grams of premium bud! Blaze it! 🔥💨"}`);
+            }, 3000); // 3-second delay before giving the weed
+        }, 1000); // 1-second delay for initial 4:20 message
+    }
+}, 1000);
+
 // 🕒 Cooldown storage for `.getweed`
 //let lastWeedWithdrawals = JSON.parse(localStorage.getItem("lastWeedWithdrawals")) || {};
 
@@ -1489,7 +1708,7 @@ if (wsmsg["text"].toLowerCase() === ".weedprice") {
 }
 
 // 🌿 .myweed
-if (wsmsg['text'].toLowerCase() === ".myweed") {
+/*if (wsmsg['text'].toLowerCase() === ".myweed") {
     const handle = wsmsg['handle'];
     const username = userHandles[handle];
     const stash = userWeedStashes[username] || 0;
@@ -1498,6 +1717,44 @@ if (wsmsg['text'].toLowerCase() === ".myweed") {
 
     const messages = [
         `🌿 Your Weed Stash: ${stash} grams`//,
+        //`🔥 Current Weed Prices: Buy: ${buyPrice} GBX/gram | Sell: ${sellPrice} GBX/gram`
+    ];
+
+    messages.forEach((msg, index) => {
+        setTimeout(() => {
+            respondWithMessage.call(this, msg);
+        }, index * 1000);
+    });
+}*/
+
+// 🌿 .myweed
+if (wsmsg["text"].toLowerCase() === ".myweed") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    let stash = userWeedStashes[username] || 0;
+    const buyPrice = weedBuyPrice.toLocaleString();
+    const sellPrice = weedSellPrice.toLocaleString();
+
+    // Conversion factors
+    const gramsPerOunce = 28.3495;
+    const ouncesPerPound = 16;
+    const gramsPerPound = gramsPerOunce * ouncesPerPound;
+
+    // Convert stash
+    const pounds = Math.floor(stash / gramsPerPound);
+    stash %= gramsPerPound;
+    const ounces = Math.floor(stash / gramsPerOunce);
+    const grams = Math.round(stash % gramsPerOunce);
+
+    // Format stash breakdown
+    let stashText = [];
+    if (pounds > 0) stashText.push(`${pounds}lb`);
+    if (ounces > 0) stashText.push(`${ounces}oz`);
+    if (grams > 0 || stashText.length === 0) stashText.push(`${grams}g`);
+
+    const messages = [
+        `🌿 ${nickname}'s Weed Stash: ${stashText.join(" ")} (${userWeedStashes[username]}g)`,
         //`🔥 Current Weed Prices: Buy: ${buyPrice} GBX/gram | Sell: ${sellPrice} GBX/gram`
     ];
 
@@ -2111,6 +2368,236 @@ if (wsmsg["text"].toLowerCase() === ".circulation") {
     }, 1000);
 }
 
+
+
+// STONKS STONKS STONKS
+
+// 🏦 GojiBux Stock Market
+let stocks = {
+    "WEED": { price: Math.floor(Math.random() * 91) + 10 }, // 10 - 100 GBX
+    "DANK": { price: Math.floor(Math.random() * 91) + 10 },
+    "GOJI": { price: Math.floor(Math.random() * 91) + 10 }
+};
+
+let userStocks = JSON.parse(localStorage.getItem("userStocks")) || {}; // Track user investments
+
+function updateStockPrices() {
+    for (const stock in stocks) {
+        if (stocks.hasOwnProperty(stock)) {
+            let change = Math.floor(Math.random() * 21) - 10; // Random +/- 10 GBX
+            stocks[stock].price = Math.max(1, stocks[stock].price + change); // Ensure price never goes below 1
+        }
+    }
+    localStorage.setItem("stocks", JSON.stringify(stocks));
+}
+
+// Update stock prices every minute
+setInterval(updateStockPrices, 60000);
+
+
+// 📊 `.stocks` - Show stock prices
+if (wsmsg["text"].toLowerCase() === ".stocks") {
+    let stockMessage = "📈 **Current Stock Prices:**\n";
+    for (const stock in stocks) {
+        stockMessage += `💰 ${stock}: ${stocks[stock].price} GBX\n`;
+    }
+    respondWithMessage.call(this, stockMessage);
+}
+
+
+// 🛒 `.buy STOCK AMOUNT` - Buy stocks
+if (wsmsg["text"].toLowerCase().startsWith(".buy ")) {
+    const args = wsmsg["text"].split(" ");
+    const stock = args[1]?.toUpperCase();
+    const amount = parseInt(args[2]);
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+
+    if (!stocks[stock]) {
+        respondWithMessage.call(this, `❌ Invalid stock! Use .stocks to see available stocks.`);
+        return;
+    }
+
+    if (isNaN(amount) || amount <= 0) {
+        respondWithMessage.call(this, `❌ Invalid amount! Example: .buy WEED 5`);
+        return;
+    }
+
+    const cost = stocks[stock].price * amount;
+
+    if (userBalances[username].balance < cost) {
+        respondWithMessage.call(this, `💸 Not enough GojiBux! You need ${cost} GBX.`);
+        return;
+    }
+
+    // Deduct GojiBux and add stocks
+    userBalances[username].balance -= cost;
+    userStocks[username] = userStocks[username] || {};
+    userStocks[username][stock] = (userStocks[username][stock] || 0) + amount;
+
+    saveBalances();
+    localStorage.setItem("userStocks", JSON.stringify(userStocks));
+
+    respondWithMessage.call(this, `✅ You bought ${amount} shares of ${stock} at ${stocks[stock].price} GBX each!`);
+}
+
+
+// 💰 `.sell STOCK AMOUNT` - Sell stocks
+if (wsmsg["text"].toLowerCase().startsWith(".sell ")) {
+    const args = wsmsg["text"].split(" ");
+    const stock = args[1]?.toUpperCase();
+    const amount = parseInt(args[2]);
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+
+    if (!stocks[stock]) {
+        respondWithMessage.call(this, `❌ Invalid stock! Use .stocks to see available stocks.`);
+        return;
+    }
+
+    if (isNaN(amount) || amount <= 0) {
+        respondWithMessage.call(this, `❌ Invalid amount! Example: .sell WEED 5`);
+        return;
+    }
+
+    if (!userStocks[username] || !userStocks[username][stock] || userStocks[username][stock] < amount) {
+        respondWithMessage.call(this, `❌ You don't have enough ${stock} to sell!`);
+        return;
+    }
+
+    // Sell stocks at current price
+    const earnings = stocks[stock].price * amount;
+    userBalances[username].balance += earnings;
+    userStocks[username][stock] -= amount;
+
+    if (userStocks[username][stock] === 0) {
+        delete userStocks[username][stock]; // Remove empty holdings
+    }
+
+    saveBalances();
+    localStorage.setItem("userStocks", JSON.stringify(userStocks));
+
+    respondWithMessage.call(this, `✅ You sold ${amount} shares of ${stock} for ${earnings} GBX!`);
+}
+
+
+// 🏦 `.mystocks` - View stock portfolio
+if (wsmsg["text"].toLowerCase() === ".mystocks") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+
+    if (!userStocks[username] || Object.keys(userStocks[username]).length === 0) {
+        respondWithMessage.call(this, `📉 You don’t own any stocks yet! Use .buy STOCK AMOUNT`);
+        return;
+    }
+
+    let portfolioMessage = "📊 **Your Stock Portfolio:**\n";
+    for (const stock in userStocks[username]) {
+        portfolioMessage += `💰 ${stock}: ${userStocks[username][stock]} shares (${stocks[stock].price} GBX each)\n`;
+    }
+
+    respondWithMessage.call(this, portfolioMessage);
+}
+
+
+// 🏦 Set dividend payout rate (2% of stock price per share)
+/*const DIVIDEND_RATE = 0.02;
+
+// 🕒 Give dividends every 10 minutes
+setInterval(() => {
+    let totalPayouts = 0;
+
+    for (const username in userStocks) {
+        if (userStocks.hasOwnProperty(username)) {
+            let totalEarnings = 0;
+
+            for (const stock in userStocks[username]) {
+                if (stocks.hasOwnProperty(stock)) {
+                    let sharesOwned = userStocks[username][stock];
+                    let stockPrice = stocks[stock].price;
+                    let dividend = Math.floor((stockPrice * DIVIDEND_RATE) * sharesOwned);
+
+                    totalEarnings += dividend;
+                }
+            }
+
+            if (totalEarnings > 0) {
+                userBalances[username].balance += totalEarnings;
+                totalPayouts += totalEarnings;
+            }
+        }
+    }
+
+    saveBalances();
+
+    // Announce dividends
+    if (totalPayouts > 0) {
+        this._send(`{"stumble":"msg","text": "💵 Dividend Payout! Stockholders just earned a total of ${totalPayouts.toLocaleString()} GBX in passive income! 🤑"}`);
+    }
+}, 600000); // Runs every 10 minutes (600,000ms)*/
+
+
+// 🎰 `.gamble AMOUNT` - Bet GojiBux for a chance to win!
+if (wsmsg["text"].toLowerCase().startsWith(".gamble ")) {
+    const args = wsmsg["text"].split(" ");
+    const betAmount = parseInt(args[1]);
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    if (!username) {
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        return;
+    }
+
+    if (isNaN(betAmount) || betAmount <= 0) {
+        respondWithMessage.call(this, "❌ Invalid amount! Example: .gamble 500");
+        return;
+    }
+
+    if (userBalances[username].balance < betAmount) {
+        respondWithMessage.call(this, `💸 Not enough GojiBux! You only have ${userBalances[username].balance} GBX.`);
+        return;
+    }
+
+    // 🎲 Gambling probabilities
+    const roll = Math.random(); // Generates a number between 0.0 and 1.0
+    let winnings = 0;
+    let lostToBank = 0;
+    let resultMessage = "";
+
+    if (roll < 0.05) { // 5% chance - JACKPOT (5x payout)
+        winnings = betAmount * 5;
+        resultMessage = `🎉 JACKPOT! ${nickname} just turned ${betAmount.toLocaleString()} GBX into ${winnings.toLocaleString()} GBX! 🎰💰`;
+    } else if (roll < 0.35) { // 30% chance - Double the money (2x payout)
+        winnings = betAmount * 2;
+        resultMessage = `🔥 Lucky win! ${nickname} doubled their money and now has ${winnings.toLocaleString()} GBX! 🤑`;
+    } else if (roll < 0.65) { // 30% chance - Lose half (Half goes to LGH Bank)
+        winnings = -Math.floor(betAmount / 2);
+        lostToBank = Math.abs(winnings);
+        resultMessage = `😐 Oof! ${nickname} lost half their bet. -${lostToBank.toLocaleString()} GBX.`;
+    } else { // 35% chance - Lose everything (Full amount goes to LGH Bank)
+        winnings = -betAmount;
+        lostToBank = Math.abs(winnings);
+        resultMessage = `💸 Tough luck! ${nickname} lost their entire bet of ${betAmount.toLocaleString()} GBX. 😭`;
+    }
+
+    // Update player balance
+    userBalances[username].balance += winnings;
+
+    // Add lost money to LGH Bank
+    if (lostToBank > 0) {
+        lghBank += lostToBank;
+        localStorage.setItem("lghBank", lghBank.toString());
+    }
+
+    saveBalances();
+
+    // Send result message
+    respondWithMessage.call(this, resultMessage);
+}
+
+
 // ⚠️ `.clearGojiBux` - Wipe all balances & reset LGH (Admin-only)
 /*if (wsmsg["text"].toLowerCase() === ".cleargojibux") {
     userBalances = {};
@@ -2712,6 +3199,123 @@ if (wsmsg["text"].toLowerCase() === ".dumpspaget") {
     respondWithMessage.call(this, `🍝 ${nickname} discarded ${dumpedSpaghetti.toLocaleString()} SPG! RIP spaghetti...`);
 }
 
+if (wsmsg["text"].toLowerCase().startsWith(".extract")) {
+    const args = wsmsg["text"].split(" ");
+
+    if (args.length < 3) {
+        respondWithMessage.call(this, "🤔 How much are you trying to extract? Try .extract hash X");
+        return;
+    }
+
+    const extractType = args[1].toLowerCase();
+    const amount = parseFloat(args[2]);
+
+    if (isNaN(amount) || amount <= 0) {
+        respondWithMessage.call(this, "🚫 Invalid amount! Try .extract hash X where X is how much weed you want to process.");
+        return;
+    }
+
+    const extractRates = {
+        "hash": { weedPerGram: 10, gbxPerWeed: 1 }
+    };
+
+    if (!(extractType in extractRates)) {
+        respondWithMessage.call(this, `🤨 I don't know how to extract ${extractType} yet! Available types: hash`);
+        return;
+    }
+
+    const handle = wsmsg["handle"];
+    const user = userHandles[handle];  // **Now matching .jointroll and .myweed**
+
+    if (!user) {
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        return;
+    }
+
+    if (!userWeedStashes[user]) {
+        userWeedStashes[user] = 0;
+    }
+
+    const weedStash = userWeedStashes[user];
+    const userGBX = userBalances[user]?.balance || 0;
+
+    console.log(`[DEBUG] Extracting for: ${user}, Weed Stash: ${weedStash}g, GBX: ${userGBX}`);
+
+    const { weedPerGram, gbxPerWeed } = extractRates[extractType];
+    const maxExtractable = Math.floor(weedStash / weedPerGram);
+    const extractAmount = Math.min(amount, maxExtractable);
+    const weedNeeded = extractAmount * weedPerGram;
+    const gbxCost = Math.max(weedNeeded * gbxPerWeed, 1);
+
+    if (extractAmount <= 0) {
+        respondWithMessage.call(this, `🚫 You don't have enough weed to extract at least 1g of hash! You need at least ${weedPerGram}g.`);
+        return;
+    }
+
+    if (weedStash < weedNeeded) {
+        respondWithMessage.call(this, `🚫 You don’t have that much weed to extract! You currently have ${weedStash.toLocaleString()}g.`);
+        return;
+    }
+
+    if (userGBX < gbxCost) {
+        respondWithMessage.call(this, `💸 You’re too broke to extract that much! You need ${gbxCost.toLocaleString()} GBX but only have ${userGBX.toLocaleString()} GBX.`);
+        return;
+    }
+
+    userWeedStashes[user] -= weedNeeded;
+    userBalances[user].balance -= gbxCost;
+
+    if (!userExtractStashes[user]) {
+        userExtractStashes[user] = {};
+    }
+    userExtractStashes[user][extractType] = (userExtractStashes[user][extractType] || 0) + extractAmount;
+
+    const messages = [
+        `🔥 You just pressed ${extractAmount.toLocaleString()}g of hash from ${weedNeeded.toLocaleString()}g of weed! Smells dank!`,
+        `🛠️ Extraction complete! ${extractAmount.toLocaleString()}g of hash secured in your stash!`,
+        `🌿➡️💨 You transformed ${weedNeeded.toLocaleString()}g of weed into ${extractAmount.toLocaleString()}g of hash like a pro!`
+    ];
+
+    respondWithMessage.call(this, messages[Math.floor(Math.random() * messages.length)]);
+
+    console.log(`[DEBUG] ${user} After Extraction - Weed Stash: ${userWeedStashes[user]}g, Extract Stash: ${userExtractStashes[user][extractType]}g, GBX: ${userBalances[user].balance}`);
+}
+
+if (wsmsg["text"].toLowerCase() === ".top") {
+    let categories = [
+        { name: "GojiBux", emoji: "💵", data: userBalances, key: "balance", unit: "GBX" },
+        { name: "Offshore", emoji: "🏝️", data: userStashes, key: null, unit: "GBX" },
+        { name: "Weed", emoji: "🌿", data: userWeedStashes, key: null, unit: "grams" },
+        { name: "Joints", emoji: "🚬", data: userJointStashes, key: null, unit: "rolled" },
+        { name: "Spaghetti", emoji: "🍝", data: userSpaghettiStashes, key: null, unit: "SPG" },
+        { name: "Pizza", emoji: "🍕", data: userPizzaStashes, key: null, unit: "PZA" }
+    ];
+
+    let leaderboard = "📊 Ultimate Top Players 📊\n";
+
+    categories.forEach(({ name, emoji, data, key, unit }) => {
+        let sortedUsers = Object.entries(data)
+            .sort((a, b) => ((b[1]?.[key] || b[1] || 0) - (a[1]?.[key] || a[1] || 0)));
+
+        if (sortedUsers.length > 0) {
+            let [username, stash] = sortedUsers[0];
+            let value = key ? stash[key] || 0 : stash || 0; // Default assignment
+
+            // Special handling for GojiBux
+            if (name === "GojiBux") {
+                value = stash?.balance || 0; // Extract balance from object
+            }
+
+            if (value > 0) {
+                const nickname = userNicknames[username]?.nickname || username;
+                leaderboard += `${emoji} Top ${name}: ${nickname} - ${emoji} ${value.toLocaleString()} ${unit}\n`;
+            }
+        }
+    });
+
+    respondWithMessage.call(this, leaderboard.trim());
+}
+
 //-----------------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -3037,6 +3641,20 @@ if (wsmsg['text'].toLowerCase() === ".self") {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+    // Command: .throat / .throats
+    if ([".throat", ".throats"].includes(wsmsg['text'].toLowerCase())) {
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "Someone";
+
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: `🤖 ${nickname} is throating their coffee! Cheers? ☕`
+        }));
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
     // Command: .bc
     if (wsmsg['text'].toLowerCase() === ".bc") {
         const handle = wsmsg['handle'];
@@ -3109,21 +3727,21 @@ if (wsmsg['text'].toLowerCase() === ".self") {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-    // Command: .penis (case insensitive)
-    if (wsmsg['text'].toLowerCase().startsWith(".penis")) {
-        const handle = wsmsg['handle'];
-        const username = userHandles[handle];
-        const nickname = userNicknames[username]?.nickname || "Someone";
+// Command: .penis (case insensitive)
+if (wsmsg['text'].toLowerCase().startsWith(".penis")) {
+    const handle = wsmsg['handle'];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || "Someone";
 
-        // Generate random length for the penis (8D to 8============D)
-        const length = Math.floor(Math.random() * 21) + 1; // Generates a number between 1 and 21
-        const penis = `8${"=".repeat(length)}D`;
+    // Generate random length for the penis (8D to 8=====================D)
+    const length = Math.floor(Math.random() * 22); // Generates a number between 0 and 21
+    const penis = `8${"=".repeat(length)}D`;
 
-        this._send(JSON.stringify({
-            stumble: "msg",
-            text: `🤖 ${nickname}'s penis is this long: ${penis}`
-        }));
-    }
+    this._send(JSON.stringify({
+        stumble: "msg",
+        text: `🤖 ${nickname}'s penis is this long: ${penis}`
+    }));
+}
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -3965,6 +4583,14 @@ if (triggerShatterCommands.includes(wsmsg['text'].toLowerCase())) {
     // start car fart
     if (wsmsg['text'].toLowerCase() === ".carfart") {
         this._send('{"stumble":"msg","text": "https://i.imgur.com/GxUAMV9.gif"}');
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // .sedna command
+    if (wsmsg['text'].toLowerCase() === ".sedna") {
+        const result = Math.random() < 0.5 ? "owo" : "uwu";
+        this._send(`{"stumble":"msg","text": "🤖 ${result}"}`);
     }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -5171,63 +5797,60 @@ if (triggerShatterCommands.includes(wsmsg['text'].toLowerCase())) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // Command: .roll (Dice Roll)
-        if (wsmsg['text'].startsWith(".roll")) {
-            const handle = wsmsg['handle'];
-            const username = userHandles[handle];
-            const nickname = userNicknames[username]?.nickname || "";
+    // Command: .roll (Dice Roll)
+    if (wsmsg['text'].startsWith(".roll")) {
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "";
 
-            // Extract the dice notation (e.g., "1d6") from the command
-            let args = wsmsg['text'].split(' ')[1]; // Get the part after ".roll"
+        // Extract the dice notation (e.g., "1d6") from the command
+        let args = wsmsg['text'].split(' ')[1]; // Get the part after ".roll"
 
-            // Default values for number of dice and faces
-            let numDice = 1;
-            let maxFace = 6;
+        // Default values for number of dice and faces
+        let numDice = 1;
+        let maxFace = 6;
 
-            // Parse the dice notation if it exists
-            if (args && args.includes('d')) {
-                let parts = args.split('d');
-                numDice = parseInt(parts[0]) || 1; // Number before 'd', default to 1
-                maxFace = parseInt(parts[1]) || 6; // Number after 'd', default to 6
-            }
-
-            let rolls = [];
-            let total = 0;
-            const diceSymbols = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
-
-            // Roll the dice
-            for (let i = 0; i < numDice; i++) {
-                let roll = Math.floor(Math.random() * maxFace) + 1;
-                if (maxFace <= 6) {
-                    rolls.push(diceSymbols[roll - 1]); // Use only the symbol
-                } else {
-                    rolls.push(roll); // Use numbers for higher face dice
-                }
-                total += roll; // Add to the total
-            }
-
-            // Format roll output
-            let rollText = maxFace <= 6 ? rolls.join(' ') : rolls.join(', ');
-
-            // Construct the message
-            let rollMessage = nickname ? `🎲 ${nickname} Rolled: ${rollText}` : `🎲 Rolled: ${rollText}`;
-
-            // Send the rolled results
-            this._send(JSON.stringify({
-                stumble: "msg",
-                text: rollMessage
-            }));
-
-            // If more than one die is rolled, send the total after 1000ms delay
-            if (numDice > 1) {
-                setTimeout(() => {
-                    this._send(JSON.stringify({
-                        stumble: "msg",
-                        text: `🎲 Total: ${total}`
-                    }));
-                }, 1000);
-            }
+        // Parse the dice notation if it exists
+        if (args && args.includes('d')) {
+            let parts = args.split('d');
+            numDice = parseInt(parts[0]) || 1; // Number before 'd', default to 1
+            maxFace = parseInt(parts[1]) || 6; // Number after 'd', default to 6
         }
+
+        let rolls = [];
+        let total = 0;
+        const diceSymbols = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+
+        // Roll the dice
+        for (let i = 0; i < numDice; i++) {
+            let roll = Math.floor(Math.random() * maxFace) + 1;
+            let displayRoll = maxFace <= 6 ? `${diceSymbols[roll - 1]} ${roll}` : `${roll}`;
+            rolls.push(displayRoll);
+            total += roll;
+        }
+
+        // Format roll output
+        let rollText = rolls.join(' ');
+
+        // Construct the message
+        let rollMessage = nickname ? `🎲 ${nickname} Rolled: ${rollText}` : `🎲 Rolled: ${rollText}`;
+
+        // Send the rolled results
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: rollMessage
+        }));
+
+        // If more than one die is rolled, send the total after 1000ms delay
+        if (numDice > 1) {
+            setTimeout(() => {
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: `🎲 Total: ${total}`
+                }));
+            }, 1000);
+        }
+    }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -5601,7 +6224,7 @@ if (triggerShatterCommands.includes(wsmsg['text'].toLowerCase())) {
                 }
             };
 
-            const match = wsmsg['text'].match(/\.convert\s+([\d.]+)\s*(\w+)\s*to\s*(\w+)/i);
+            const match = wsmsg['text'].match(/\.convert\s+(-?[\d.]+)\s*(\w+)\s*to\s*(\w+)/i);
 
             if (match) {
                 const value = parseFloat(match[1]);
