@@ -5001,6 +5001,211 @@ if ([".help", ".halp"].includes(wsmsg['text'].toLowerCase())) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+// Large list of malaphors
+const malaphors = [
+    "We'll burn that bridge when we get to it.",
+    "It's not rocket surgery.",
+    "I’ll jump off that bridge when I come to it.",
+    "He's not the sharpest cookie in the jar.",
+    "You hit the nail right on the nose.",
+    "Don’t count your chickens before they hatch in one basket.",
+    "It’s like comparing apples and oranges to a barn door.",
+    "Bite the bullet and eat your cake too.",
+    "He’s a loose cannon that shoots straight from the hip.",
+    "We’ll cross that road when it comes back to bite us.",
+    "It’s the pot calling the kettle a spade.",
+    "Let’s get all our ducks on the same page.",
+    "That’s the way the cookie bounces.",
+    "We’re barking up the wrong rabbit hole.",
+    "She’s a wolf in cheap clothing.",
+    "You can’t have your cake before the horse.",
+    "He spilled the beans and let the cat out of Pandora’s box.",
+    "The early bird gets the worm, but the second mouse gets the cheese.",
+    "Don’t put all your eggs in one omelet.",
+    "Let’s not jump the shark before it hatches.",
+    "Don’t cry over spilt milk under the bridge.",
+    "He’s got bigger fish to count.",
+    "I dodged a bullet by the skin of my pants.",
+    "She was skating on thin eggshells.",
+    "He’s a broken record playing devil’s advocate.",
+    "It’s not my cup of worms.",
+    "Don’t bite the hand that lays the golden eggs.",
+    "Keep your eye on the ball and your ear to the ground.",
+    "We’re in the same boat but not on the same page.",
+    "It’s a dog-eat-dog world, and I’m wearing milk bone underwear.",
+    "Let’s throw spaghetti at the wall and see if the shoe fits.",
+    "That’s a tough pill to fry.",
+    "She’s got a chip on her block.",
+    "It’s like herding cats up a hill both ways.",
+    "You can lead a horse to water, but you can’t make it change lanes.",
+    "He’s not playing with a full bag of marbles.",
+    "She let the cat out of the horse’s mouth.",
+    "It’s the blind leading the headless.",
+    "We’re hitting two birds with one bush.",
+    "That’s like trying to nail Jell-O to a moving train.",
+    "You made your bed, now lay in your grave.",
+    "He threw me under the bus and into the frying pan.",
+    "This isn’t my first rodeo at the circus.",
+    "It’s a fine line between a rock and a hard place.",
+    "She’s up a creek without a compass.",
+    "Don’t put all your ducks before the horse.",
+    "It’s like finding a needle in a junk drawer.",
+    "You can’t teach an old dog to bark up the wrong tree.",
+    "That idea is dead in the bathwater.",
+    "Close but no cigar store Indian."
+];
+
+// Start .malaphor command
+if (wsmsg['text'].toLowerCase() === ".malaphor") {
+    let randomMalaphor = malaphors[Math.floor(Math.random() * malaphors.length)];
+    this._send(`{"stumble":"msg","text":"🤖 ${randomMalaphor}"}`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// HUGE list of jokes
+const jokes = [
+    "Why don't skeletons fight each other? They don't have the guts.",
+    "I told my wife she should embrace her mistakes. She gave me a hug.",
+    "Why do cows have hooves instead of feet? Because they lactose.",
+    "Parallel lines have so much in common. It’s a shame they’ll never meet.",
+    "What did the janitor say when he jumped out of the closet? Supplies!",
+    "I used to play piano by ear, but now I use my hands.",
+    "Why couldn’t the bicycle stand up by itself? It was two-tired.",
+    "I’m reading a book about anti-gravity. It’s impossible to put down!",
+    "I only know 25 letters of the alphabet. I don’t know Y.",
+    "Why do seagulls fly over the ocean? Because if they flew over the bay, they’d be bagels.",
+    "Did you hear about the guy who got hit with a can of soda? He was lucky it was a soft drink.",
+    "Why don’t some couples go to the gym? Because some relationships don’t work out.",
+    "I ordered a chicken and an egg online. I’ll let you know which comes first.",
+    "How does a penguin build its house? Igloos it together.",
+    "Why did the scarecrow win an award? Because he was outstanding in his field.",
+    "I told my suitcase that there will be no vacation this year. Now I'm dealing with emotional baggage.",
+    "Why do math books look sad? Because they have too many problems.",
+    "What’s orange and sounds like a parrot? A carrot.",
+    "Why don’t eggs tell jokes? Because they might crack up.",
+    "I tried to make a belt out of watches, but it was a waist of time.",
+    "Did you hear about the restaurant on the moon? Great food, no atmosphere.",
+    "I would tell you a chemistry joke, but I know I wouldn’t get a reaction.",
+    "Want to hear a construction joke? Oh, never mind—I'm still working on it.",
+    "Why did the golfer bring two pairs of pants? In case he got a hole in one.",
+    "Did you hear about the kidnapping at school? It’s okay, he woke up.",
+    "Why did the chicken go to the séance? To talk to the other side.",
+    "I used to be a baker, but I couldn’t make enough dough.",
+    "Why did the coffee file a police report? It got mugged.",
+    "What did one ocean say to the other? Nothing, they just waved.",
+    "Why did the tomato turn red? Because it saw the salad dressing.",
+    "What do you call a fake noodle? An impasta.",
+    "Why can’t your nose be 12 inches long? Because then it would be a foot.",
+    "I would tell you a joke about an elevator, but it’s an uplifting experience.",
+    "I told my wife she should do lunges to stay in shape. That was a big step forward.",
+    "I have a joke about time travel, but you didn’t like it.",
+    "I tried writing with a broken pencil, but it was pointless.",
+    "Why don’t crabs donate? Because they’re shellfish.",
+    "How does the moon cut his hair? Eclipse it.",
+    "I used to be addicted to soap, but I’m clean now.",
+    "Why did the orange stop rolling? Because it ran out of juice.",
+    "Why did the scarecrow become a motivational speaker? Because he was outstanding in his field.",
+    "What do you call a bear with no teeth? A gummy bear.",
+    "Why did the banana go to the doctor? It wasn’t peeling well.",
+    "What do you call cheese that isn’t yours? Nacho cheese.",
+    "I went to buy some camouflage pants, but I couldn’t find any.",
+    "Why did the computer go to the doctor? It caught a virus.",
+    "What do you get when you cross a snowman and a vampire? Frostbite.",
+    "Did you hear about the cheese factory that exploded? There was nothing left but de-brie.",
+    "I told my friend ten jokes to make them laugh. Sadly, no pun in ten did.",
+    "Why was the math book sad? Because it had too many problems.",
+    "How do you organize a space party? You planet.",
+    "I tried to catch some fog earlier. Mist.",
+    "Why do cows wear bells? Because their horns don’t work.",
+    "What do you call a pig that does karate? A pork chop.",
+    "Why did the grape stop in the middle of the road? Because it ran out of juice.",
+    "How does a scientist freshen their breath? With experi-mints.",
+    "Why was the calendar so popular? Because it had so many dates!",
+    "What do you call a snowman with a six-pack? An abdominal snowman.",
+    "I asked the librarian if the library had any books on paranoia. She whispered, 'They're right behind you…'",
+    "I told my wife she should do more crunches. Now I’m sleeping on the couch.",
+    "I asked the gym instructor if he could teach me to do the splits. He said, 'How flexible are you?' I said, 'I can't make it on Tuesdays.'",
+    "What do you call an alligator in a vest? An investi-gator.",
+    "Why did the baker go to therapy? Because he kneaded it.",
+    "Why did the bicycle fall over? Because it was two-tired.",
+    "What did the fish say when he hit the wall? Dam.",
+    "I named my dog 'Five Miles' so I can say I walk Five Miles every day.",
+    "I told my suitcase that we weren't going on vacation this year. Now I have emotional baggage.",
+    "I have a fear of speed bumps, but I’m slowly getting over it.",
+    "I tried to take a picture of some fog, but I mist.",
+    "A guy walks into a bar… and says ‘ouch’.",
+    "Why do ducks have feathers? To cover their butt quacks."
+];
+
+// Start .joke or .jokes command
+if (wsmsg['text'].toLowerCase() === ".joke" || wsmsg['text'].toLowerCase() === ".jokes") {
+    let randomJoke = jokes[Math.floor(Math.random() * jokes.length)];
+    this._send(`{"stumble":"msg","text":"🤖 ${randomJoke}"}`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// Huge list of Chuck Norris facts
+const chuckNorrisFacts = [
+    "Chuck Norris counted to infinity. Twice.",
+    "When Chuck Norris enters a room, he doesn’t turn the lights on. He turns the dark off.",
+    "Chuck Norris can divide by zero.",
+    "Chuck Norris once won a game of Connect Four in three moves.",
+    "When Chuck Norris does a push-up, he isn’t lifting himself up, he’s pushing the Earth down.",
+    "Chuck Norris can hear sign language.",
+    "Chuck Norris can slam a revolving door.",
+    "Chuck Norris can unscramble an egg.",
+    "Death once had a near-Chuck-Norris experience.",
+    "Chuck Norris’ calendar goes straight from March 31st to April 2nd. No one fools Chuck Norris.",
+    "Chuck Norris can kill two stones with one bird.",
+    "Chuck Norris doesn’t do push-ups. He pushes the Earth down.",
+    "When Chuck Norris looks in a mirror, the mirror shatters. Because not even glass is dumb enough to get between Chuck Norris and Chuck Norris.",
+    "The dinosaurs looked at Chuck Norris the wrong way once. You know what happened to them.",
+    "Chuck Norris can strangle you with a cordless phone.",
+    "There is no theory of evolution, just a list of creatures Chuck Norris allows to live.",
+    "Chuck Norris once wrestled a bear… just to give it a fair fight.",
+    "Chuck Norris makes onions cry.",
+    "Chuck Norris can clap with one hand.",
+    "Chuck Norris once finished a game of Monopoly. In 5 minutes.",
+    "Superman wears Chuck Norris pajamas.",
+    "Chuck Norris can dribble a bowling ball.",
+    "When Chuck Norris enters a room, everyone applauds. Even the furniture.",
+    "Chuck Norris doesn't read books. He just stares at them until he gets the information he wants.",
+    "Chuck Norris' watch doesn’t tell time. It tells him when it’s time to roundhouse kick someone.",
+    "Chuck Norris can win a staring contest with the sun.",
+    "Chuck Norris once built a snowman… out of rain.",
+    "Chuck Norris' tears cure cancer. Too bad he has never cried.",
+    "Chuck Norris doesn’t use a GPS. He just declares where he is and the world adjusts accordingly.",
+    "If you spell ‘Chuck Norris’ in Scrabble, you win. Forever.",
+    "Chuck Norris can sneeze with his eyes open.",
+    "When Chuck Norris was born, he drove his mom home from the hospital.",
+    "Chuck Norris can build a snowman out of fire.",
+    "When the Boogeyman goes to sleep, he checks his closet for Chuck Norris.",
+    "Chuck Norris doesn't need a parachute when skydiving. The ground moves out of his way.",
+    "Chuck Norris doesn’t need a GPS. He decides where he is.",
+    "Chuck Norris doesn’t get brain freeze. He freezes the ice cream with his mind.",
+    "Chuck Norris can delete the Recycle Bin.",
+    "Ghosts sit around the campfire and tell Chuck Norris stories.",
+    "Chuck Norris can unscramble a Rubik’s Cube just by looking at it.",
+    "Chuck Norris' roundhouse kick is so fast, it broke the speed of light.",
+    "Chuck Norris once ordered a Big Mac at Burger King… and got one.",
+    "Chuck Norris once visited The Virgin Islands. Now they’re just called 'The Islands'.",
+    "Chuck Norris doesn't sleep. He waits.",
+    "Chuck Norris once roundhouse kicked someone so hard, his foot broke the time-space continuum.",
+    "Chuck Norris doesn’t get wet. Water gets Chuck Norris’d.",
+    "Chuck Norris can divide by zero.",
+    "If you spell ‘Chuck Norris’ in Morse code, it reads ‘Victory’."
+];
+
+// Start .chucknorris or .cn command
+if (wsmsg['text'].toLowerCase() === ".chucknorris" || wsmsg['text'].toLowerCase() === ".cn") {
+    let randomFact = chuckNorrisFacts[Math.floor(Math.random() * chuckNorrisFacts.length)];
+    this._send(`{"stumble":"msg","text":"${randomFact}"}`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
     // start char
     if (wsmsg['text'].toLowerCase() === ".char") {
         this._send('{"stumble":"msg","text": "https://i.imgur.com/WVqt3hx.gif"}');
