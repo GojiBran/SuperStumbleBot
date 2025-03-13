@@ -49,7 +49,7 @@ The bot features a dynamic **GojiBux** economy where users can earn, gamble, and
 - **Auto-Replies**:  
   - `ping` → `PONG`, `ding` → `DONG`, `gg` triggers random responses.  
   - Recognizes **slang** and **inside jokes** (`5-0`, `set`, `packed`, `MAMA`).  
-- **Easter Eggs & Fun Commands**: `.**********`, `.888`, `.88`, `.********`.  
+- **Easter Eggs & Fun Commands**: `.**********`, `.***`, `.**`, `.********`.  
 
 ### **5. Nickname & User Management**  
 - Stores **user nicknames** and info in `localStorage`.  
