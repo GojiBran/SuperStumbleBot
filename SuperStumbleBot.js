@@ -6777,7 +6777,7 @@ if (triggerDilfCommands.includes(wsmsg['text'].toLowerCase())) {
     }*/
 
 // Start snarfdilf (Costs 10k GBX, random image output)
-if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
+/*if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
     const handle = wsmsg['handle'];
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || "Someone";
@@ -6799,7 +6799,8 @@ if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
     // List of possible images
     const snarfdilfImages = [
         "https://i.imgur.com/RSZ7xzg.jpeg",
-        "https://i.imgur.com/5HSAo1l.jpeg"
+        "https://i.imgur.com/5HSAo1l.jpeg",
+        "https://i.imgur.com/oLAqMHS.jpeg"
     ];
     const randomImage = snarfdilfImages[Math.floor(Math.random() * snarfdilfImages.length)];
 
@@ -6809,6 +6810,51 @@ if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
     // Send payment confirmation after 1000ms
     setTimeout(() => {
         this._send(`{"stumble":"msg","text": "🤖 ${nickname} paid 💵 10,000 GBX for this snarfdilf masterpiece."}`);
+    }, 1000);
+}*/
+
+// Start snarfdilf (Costs 10k GBX, random image output)
+if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
+    const handle = wsmsg['handle'];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || "Someone";
+    const recipient = "jedisnarf"; // User who receives the money
+
+    if (!username) return; // Ensure the user is valid
+
+    const cost = 10_000; // Cost: 10,000 GBX
+    const userBalance = userBalances[username]?.balance || 0;
+
+    if (userBalance < cost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 10,000 GBX to access peak snarfdilf content. Get your GBX up!`);
+        return;
+    }
+
+    // Deduct 10,000 GBX from the user
+    userBalances[username].balance -= cost;
+
+    // Give 10,000 GBX to jedisnarf
+    if (!userBalances[recipient]) {
+        userBalances[recipient] = { balance: 0 }; // Ensure jedisnarf has an account
+    }
+    userBalances[recipient].balance += cost;
+
+    saveBalances();
+
+    // List of possible images
+    const snarfdilfImages = [
+        "https://i.imgur.com/RSZ7xzg.jpeg",
+        "https://i.imgur.com/5HSAo1l.jpeg",
+        "https://i.imgur.com/oLAqMHS.jpeg"
+    ];
+    const randomImage = snarfdilfImages[Math.floor(Math.random() * snarfdilfImages.length)];
+
+    // Send the image
+    this._send(`{"stumble":"msg","text": "${randomImage}"}`);
+
+    // Send payment confirmation after 1000ms
+    setTimeout(() => {
+        this._send(`{"stumble":"msg","text": "🤖 ${nickname} paid 💵 10,000 GBX for this snarfdilf masterpiece. ${recipient} received the payment."}`);
     }, 1000);
 }
 
