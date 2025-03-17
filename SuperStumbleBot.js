@@ -1868,7 +1868,7 @@ if (wsmsg["text"].toLowerCase() === ".distribute") {
     saveWeedStashes();
     localStorage.setItem("gojiGardenStash", JSON.stringify(gojiGardenStash));
 
-    respondWithMessage.call(this, `🌿 The harvest has been shared! Each user received **${perUserAmount.toLocaleString()}g** of weed from Goji's Garden!`);
+    respondWithMessage.call(this, `🌿 The harvest has been shared! Each user received ${perUserAmount.toLocaleString()}g of weed from Goji's Garden!`);
 }*/
 
 // 🕒 Cooldown storage for `.harvest`
@@ -1913,10 +1913,10 @@ if (wsmsg["text"].toLowerCase() === ".harvest") {
         response = `🚬 ${nickname} checked Goji’s Garden, but the plants were dry. No harvest this time!`;
     } else {
         const messages = [
-            `🌿 ${nickname} gathered a fresh batch from Goji’s Garden and stored **${grownPounds} lb** [${grownGrams.toLocaleString()}g] in WGH! 🌱`,
-            `🔥 ${nickname} just harvested **${grownPounds} lb** [${grownGrams.toLocaleString()}g] of premium bud from Goji’s Garden! Stored safely in WGH. 🌿`,
-            `💨 ${nickname} picked a lush crop from Goji’s Garden, adding **${grownPounds} lb** [${grownGrams.toLocaleString()}g] to WGH!`,
-            `🏡 The farm is thriving! ${nickname} harvested **${grownPounds} lb** [${grownGrams.toLocaleString()}g] from Goji’s Garden and stored it in WGH!`
+            `🌿 ${nickname} gathered a fresh batch from Goji’s Garden and stored ${grownPounds} lb [${grownGrams.toLocaleString()}g] in WGH! 🌱`,
+            `🔥 ${nickname} just harvested ${grownPounds} lb [${grownGrams.toLocaleString()}g] of premium bud from Goji’s Garden! Stored safely in WGH. 🌿`,
+            `💨 ${nickname} picked a lush crop from Goji’s Garden, adding ${grownPounds} lb [${grownGrams.toLocaleString()}g] to WGH!`,
+            `🏡 The farm is thriving! ${nickname} harvested ${grownPounds} lb [${grownGrams.toLocaleString()}g] from Goji’s Garden and stored it in WGH!`
         ];
         response = messages[Math.floor(Math.random() * messages.length)];
     }
@@ -1975,7 +1975,7 @@ if (wsmsg["text"].toLowerCase() === ".distribute") {
     saveWeedStashes();
     localStorage.setItem("wghBank", JSON.stringify(wghBank));
 
-    respondWithMessage.call(this, `🌿 **Distribution complete!** Each user received **${perUserAmount.toLocaleString()}g** of weed from WGH!`);
+    respondWithMessage.call(this, `🌿 Distribution complete! Each user received ${perUserAmount.toLocaleString()}g of weed from WGH!`);
 }
 
 // 💨 `.admin giveweed` - Give all users a specified amount of weed (default: 420g)
@@ -2605,7 +2605,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".do ")) {
 
     console.log(`[DO RECEIVED] ${username}: Typed = "${userInput}", Expected = "${word}", Current time = ${Date.now()}, Expires at = ${expiresAt}`);
 
-    // **Grace period check (adds 1 second buffer)**
+    // Grace period check (adds 1 second buffer)
     if (Date.now() > expiresAt + 1000) {
         console.log(`[EXPIRED CHECK] ${username} job expired before completing.`);
         delete userChallenges[username];
@@ -2643,9 +2643,9 @@ if (wsmsg['text'].toLowerCase() === ".economy") {
     const sellPrice = weedSellPrice.toLocaleString();
 
     const messages = [
-        `🏦 **LGH Bank Total:** ${totalLGH} GBX (Max: 1,000,000 GBX)`,
-        `🏦 **WGH Bank Total:** ${totalWGH} grams (Max: 50,000g)`,
-        `🔥 **Current Weed Prices:** Buy: ${buyPrice} GBX/gram | Sell: ${sellPrice} GBX/gram`
+        `🏦 LGH Bank Total: ${totalLGH} GBX`,
+        `🏦 WGH Bank Total: ${totalWGH} grams`,
+        `🔥 Current Weed Prices: Buy: ${buyPrice} GBX/gram | Sell: ${sellPrice} GBX/gram`
     ];
 
     messages.forEach((msg, index) => {
@@ -2671,7 +2671,7 @@ if (wsmsg["text"].toLowerCase() === ".topbux") {
         return;
     }
 
-    let leaderboard = "📊 **Top 10 GojiBux Holders** 💵\n";
+    let leaderboard = "📊 Top 10 GojiBux Holders 💵\n";
     sortedUsers.forEach(([username, data], index) => {
         const nickname = userNicknames[username]?.nickname || username;
         leaderboard += `${index + 1}. ${nickname} - 💵 ${data.balance.toLocaleString()} GBX\n`;
@@ -2691,7 +2691,7 @@ if (wsmsg["text"].toLowerCase() === ".topblk") {
         return;
     }
 
-    let leaderboard = "🏝️ **Top 10 Offshore Stashes** 💰\n";
+    let leaderboard = "🏝️ Top 10 Offshore Stashes 💰\n";
     sortedOffshoreUsers.forEach(([username, stash], index) => {
         const nickname = userNicknames[username]?.nickname || username;
         leaderboard += `${index + 1}. ${nickname} - 💵 ${stash.toLocaleString()} GBX hidden offshore\n`;
@@ -2716,7 +2716,7 @@ if (wsmsg["text"].toLowerCase() === ".topweed") {
         return;
     }
 
-    let leaderboard = "🌿 **Top 10 Weed Stashes**\n";
+    let leaderboard = "🌿 Top 10 Weed Stashes\n";
     sortedWeedUsers.forEach(([username, stash], index) => {
         const nickname = userNicknames[username]?.nickname || username;
         leaderboard += `${index + 1}. ${nickname} - 🌿 ${stash.toLocaleString()} grams\n`;
@@ -2789,7 +2789,7 @@ setInterval(updateStockPrices, 60000);
 
 // 📊 `.stocks` - Show stock prices
 if (wsmsg["text"].toLowerCase() === ".stocks") {
-    let stockMessage = "📈 **Current Stock Prices:**\n";
+    let stockMessage = "📈 Current Stock Prices:\n";
     for (const stock in stocks) {
         stockMessage += `💰 ${stock}: ${stocks[stock].price} GBX\n`;
     }
@@ -2883,7 +2883,7 @@ if (wsmsg["text"].toLowerCase() === ".mystocks") {
         return;
     }
 
-    let portfolioMessage = "📊 **Your Stock Portfolio:**\n";
+    let portfolioMessage = "📊 Your Stock Portfolio:\n";
     for (const stock in userStocks[username]) {
         portfolioMessage += `💰 ${stock}: ${userStocks[username][stock]} shares (${stocks[stock].price} GBX each)\n`;
     }
@@ -3143,7 +3143,7 @@ if (wsmsg["text"].toLowerCase() === ".spaget") {
 
     // 🍝 Funny Messages
     const messages = [
-        `🍝 ${nickname} just slurped up ${earnedSpaghetti} SPG!`,
+        `🍝 ${nickname} just scored ${earnedSpaghetti} SPG!`,
         `🍕 ${nickname} found ${earnedSpaghetti} SPG hidden under a pizza box!`,
         `🍜 ${nickname} cooked up ${earnedSpaghetti} SPG in a fine Italian restaurant!`,
         `🥖 ${nickname} just smuggled ${earnedSpaghetti} SPG out of Olive Garden!`,
@@ -3340,7 +3340,7 @@ if ([".pizza", ".pixxa"].includes(wsmsg["text"].toLowerCase())) {
 
     // 🍕 Funny Messages
     const messages = [
-        `🍕 ${nickname} just devoured ${earnedPizza} PZA!`,
+        `🍕 ${nickname} just scored ${earnedPizza} PZA!`,
         `🧀 ${nickname} swiped ${earnedPizza} PZA before the waiter noticed!`,
         `🔥 ${nickname} baked ${earnedPizza} PZA in a wood-fired oven!`,
         `🚗 ${nickname} got ${earnedPizza} PZA delivered, and they even remembered the garlic sauce!`,
@@ -3483,7 +3483,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".eatpizza")) {
     const userWeed = userWeedStashes[username] || 0;
     const stashedGBX = userStashes[username] || 0;
 
-    // **Fixed Success Rate: 5%**
+    // Fixed Success Rate: 5%
     let success = Math.random() < 0.05;
 
     if (success) {
@@ -3503,11 +3503,11 @@ if (wsmsg["text"].toLowerCase().startsWith(".eatpizza")) {
         userBalances[username].balance = Math.max(1, userBalance - lossAmount); // Don't go below 1 GBX
         lghBank += lossAmount; // Put lost GBX back into LGH Bank
 
-        // **NEW: Burn All Weed**
+        // NEW: Burn All Weed
         let weedBurned = userWeed;
         userWeedStashes[username] = 0; // Lose all weed (burned)
 
-        // **NEW: Burn 5-15% of Stashed GBX**
+        // NEW: Burn 5-15% of Stashed GBX
         const stashedLoss = Math.floor(stashedGBX * (Math.random() * 0.10 + 0.05)); // 5-15% burn
         userStashes[username] = Math.max(0, stashedGBX - stashedLoss); // Reduce stash
         saveUserStashes();
@@ -3656,19 +3656,19 @@ if (wsmsg["text"].toLowerCase() === ".dumpall") {
         return;
     }
 
-    // **Dump GojiBux**
+    // Dump GojiBux
     if (dumpedBux > 0) {
         lghBank += dumpedBux;
         userBalances[username].balance = 0;
     }
 
-    // **Dump Weed**
+    // Dump Weed
     if (dumpedWeed > 0) {
         wghBank += dumpedWeed;
         userWeedStashes[username] = 0;
     }
 
-    // **Dump Spaghetti**
+    // Dump Spaghetti
     if (dumpedSpaghetti > 0) {
         userSpaghettiStashes[username] = 0; // No global SPG storage, it just disappears
     }
@@ -3680,7 +3680,7 @@ if (wsmsg["text"].toLowerCase() === ".dumpall") {
     localStorage.setItem("lghBank", lghBank);
     localStorage.setItem("wghBank", wghBank);
 
-    // **Generate Random Funny Messages**
+    // Generate Random Funny Messages
     let messages = [`🗑️ ${nickname} just dumped everything they had!`];
 
     if (dumpedBux > 0) messages.push(`💵 ${nickname} donated ${dumpedBux.toLocaleString()} GBX to LGH Bank!`);
@@ -3799,7 +3799,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".extract")) {
     }
 
     const handle = wsmsg["handle"];
-    const user = userHandles[handle];  // **Now matching .jointroll and .myweed**
+    const user = userHandles[handle];  // Now matching .jointroll and .myweed
 
     if (!user) {
         respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
@@ -3988,7 +3988,7 @@ if (wsmsg["text"].toLowerCase() === ".adventure") {
     // Select a random scenario and choice
     const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
     const choice = scenario.choices[Math.floor(Math.random() * scenario.choices.length)];
-    let result = `**${scenario.name}**: ${scenario.description}\n\n👉 *${choice.text}*... `;
+    let result = `${scenario.name}: ${scenario.description}\n\n👉 *${choice.text}*... `;
 
     if (choice.reward.busted) {
         result += `🚔 BUSTED! ${nickname} lost ${Math.abs(choice.reward.gojiBux).toLocaleString()} GBX and is on a 5-minute cooldown.`;
@@ -4422,7 +4422,7 @@ if (wsmsg["text"].toLowerCase() === ".gojicoin") {
     saveBalances();
     localStorage.setItem("gojiCoinBalances", JSON.stringify(gojiCoinBalances));
 
-    respondWithMessage.call(this, `💎 ${nickname} just purchased a **GojiCoin**! **💰 Total: ${gojiCoinBalances[username]} GojiCoin(s).**`);
+    respondWithMessage.call(this, `💎 ${nickname} just purchased a GojiCoin! 💰 Total: ${gojiCoinBalances[username]} GojiCoin(s).`);
 }
 
 // 🏦 `.gojicoin balance` - Check total GojiCoins owned
@@ -4438,7 +4438,7 @@ if (wsmsg["text"].toLowerCase() === ".gojicoin balance") {
 
     const gojiCoins = gojiCoinBalances[username] || 0;
 
-    respondWithMessage.call(this, `💎 ${nickname}, you currently own **${gojiCoins.toLocaleString()} GojiCoin(s).**`);
+    respondWithMessage.call(this, `💎 ${nickname}, you currently own ${gojiCoins.toLocaleString()} GojiCoin(s).`);
 }
 
 // 🏆 `.topcoin` - Display the top GojiCoin holders
@@ -4456,10 +4456,10 @@ if (wsmsg["text"].toLowerCase() === ".topcoin") {
         .slice(0, 10); // Limit to top 10
 
     let leaderboard = sortedUsers.map(([user, coins], index) =>
-        `#${index + 1} - @${user}: **💎 ${coins.toLocaleString()} GojiCoin(s)**`
+        `#${index + 1} - @${user}: 💎 ${coins.toLocaleString()} GojiCoin(s)`
     ).join("\n");
 
-    respondWithMessage.call(this, `🏆 **Top GojiCoin Holders:**\n${leaderboard}`);
+    respondWithMessage.call(this, `🏆 Top GojiCoin Holders:\n${leaderboard}`);
 }
 
 // 🏆 Treat Goji Command: CashApp, GBX & WGH Transfers, and Flex Messages
@@ -4509,34 +4509,34 @@ if (wsmsg['text'].toLowerCase() === ".treat") {
 
     // 🎲 Randomized treat responses
     let treatResponses = [
-        `🍕 ${nickname} hooked Goji up with a fresh slice and sent **${transferGBX}GBX + ${transferWGH}g WGH**!`,
-        `☕ ${nickname} fueled Goji’s grind with coffee and dropped **${transferGBX}GBX + ${transferWGH}g WGH**!`,
-        `🔥 ${nickname} blessed Goji with some Mendo Dope and **${transferGBX}GBX + ${transferWGH}g WGH**!`,
-        `💰 ${nickname} just cashed out **${transferGBX}GBX + ${transferWGH}g WGH** to Goji! Respect!`,
-        `🌱 ${nickname} paid tribute to Goji with **${transferGBX}GBX + ${transferWGH}g WGH**! 🔥`,
-        `🚀 Goji’s stash just got a boost! **${nickname} sent ${transferGBX}GBX + ${transferWGH}g WGH**!`,
-        `💨 ${nickname} passed a fat bag of **${transferGBX}GBX + ${transferWGH}g WGH** to Goji!`,
-        `🏆 Elite donor move: ${nickname} dropped **${transferGBX}GBX + ${transferWGH}g WGH** in Goji’s wallet!`,
-        `🍃 ${nickname} shared the love—**${transferGBX}GBX + ${transferWGH}g WGH** now in Goji’s hands!`,
-        `🛠️ Support unlocked! **${nickname} sent ${transferGBX}GBX + ${transferWGH}g WGH** to Goji!`,
-        `💳 ${nickname} swiped the card and **${transferGBX}GBX + ${transferWGH}g WGH** is now Goji’s!`,
-        `🎁 ${nickname} just sent Goji a surprise gift: **${transferGBX}GBX + ${transferWGH}g WGH**!`,
-        `🛫 ${nickname} just airdropped **${transferGBX}GBX + ${transferWGH}g WGH** straight into Goji’s stash!`,
-        `💼 ${nickname} sent Goji a briefcase full of **${transferGBX}GBX + ${transferWGH}g WGH**!`,
-        `🔥 Goji just got a direct deposit—courtesy of ${nickname}! **${transferGBX}GBX + ${transferWGH}g WGH** secured!`,
-        `🚛 ${nickname} pulled up with a truckload—**${transferGBX}GBX + ${transferWGH}g WGH** added to Goji’s vault!`,
-        `⚡ ${nickname} made it rain with **${transferGBX}GBX + ${transferWGH}g WGH**! Goji’s powered up!`,
-        `🦍 ${nickname} went full gorilla mode and gifted **${transferGBX}GBX + ${transferWGH}g WGH** to Goji!`
+        `🍕 ${nickname} hooked Goji up with a fresh slice and sent ${transferGBX}GBX + ${transferWGH}g WGH!`,
+        `☕ ${nickname} fueled Goji’s grind with coffee and dropped ${transferGBX}GBX + ${transferWGH}g WGH!`,
+        `🔥 ${nickname} blessed Goji with some Mendo Dope and ${transferGBX}GBX + ${transferWGH}g WGH!`,
+        `💰 ${nickname} just cashed out ${transferGBX}GBX + ${transferWGH}g WGH to Goji! Respect!`,
+        `🌱 ${nickname} paid tribute to Goji with ${transferGBX}GBX + ${transferWGH}g WGH! 🔥`,
+        `🚀 Goji’s stash just got a boost! ${nickname} sent ${transferGBX}GBX + ${transferWGH}g WGH!`,
+        `💨 ${nickname} passed a fat bag of ${transferGBX}GBX + ${transferWGH}g WGH to Goji!`,
+        `🏆 Elite donor move: ${nickname} dropped ${transferGBX}GBX + ${transferWGH}g WGH in Goji’s wallet!`,
+        `🍃 ${nickname} shared the love—${transferGBX}GBX + ${transferWGH}g WGH now in Goji’s hands!`,
+        `🛠️ Support unlocked! ${nickname} sent ${transferGBX}GBX + ${transferWGH}g WGH to Goji!`,
+        `💳 ${nickname} swiped the card and ${transferGBX}GBX + ${transferWGH}g WGH is now Goji’s!`,
+        `🎁 ${nickname} just sent Goji a surprise gift: ${transferGBX}GBX + ${transferWGH}g WGH!`,
+        `🛫 ${nickname} just airdropped ${transferGBX}GBX + ${transferWGH}g WGH straight into Goji’s stash!`,
+        `💼 ${nickname} sent Goji a briefcase full of ${transferGBX}GBX + ${transferWGH}g WGH!`,
+        `🔥 Goji just got a direct deposit—courtesy of ${nickname}! ${transferGBX}GBX + ${transferWGH}g WGH secured!`,
+        `🚛 ${nickname} pulled up with a truckload—${transferGBX}GBX + ${transferWGH}g WGH added to Goji’s vault!`,
+        `⚡ ${nickname} made it rain with ${transferGBX}GBX + ${transferWGH}g WGH! Goji’s powered up!`,
+        `🦍 ${nickname} went full gorilla mode and gifted ${transferGBX}GBX + ${transferWGH}g WGH to Goji!`
     ];
 
-    // 🚫 If the user had **nothing** to give, adjust the response
+    // 🚫 If the user had nothing to give, adjust the response
     if (transferGBX === 0 && transferWGH === 0) {
         treatResponses = [
-            `💸 ${nickname} wanted to treat Goji but had **nothing to give**—it’s the thought that counts!`,
+            `💸 ${nickname} wanted to treat Goji but had nothing to give—it’s the thought that counts!`,
             `🚫 ${nickname} checked their pockets… empty! No GBX or WGH to send.`,
-            `🤖 ${nickname} tried to treat Goji but has **zero funds**. Maybe next time!`,
-            `💀 ${nickname} attempted generosity but their wallet is **drier than a desert**. No GBX, no WGH!`,
-            `🍕 ${nickname} tried to treat Goji but is **broke AF**—at least they tried!`
+            `🤖 ${nickname} tried to treat Goji but has zero funds. Maybe next time!`,
+            `💀 ${nickname} attempted generosity but their wallet is drier than a desert. No GBX, no WGH!`,
+            `🍕 ${nickname} tried to treat Goji but is broke AF—at least they tried!`
         ];
     }
 
@@ -5422,7 +5422,7 @@ if (wsmsg['text'].toLowerCase().startsWith(".owner")) {
     const userBalance = userBalances[username]?.balance || 0;
 
     if (userBalance < cost) {
-        respondWithMessage.call(this, `🤖 ${nickname}, you need **1,000,000 GBX** to become the room owner. Keep grinding, peasant! 💸`);
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 1,000,000 GBX to become the room owner. Keep grinding, peasant! 💸`);
         return;
     }
 
@@ -5440,7 +5440,7 @@ if (wsmsg['text'].toLowerCase().startsWith(".owner")) {
     setTimeout(() => {
         this._send(JSON.stringify({
             stumble: "msg",
-            text: `🤖 Just kidding. You literally just burned **1,000,000 GBX** for NOTHING. 😂💸`
+            text: `🤖 Just kidding. You literally just burned 1,000,000 GBX for NOTHING. 😂💸`
         }));
     }, 2000);
 }
