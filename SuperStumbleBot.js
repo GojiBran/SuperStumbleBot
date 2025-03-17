@@ -1051,14 +1051,14 @@ if (wsmsg["text"].toLowerCase().startsWith(".steal")) {
             return;
         }
 
-        if (!userBalances[victimUsername] || (userBalances[victimUsername].balance || 0) < 2) {
-            respondWithMessage.call(this, `🤖 ${victimUsername} doesn't have enough GojiBux to steal.`);
+        if (!userBalances[victimUsername] || (userBalances[victimUsername].balance || 0) < 1000) {
+            respondWithMessage.call(this, `🤖 ${victimUsername} doesn't have enough GojiBux to steal from.`);
             return;
         }
     } else {
         // No target specified, pick a random victim
         const potentialVictims = Object.keys(userBalances).filter(
-            (username) => username !== thiefUsername && (userBalances[username].balance || 0) > 1
+            (username) => username !== thiefUsername && (userBalances[username].balance || 0) >= 1000
         );
 
         if (potentialVictims.length === 0) {
@@ -2657,7 +2657,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".do ")) {
 
 
 // 💹 .economy
-if (wsmsg['text'].toLowerCase() === ".economy") {
+/*if (wsmsg['text'].toLowerCase() === ".economy") {
     const totalLGH = lghBank.toLocaleString();
     const totalWGH = wghBank.toLocaleString();
     const buyPrice = weedBuyPrice.toLocaleString();
@@ -2674,7 +2674,7 @@ if (wsmsg['text'].toLowerCase() === ".economy") {
             respondWithMessage.call(this, msg);
         }, index * 1000);
     });
-}
+}*/
 
 // 🏛 `.lgh` - Show the total GojiBux stored in the LGH Bank
 if (wsmsg["text"].toLowerCase() === ".lgh") {
@@ -2747,7 +2747,7 @@ if (wsmsg["text"].toLowerCase() === ".topweed") {
 }
 
 // 📊 `.circulation` - Show total circulating economy stats (split into 2 messages)
-if (wsmsg["text"].toLowerCase() === ".circulation") {
+/*if (wsmsg["text"].toLowerCase() === ".circulation") {
     // Calculate total GojiBux in circulation
     const totalUserBalances = Object.values(userBalances).reduce((sum, data) => sum + (data.balance || 0), 0);
     const totalOffshore = Object.values(userStashes).reduce((sum, stash) => sum + (stash || 0), 0);
@@ -2779,9 +2779,54 @@ if (wsmsg["text"].toLowerCase() === ".circulation") {
             `🚬 Total Joints Rolled: ${totalJoints.toLocaleString()}`
         );
     }, 1000);
+}*/
+
+// 📊 `.economy` - Show total economy stats, including circulation and weed prices
+if (wsmsg["text"].toLowerCase() === ".economy" || wsmsg["text"].toLowerCase() === ".circulation") {
+    // Calculate total GojiBux in circulation
+    const totalUserBalances = Object.values(userBalances).reduce((sum, data) => sum + (data.balance || 0), 0);
+    const totalOffshore = Object.values(userStashes).reduce((sum, stash) => sum + (stash || 0), 0);
+    const totalGbxSupply = lghBank + totalUserBalances + totalOffshore;
+
+    // Calculate total weed in circulation
+    const totalUserWeed = Object.values(userWeedStashes).reduce((sum, stash) => sum + (stash || 0), 0);
+    const totalWeedSupply = wghBank + totalUserWeed;
+
+    // Calculate total joints in circulation
+    const totalJoints = Object.values(userJointStashes).reduce((sum, stash) => sum + (stash || 0), 0);
+
+    // Get current weed prices
+    const buyPrice = weedBuyPrice.toLocaleString();
+    const sellPrice = weedSellPrice.toLocaleString();
+
+    // Send first part (GojiBux data)
+    respondWithMessage.call(this,
+        `📊 Total Economy Circulation (GojiBux):\n` +
+        `💵 Total GojiBux in Circulation: ${totalGbxSupply.toLocaleString()} GBX\n` +
+        `🏦 LGH Bank Holdings: ${lghBank.toLocaleString()} GBX\n` +
+        `👤 Total User Balances: ${totalUserBalances.toLocaleString()} GBX\n` +
+        `🏝️ Total Offshore Stash: ${totalOffshore.toLocaleString()} GBX`
+    );
+
+    // Send second part (Weed & Joints data) after 1-second delay
+    setTimeout(() => {
+        respondWithMessage.call(this,
+            `🌿 Total Economy Circulation (Weed & Joints):\n` +
+            `🌿 Total Weed in Circulation: ${totalWeedSupply.toLocaleString()} grams\n` +
+            `🏦 WGH Bank Holdings: ${wghBank.toLocaleString()} grams\n` +
+            `👤 Total User Weed Stashes: ${totalUserWeed.toLocaleString()} grams\n` +
+            `🚬 Total Joints Rolled: ${totalJoints.toLocaleString()}`
+        );
+    }, 1000);
+
+    // Send third part (Weed prices) after 2-second delay
+    setTimeout(() => {
+        respondWithMessage.call(this,
+            `💹 Current Weed Prices:\n` +
+            `🔥 Buy: ${buyPrice} GBX/gram | Sell: ${sellPrice} GBX/gram`
+        );
+    }, 2000);
 }
-
-
 
 // STONKS STONKS STONKS
 
@@ -4270,6 +4315,27 @@ if (wsmsg["text"].toLowerCase().startsWith(".balance") || wsmsg["text"].toLowerC
         `🗝️ Hidden: ${hiddenWeed.toLocaleString()}g\n` +
         `🥖 Joints: ${joints.toLocaleString()}`
     );
+}
+
+// 🥖 `.topjoints` - Display the top users with the most joints
+if (wsmsg["text"].toLowerCase() === ".topjoints") {
+    const sortedUsers = Object.entries(userJointStashes)
+        .sort((a, b) => (b[1] || 0) - (a[1] || 0))
+        .filter(([username, stash]) => stash > 0); // Ensure only users with joints are shown
+
+    if (sortedUsers.length === 0) {
+        respondWithMessage.call(this, "🤖 Nobody has any joints to flex.");
+        return;
+    }
+
+    let leaderboard = "🥖 Top Joint Hoarders 🥖\n";
+
+    sortedUsers.slice(0, 10).forEach(([username, stash], index) => {
+        const nickname = userNicknames[username]?.nickname || username;
+        leaderboard += `#${index + 1} - ${nickname}: ${stash.toLocaleString()} Joints\n`;
+    });
+
+    respondWithMessage.call(this, leaderboard.trim());
 }
 
 if (wsmsg["text"].toLowerCase() === ".top" || wsmsg["text"].toLowerCase() === ".leaderboard") {
