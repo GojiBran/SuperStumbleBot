@@ -1873,7 +1873,7 @@ if (wsmsg["text"].toLowerCase() === ".distribute") {
 
 // 🕒 Cooldown storage for `.harvest`
 let lastHarvestTime = JSON.parse(localStorage.getItem("lastHarvestTime")) || {};
-let wghBank = JSON.parse(localStorage.getItem("wghBank")) || 10000; // WGH storage (Weed Global Holdings)
+//let wghBank = JSON.parse(localStorage.getItem("wghBank")) || 10000; // WGH storage (Weed Global Holdings)
 
 // 💰 `.harvest` - Collect weed from Goji’s Garden and store it in WGH (30-minute cooldown)
 if (wsmsg["text"].toLowerCase() === ".harvest") {
