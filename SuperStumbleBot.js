@@ -604,7 +604,7 @@ function saveBalances() {
 }
 
 // 🏦 `.mybux` - Display the user's GojiBux balance
-if (wsmsg["text"].toLowerCase() === ".mybux") {
+/*if (wsmsg["text"].toLowerCase() === ".mybux") {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
@@ -615,6 +615,27 @@ if (wsmsg["text"].toLowerCase() === ".mybux") {
     }
 
     const balance = userBalances[username]?.balance || 1;
+
+    respondWithMessage.call(this, `🤖 ${nickname}, your GojiBux balance is 💵 ${balance.toLocaleString()} GBX.`);
+}*/
+
+// 🏦 `.mybux` - Display the user's GojiBux balance
+if (wsmsg["text"].toLowerCase() === ".mybux") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    if (!username) {
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        return;
+    }
+
+    if (!(username in userBalances)) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you don't have a GojiBux balance yet.`);
+        return;
+    }
+
+    const balance = userBalances[username].balance;
 
     respondWithMessage.call(this, `🤖 ${nickname}, your GojiBux balance is 💵 ${balance.toLocaleString()} GBX.`);
 }
@@ -4235,7 +4256,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".balance") || wsmsg["text"].toLowerC
         return;
     }
 
-    const balance = userBalances[targetUsername]?.balance || 1; // GojiBux balance
+    const balance = userBalances[targetUsername]?.balance || 0; // GojiBux balance
     const offshore = userStashes[targetUsername] || 0; // Offshore stash
     const weed = userWeedStashes[targetUsername] || 0; // Weed stash
     const hiddenWeed = userHiddenWeed[targetUsername] || 0; // Hidden weed stash
