@@ -2285,7 +2285,7 @@ setInterval(() => {
 }, 600000); // Runs every 10 minutes (600,000ms)*/
 
 // 🎰 `.gamble AMOUNT` or `.bet AMOUNT` - Bet GojiBux for a chance to win!
-if (wsmsg["text"].toLowerCase().startsWith(".gamble ") || wsmsg["text"].toLowerCase().startsWith(".bet ")) {
+/*if (wsmsg["text"].toLowerCase().startsWith(".gamble ") || wsmsg["text"].toLowerCase().startsWith(".bet ")) {
     const args = wsmsg["text"].split(" ");
     const betInput = args[1]?.toLowerCase();
     const handle = wsmsg["handle"];
@@ -2331,6 +2331,76 @@ if (wsmsg["text"].toLowerCase().startsWith(".gamble ") || wsmsg["text"].toLowerC
         lostToBank = Math.abs(winnings);
         resultMessage = `😐 Oof! ${nickname} lost half their bet. -${lostToBank.toLocaleString()} GBX.`;
     } else { // 60% chance - Lose everything (Full amount goes to LGH Bank)
+        winnings = -betAmount;
+        lostToBank = Math.abs(winnings);
+        resultMessage = `💸 Tough luck! ${nickname} lost their entire bet of ${betAmount.toLocaleString()} GBX. 😭`;
+    }
+
+    // Update player balance
+    userBalances[username].balance += winnings;
+
+    // Add lost money to LGH Bank
+    if (lostToBank > 0) {
+        lghBank += lostToBank;
+        localStorage.setItem("lghBank", lghBank.toString());
+    }
+
+    saveBalances();
+
+    // Send result message
+    respondWithMessage.call(this, resultMessage);
+}*/
+
+// 🎰 `.gamble AMOUNT` or `.bet AMOUNT` - Bet GojiBux for a chance to win!
+if (wsmsg["text"].toLowerCase().startsWith(".gamble ") || wsmsg["text"].toLowerCase().startsWith(".bet ")) {
+    const args = wsmsg["text"].split(" ");
+    const betInput = args[1]?.toLowerCase();
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    if (!username) {
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        return;
+    }
+
+    let betAmount;
+    if (betInput === "max" || betInput === "all") {
+        betAmount = userBalances[username].balance; // Bet entire balance
+    } else {
+        betAmount = parseInt(betInput);
+    }
+
+    if (isNaN(betAmount) || betAmount <= 0) {
+        respondWithMessage.call(this, "❌ Invalid amount! Example: `.gamble 500` or `.gamble max` to go all in.");
+        return;
+    }
+
+    if (userBalances[username].balance < betAmount) {
+        respondWithMessage.call(this, `💸 Not enough GojiBux! You only have ${userBalances[username].balance.toLocaleString()} GBX.`);
+        return;
+    }
+
+    // 🎲 Adjusted gambling probabilities (Higher Wins!)
+    const roll = Math.random();
+    let winnings = 0;
+    let lostToBank = 0;
+    let resultMessage = "";
+
+    if (roll < 0.02) { // 2% chance - JACKPOT (5x payout)
+        winnings = betAmount * 4;
+        resultMessage = `🎉 JACKPOT! ${nickname} turned ${betAmount.toLocaleString()} GBX into ${(winnings + betAmount).toLocaleString()} GBX! 🎰💰`;
+    } else if (roll < 0.15) { // 13% chance - BIG WIN (3x payout)
+        winnings = betAmount * 2;
+        resultMessage = `🔥 BIG WIN! ${nickname} turned ${betAmount.toLocaleString()} GBX into ${(winnings + betAmount).toLocaleString()} GBX! 🤑`;
+    } else if (roll < 0.35) { // 20% chance - Standard win (2x payout)
+        winnings = betAmount;
+        resultMessage = `✅ Nice win! ${nickname} doubled their bet and now has ${(winnings + betAmount).toLocaleString()} GBX! 💰`;
+    } else if (roll < 0.50) { // 15% chance - Lose 50%
+        winnings = -Math.floor(betAmount / 2);
+        lostToBank = Math.abs(winnings);
+        resultMessage = `😬 Small loss! ${nickname} lost half their bet. -${lostToBank.toLocaleString()} GBX.`;
+    } else { // 50% chance - Lose everything
         winnings = -betAmount;
         lostToBank = Math.abs(winnings);
         resultMessage = `💸 Tough luck! ${nickname} lost their entire bet of ${betAmount.toLocaleString()} GBX. 😭`;
