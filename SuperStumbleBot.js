@@ -606,8 +606,11 @@ if (wsmsg["text"].toLowerCase() === ".gojibux") {
         return;
     }
 
-    if (!userBalances[username]) {
+    /*if (!userBalances[username]) {
         userBalances[username] = { balance: 1 }; // Ensure all users start with 1 GBX
+    }*/
+    if (userBalances[username] == null || userBalances[username].balance == null) {
+        userBalances[username] = { balance: 0 }; // Ensure all users start at 0 if not defined
     }
 
     const now = Date.now();
