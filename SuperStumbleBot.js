@@ -3965,7 +3965,7 @@ if (wsmsg["text"].toLowerCase() === ".burn") {
 }
 
 // 🗑️ `.loot` - Scavenge for random economy items, with jackpots and police busts!
-if (wsmsg["text"].toLowerCase() === ".loot") {
+/*if (wsmsg["text"].toLowerCase() === ".loot") {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
@@ -4074,7 +4074,7 @@ if (wsmsg["text"].toLowerCase() === ".loot") {
 
     // Send message to chat
     respondWithMessage.call(this, lootMessage + bustMessage);
-}
+}*/
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
