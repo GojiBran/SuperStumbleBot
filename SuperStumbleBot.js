@@ -2133,7 +2133,7 @@ if (wsmsg["text"].toLowerCase() === ".topblk") {
     let leaderboard = "🏝️ Top 10 Offshore Stashes 💰\n";
     sortedOffshoreUsers.forEach(([username, stash], index) => {
         const nickname = userNicknames[username]?.nickname || username;
-        leaderboard += `${index + 1}. ${nickname} - 💵 ${stash.toLocaleString()} GBX hidden offshore\n`;
+        leaderboard += `${index + 1}. ${nickname} - 💵 ${stash.toLocaleString()} GBX\n`;
     });
 
     respondWithMessage.call(this, leaderboard.trim());
