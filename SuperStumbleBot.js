@@ -4289,7 +4289,8 @@ if (wsmsg["text"].toLowerCase() === ".top" || wsmsg["text"].toLowerCase() === ".
 
             if (value > 0) {
                 const nickname = userNicknames[username]?.nickname || username;
-                leaderboard += `${emoji} ${nickname} (${username}) - ${value.toLocaleString()} ${unit}\n`;
+                //leaderboard += `${emoji} ${nickname} (${username}) - ${value.toLocaleString()} ${unit}\n`;
+                leaderboard += `${emoji} ${username} - ${value.toLocaleString()} ${unit}\n`;
             }
         }
     });
@@ -4332,7 +4333,8 @@ if (wsmsg["text"].toLowerCase() === ".topbux") {
     let leaderboard = "📊 Top 10 GojiBux Holders 💵\n";
     sortedUsers.forEach(([username, data], index) => {
         const nickname = userNicknames[username]?.nickname || username;
-        leaderboard += `${index + 1}. ${nickname} (${username}) - 💵 ${data.balance.toLocaleString()} GBX\n`;
+        //leaderboard += `${index + 1}. ${nickname} (${username}) - 💵 ${data.balance.toLocaleString()} GBX\n`;
+        leaderboard += `${index + 1}. ${username} - 💵 ${data.balance.toLocaleString()} GBX\n`;
     });
 
     respondWithMessage.call(this, leaderboard.trim());
@@ -4352,7 +4354,8 @@ if (wsmsg["text"].toLowerCase() === ".topblk") {
     let leaderboard = "🏝️ Top 10 Stashes 💰\n";
     sortedOffshoreUsers.forEach(([username, stash], index) => {
         const nickname = userNicknames[username]?.nickname || username;
-        leaderboard += `${index + 1}. ${nickname} (${username}) - 💵 ${stash.toLocaleString()} GBX\n`;
+        //leaderboard += `${index + 1}. ${nickname} (${username}) - 💵 ${stash.toLocaleString()} GBX\n`;
+        leaderboard += `${index + 1}. ${username} - 💵 ${stash.toLocaleString()} GBX\n`;
     });
 
     respondWithMessage.call(this, leaderboard.trim());
@@ -4372,7 +4375,8 @@ if (wsmsg["text"].toLowerCase() === ".topweed") {
     let leaderboard = "🌿 Top 10 Weed Stashes\n";
     sortedWeedUsers.forEach(([username, stash], index) => {
         const nickname = userNicknames[username]?.nickname || username;
-        leaderboard += `${index + 1}. ${nickname} (${username}) - 🌿 ${stash.toLocaleString()} grams\n`;
+        //leaderboard += `${index + 1}. ${nickname} (${username}) - 🌿 ${stash.toLocaleString()} grams\n`;
+        leaderboard += `${index + 1}. ${username} - 🌿 ${stash.toLocaleString()} grams\n`;
     });
 
     respondWithMessage.call(this, leaderboard.trim());
@@ -4393,7 +4397,8 @@ if (wsmsg["text"].toLowerCase() === ".topjoints") {
 
     sortedUsers.slice(0, 10).forEach(([username, stash], index) => {
         const nickname = userNicknames[username]?.nickname || username;
-        leaderboard += `#${index + 1} - ${nickname} (${username}): ${stash.toLocaleString()} Joints\n`;
+        //leaderboard += `#${index + 1} - ${nickname} (${username}): ${stash.toLocaleString()} Joints\n`;
+        leaderboard += `#${index + 1} - ${username}: ${stash.toLocaleString()} Joints\n`;
     });
 
     respondWithMessage.call(this, leaderboard.trim());
@@ -4412,7 +4417,8 @@ if (wsmsg["text"].toLowerCase() === ".topspaget") {
     let leaderboard = "🍝 Top 10 Spaghetti Hoarders\n";
     sortedUsers.forEach(([username, stash], index) => {
         const nickname = userNicknames[username]?.nickname || username;
-        leaderboard += `${index + 1}. ${nickname} (${username}) - 🍝 ${stash.toLocaleString()} SPG\n`;
+        //leaderboard += `${index + 1}. ${nickname} (${username}) - 🍝 ${stash.toLocaleString()} SPG\n`;
+        leaderboard += `${index + 1}. ${username} - 🍝 ${stash.toLocaleString()} SPG\n`;
     });
 
     respondWithMessage.call(this, leaderboard.trim());
@@ -4431,7 +4437,8 @@ if (wsmsg["text"].toLowerCase() === ".toppizza") {
     let leaderboard = "🍕 Top 10 Pizza Hoarders\n";
     sortedUsers.forEach(([username, stash], index) => {
         const nickname = userNicknames[username]?.nickname || username;
-        leaderboard += `${index + 1}. ${nickname} (${username}) - 🍕 ${stash.toLocaleString()} PZA\n`;
+        //leaderboard += `${index + 1}. ${nickname} (${username}) - 🍕 ${stash.toLocaleString()} PZA\n`;
+        leaderboard += `${index + 1}. ${username} - 🍕 ${stash.toLocaleString()} PZA\n`;
     });
 
     respondWithMessage.call(this, leaderboard.trim());
@@ -4451,7 +4458,8 @@ if (wsmsg["text"].toLowerCase() === ".leastbux") {
     let leaderboard = "💸 Bottom 10 GojiBux Holders 💀\n";
     sortedUsers.forEach(([username, data], index) => {
         const nickname = userNicknames[username]?.nickname || username;
-        leaderboard += `${index + 1}. ${nickname} (${username}) - 💸 ${data.balance.toLocaleString()} GBX\n`;
+        //leaderboard += `${index + 1}. ${nickname} (${username}) - 💸 ${data.balance.toLocaleString()} GBX\n`;
+        leaderboard += `${index + 1}. ${username} - 💸 ${data.balance.toLocaleString()} GBX\n`;
     });
 
     respondWithMessage.call(this, leaderboard.trim());
@@ -4471,7 +4479,8 @@ if (wsmsg["text"].toLowerCase() === ".leastweed") {
     let leaderboard = "🌱 Bottom 10 Weed Stashes (Drier than a drought!)\n";
     sortedWeedUsers.forEach(([username, stash], index) => {
         const nickname = userNicknames[username]?.nickname || username;
-        leaderboard += `${index + 1}. ${nickname} (${username}) - 🌱 ${stash.toLocaleString()} grams\n`;
+        //leaderboard += `${index + 1}. ${nickname} (${username}) - 🌱 ${stash.toLocaleString()} grams\n`;
+        leaderboard += `${index + 1}. ${username} - 🌱 ${stash.toLocaleString()} grams\n`;
     });
 
     respondWithMessage.call(this, leaderboard.trim());
