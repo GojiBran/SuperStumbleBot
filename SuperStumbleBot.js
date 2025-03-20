@@ -2848,8 +2848,57 @@ if (wsmsg["text"].toLowerCase().startsWith(".eatpizza")) {
 //-----------------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+// 🍝🍕 Global Food Storage (Per-user)
+//let userSpaghettiStashes = JSON.parse(localStorage.getItem("userSpaghettiStashes")) || {};
+//let userPizzaStashes = JSON.parse(localStorage.getItem("userPizzaStashes")) || {};
+
+// 🍝🍕 Last Cook Claim Time (Per-user)
+let lastCookClaim = JSON.parse(localStorage.getItem("lastCookClaim")) || {};
+
+if (wsmsg["text"].toLowerCase() === ".cook") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const now = Date.now();
+    const cooldown = 30 * 60 * 1000; // 30-minute cooldown
+
+    if (!username) {
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        return;
+    }
+
+    // Check cooldown
+    if (lastCookClaim[username] && now - lastCookClaim[username] < cooldown) {
+        const remaining = Math.ceil((cooldown - (now - lastCookClaim[username])) / 60000);
+        respondWithMessage.call(this, `⏳ ${nickname}, your kitchen is on cooldown! You can cook again in ${remaining} minutes.`);
+        return;
+    }
+
+    // Earn 1-20 SPG and 1-20 PZA
+    const earnedSpaghetti = Math.floor(Math.random() * 20) + 1;
+    const earnedPizza = Math.floor(Math.random() * 20) + 1;
+    userSpaghettiStashes[username] = (userSpaghettiStashes[username] || 0) + earnedSpaghetti;
+    userPizzaStashes[username] = (userPizzaStashes[username] || 0) + earnedPizza;
+    lastCookClaim[username] = now;
+
+    // Save
+    localStorage.setItem("userSpaghettiStashes", JSON.stringify(userSpaghettiStashes));
+    localStorage.setItem("userPizzaStashes", JSON.stringify(userPizzaStashes));
+    localStorage.setItem("lastCookClaim", JSON.stringify(lastCookClaim));
+
+    // 🍕🍝 Funny Messages
+    const messages = [
+        `🔥 ${nickname} just cooked up a feast! +${earnedSpaghetti} SPG & +${earnedPizza} PZA!`,
+        `👨‍🍳 ${nickname} whipped up a delicious meal! +${earnedSpaghetti} SPG & +${earnedPizza} PZA!`,
+        `🍕🍝 ${nickname} went full Italian! +${earnedSpaghetti} SPG & +${earnedPizza} PZA!`,
+        `🛵 ${nickname} got a surprise delivery! +${earnedSpaghetti} SPG & +${earnedPizza} PZA!`,
+        `🥖 ${nickname} raided the Olive Garden kitchen! +${earnedSpaghetti} SPG & +${earnedPizza} PZA!`
+    ];
+    respondWithMessage.call(this, messages[Math.floor(Math.random() * messages.length)]);
+}
+
 // 🕒 Cooldown storage for `.bankrob`
-let lastBankRobTime = JSON.parse(localStorage.getItem("lastBankRobTime")) || {};
+/*let lastBankRobTime = JSON.parse(localStorage.getItem("lastBankRobTime")) || {};
 
 // 💥 `.bankrob` - Attempt to rob the LGH Bank (Static 5% Success & Brutal Failure)
 if (wsmsg["text"].toLowerCase() === ".bankrob") {
@@ -2944,6 +2993,127 @@ if (wsmsg["text"].toLowerCase() === ".bankrob") {
         }
         if (userBalances[username].balance === 1) {
             failureMessage += `\n💀 ${nickname} just lost EVERYTHING. Back to square one!`;
+        }
+
+        respondWithMessage.call(this, failureMessage);
+    }
+}*/
+
+// 🕒 Cooldown storage for `.bankrob`
+let lastBankRobTime = JSON.parse(localStorage.getItem("lastBankRobTime")) || {};
+
+// 💰 `.bankrob` - Attempt to rob the LGH Bank (55-75% Success, Balanced Failures)
+if (wsmsg["text"].toLowerCase() === ".bankrob") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    if (!username) {
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        return;
+    }
+
+    // Cooldown check (2 minutes)
+    const now = Date.now();
+    const lastRobbery = lastBankRobTime[username] || 0;
+    const cooldownTime = 2 * 60 * 1000; // 2 minutes in milliseconds
+
+    if (now - lastRobbery < cooldownTime) {
+        const remaining = Math.ceil((cooldownTime - (now - lastRobbery)) / 1000);
+        respondWithMessage.call(this, `⏳ ${nickname}, you must wait ${remaining} seconds before attempting another bank robbery.`);
+        return;
+    }
+
+    if (lghBank < 100) {
+        respondWithMessage.call(this, "🏦 LGH Bank is too empty to rob!");
+        return;
+    }
+
+    const userBalance = userBalances[username]?.balance || 1;
+    const userWeed = userWeedStashes[username] || 0;
+    const stashedGBX = userStashes[username] || 0;
+
+    // Require at least 250 GBX to attempt robbery
+    if (userBalance < 250) {
+        respondWithMessage.call(this, "❌ You need at least 💵 250 GBX to attempt a robbery! Gotta buy supplies.");
+        return;
+    }
+
+    // Supply costs (Base 250 + 3-10% of user balance)
+    const supplyCost = Math.min(userBalance, 250 + Math.floor(userBalance * (Math.random() * 0.07 + 0.03)));
+    userBalances[username].balance -= supplyCost;
+    saveBalances();
+
+    // Success rate randomized between 55% and 75%
+    let success = Math.random() < (Math.random() * 0.20 + 0.55);
+
+    if (success) {
+        // Successful robbery: Steal 15-30% of LGH Bank, but capped at 50% of the bank's balance
+        const maxSteal = Math.floor(lghBank * 0.30);
+        const stolenAmount = Math.min(Math.floor(lghBank * (Math.random() * 0.15 + 0.15)), maxSteal, Math.floor(lghBank * 0.50));
+
+        lghBank -= stolenAmount;
+        userBalances[username].balance = (userBalances[username].balance || 1) + stolenAmount;
+        saveBalances();
+        localStorage.setItem("lghBank", lghBank);
+
+        // Save cooldown
+        lastBankRobTime[username] = now;
+        localStorage.setItem("lastBankRobTime", JSON.stringify(lastBankRobTime));
+
+        respondWithMessage.call(this, `💰 ${nickname} pulled off a successful heist and stole 💵 ${stolenAmount.toLocaleString()} GBX!\n🏦 LGH Bank now holds 💰 ${lghBank.toLocaleString()} GBX.\n🧰 Supplies used: 💵 ${supplyCost.toLocaleString()} GBX.`);
+    } else {
+        // Failed robbery: Lose 20-50% of GBX, but capped at 50% of balance
+        let lossAmount = Math.floor(userBalance * (Math.random() * 0.30 + 0.20));
+        lossAmount = Math.min(lossAmount, Math.floor(userBalance * 0.50)); // Cap loss at 50% of balance
+
+        userBalances[username].balance = Math.max(1, userBalance - lossAmount);
+
+        // 50% of lost GBX goes to LGH Bank
+        const bankCut = Math.floor(lossAmount * 0.5);
+        lghBank += bankCut;
+
+        // 50% of lost GBX is shared among active players
+        const sharedAmount = lossAmount - bankCut;
+        const activePlayers = Object.keys(userBalances).filter(user => user !== username && userBalances[user]?.balance > 0);
+
+        if (activePlayers.length > 0) {
+            const splitAmount = Math.floor(sharedAmount / activePlayers.length);
+            activePlayers.forEach(user => {
+                userBalances[user].balance = (userBalances[user].balance || 1) + splitAmount;
+            });
+        }
+
+        // Lose 20-40% of weed stash instead of total loss
+        let weedBurned = Math.floor(userWeed * (Math.random() * 0.20 + 0.20));
+        userWeedStashes[username] = Math.max(0, userWeed - weedBurned);
+
+        // Lose 2-8% of stashed GBX instead of 5-15%
+        const stashedLoss = Math.floor(stashedGBX * (Math.random() * 0.06 + 0.02));
+        userStashes[username] = Math.max(0, stashedGBX - stashedLoss);
+        saveUserStashes();
+
+        // Save cooldown
+        lastBankRobTime[username] = now;
+        localStorage.setItem("lastBankRobTime", JSON.stringify(lastBankRobTime));
+
+        // Save changes
+        saveBalances();
+        saveWeedStashes();
+        localStorage.setItem("lghBank", lghBank);
+
+        let failureMessage = `🚔 ${nickname} got caught robbing LGH Bank and lost 💵 ${lossAmount.toLocaleString()} GBX!\n🧰 Supplies lost: 💵 ${supplyCost.toLocaleString()} GBX.`;
+        if (weedBurned > 0) {
+            failureMessage += `\n🔥 The cops confiscated ${weedBurned.toLocaleString()} grams of their weed!`;
+        }
+        if (stashedLoss > 0) {
+            failureMessage += `\n💸 ${stashedLoss.toLocaleString()} GBX mysteriously vanished from their stash...`;
+        }
+        if (activePlayers.length > 0) {
+            failureMessage += `\n💵 ${sharedAmount.toLocaleString()} GBX was split among ${activePlayers.length} other players!`;
+        }
+        if (userBalances[username].balance === 1) {
+            failureMessage += `\n💀 ${nickname} barely escaped with a single GBX left! Rough night...`;
         }
 
         respondWithMessage.call(this, failureMessage);
@@ -3882,48 +4052,6 @@ if (wsmsg["text"].toLowerCase().startsWith(".givepot")) {
     respondWithMessage.call(this, `💰 ${nickname} added 💵 ${amount.toLocaleString()} GBX to the pot! Current pot: 💰 ${gojiPot.toLocaleString()} GBX`);
 }
 
-// 🎰 .getpot - Claim the pot (Random winner, 1-hour cooldown)
-/*if (wsmsg["text"].toLowerCase() === ".getpot") {
-    const handle = wsmsg["handle"];
-    const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || username || "you";
-
-    const currentTime = Date.now();
-    const cooldown = 60 * 60 * 1000; // 1 hour cooldown
-
-    if (currentTime - lastPotClaimTime < cooldown) {
-        const remainingTime = Math.ceil((cooldown - (currentTime - lastPotClaimTime)) / 60000);
-        respondWithMessage.call(this, `⏳ The pot can be claimed in ${remainingTime} minutes.`);
-        return;
-    }
-
-    if (gojiPot <= 0) {
-        respondWithMessage.call(this, "🤖 The pot is empty. Contribute using .givepot!");
-        return;
-    }
-
-    // Choose a random winner from users who contributed
-    const eligibleUsers = Object.keys(userBalances).filter(u => userBalances[u]?.balance !== undefined);
-    if (eligibleUsers.length === 0) {
-        respondWithMessage.call(this, "🤖 No eligible users to receive the pot.");
-        return;
-    }
-
-    const winner = eligibleUsers[Math.floor(Math.random() * eligibleUsers.length)];
-    const winnerNickname = userNicknames[winner]?.nickname || winner;
-
-    // Give the pot to the winner
-    userBalances[winner].balance = (userBalances[winner].balance || 0) + gojiPot;
-    saveBalances();
-
-    respondWithMessage.call(this, `🎉 ${winnerNickname} won the pot of 💰 ${gojiPot.toLocaleString()} GBX! Congratulations!`);
-
-    // Reset the pot and cooldown
-    gojiPot = 0;
-    lastPotClaimTime = currentTime;
-    saveGojiPot();
-}*/
-
 // 🎰 .getpot - Claim the pot (Random winner, 1-hour cooldown, includes 50% of LGH Bank)
 if (wsmsg["text"].toLowerCase() === ".getpot") {
     const handle = wsmsg["handle"];
@@ -3931,7 +4059,7 @@ if (wsmsg["text"].toLowerCase() === ".getpot") {
     const nickname = userNicknames[username]?.nickname || username || "you";
 
     const currentTime = Date.now();
-    const cooldown = 60 * 60 * 1000; // 1 hour cooldown
+    const cooldown = 60 * 60 * 1000; // 1-hour cooldown
 
     if (currentTime - lastPotClaimTime < cooldown) {
         const remainingTime = Math.ceil((cooldown - (currentTime - lastPotClaimTime)) / 60000);
@@ -3946,10 +4074,11 @@ if (wsmsg["text"].toLowerCase() === ".getpot") {
 
     // Calculate total pot (GojiPot + 50% of LGH Bank)
     const lghContribution = Math.floor(lghBank * 0.5);
+    lghBank -= lghContribution; // Deduct LGH contribution before selecting winner
     const totalPot = gojiPot + lghContribution;
 
-    // Choose a random winner from users who contributed
-    const eligibleUsers = Object.keys(userBalances).filter(u => userBalances[u]?.balance !== undefined);
+    // Choose a random winner from all users
+    const eligibleUsers = Object.keys(userBalances);
     if (eligibleUsers.length === 0) {
         respondWithMessage.call(this, "🤖 No eligible users to receive the pot.");
         return;
@@ -3958,9 +4087,13 @@ if (wsmsg["text"].toLowerCase() === ".getpot") {
     const winner = eligibleUsers[Math.floor(Math.random() * eligibleUsers.length)];
     const winnerNickname = userNicknames[winner]?.nickname || winner;
 
+    // Ensure the winner has a balance entry
+    if (!userBalances[winner]) {
+        userBalances[winner] = { balance: 0 };
+    }
+
     // Give the total pot to the winner
-    userBalances[winner].balance = (userBalances[winner].balance || 0) + totalPot;
-    lghBank -= lghContribution; // Deduct LGH contribution
+    userBalances[winner].balance += totalPot;
     saveBalances();
     saveLghBank();
 
@@ -3971,15 +4104,6 @@ if (wsmsg["text"].toLowerCase() === ".getpot") {
     lastPotClaimTime = currentTime;
     saveGojiPot();
 }
-
-// 💰 .pot - Display the current pot balance
-/*if (wsmsg["text"].toLowerCase() === ".pot") {
-    if (gojiPot <= 0) {
-        respondWithMessage.call(this, "🤖 The pot is empty. Use .givepot to contribute!");
-    } else {
-        respondWithMessage.call(this, `💰 The current pot contains 💵 ${gojiPot.toLocaleString()} GBX! Use .givepot to contribute or .getpot to claim it.`);
-    }
-}*/
 
 // 💰 .pot - Display the current pot balance including LGH contribution
 if (wsmsg["text"].toLowerCase() === ".pot") {
