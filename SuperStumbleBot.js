@@ -9,20 +9,7 @@
 // ==/UserScript==
 
 // Notes ---
-// add this as a command .smile
-/*⣿⣿⣿⣿⣿⣿⡟⠁⠄⠄⠄⠄⣠⣤⣴⣶⣶⣶⣶⣤⡀⠈⠙⢿
-⣿⣿⣿⣿⣿⡟⠄⠄⠄⠄⠄⣸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣆⠄⠈
-⣿⣿⣿⣿⣿⠁⠄⠄⠄⢀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠄⠄
-⣿⣿⣿⣿⣿⡄⠄⠄⠄⠙⠻⠿⣿⣿⣿⣿⠿⠿⠛⠛⠻⣿⡄⠄
-⣿⣿⣿⣿⣿⡇⠄⠄⠁ ⭕ ⠄⢹⣿⡗⠄ ⭕ ⢄⡀⣾⢀⣿
-⣿⣿⣿⣿⣿⡇⠘⠄⠄⠄⢀⡀⠄⣿⣿⣷⣤⣤⣾⣿⣿⣿⣧⢸
-⣿⣿⣿⣿⣿⡇⠄⣰⣿⡿⠟⠃⠄⣿⣿⣿⣿⣿⡛⠿⢿⣿⣷⣾
-⣿⣿⣿⣿⣿⣿⡄⠈⠁⠄⠄⠄⠄⠻⠿⢛⣿⣿⠿⠂⠄⢹⢹⣿
-⣿⣿⣿⣿⣿⣿⣿⡐⠐⠄⠄⣠⣀⣀⣚⣯⣵⣶⠆⣰⠄⠞⣾⣿
-⣿⣿⣿⣿⣿⣿⣿⣷⡄⠄⠄⠈⠛⠿⠿⠿⣻⡏⢠⣿⣎⣾⣿⣿
-⣿⣿⣿⣿⣿⣿⡿⠟⠛⠄⠄⠄⠄⠙⣛⣿⣿⣵⣿⡿⢹⡟⣿⣿
-⣿⠿⠿⠋⠉⠄⠄⠄⠄⠄⠄⠄⣀⣠⣾⣿⣿⣿⡟⠁⠹⡇⣸⣿
-⠁⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠙⠿⠿⠛⠋⠄⣸⣦⣠⣿⣿⠀*/
+
 
 
 (function() {
@@ -4532,6 +4519,29 @@ if (wsmsg["text"].toLowerCase().startsWith(".balance") || wsmsg["text"].toLowerC
     );
 }
 
+if (wsmsg["text"].toLowerCase() === ".stats") {
+    const totalUsers = Object.keys(userNicknames).length;
+    const usersWithGojiBux = Object.values(userBalances).filter(user => user.balance > 0).length;
+    const usersWithWeed = Object.values(userWeedStashes).filter(amount => amount > 0).length;
+    const usersWithJoints = Object.values(userJointStashes).filter(amount => amount > 0).length;
+    const usersWithOffshore = Object.values(userStashes).filter(amount => amount > 0).length;
+    const usersWithHiddenWeed = Object.values(userHiddenWeed).filter(amount => amount > 0).length;
+    const usersWithSpaghetti = Object.values(userSpaghettiStashes).filter(amount => amount > 0).length;
+    const usersWithPizza = Object.values(userPizzaStashes).filter(amount => amount > 0).length;
+
+    respondWithMessage.call(this,
+        `📊 Bot Stats:\n` +
+        `👥 Total Users: ${totalUsers.toLocaleString()}\n` +
+        `💵 Users with GojiBux: ${usersWithGojiBux.toLocaleString()}\n` +
+        `🏝️ Users with Offshore Stash: ${usersWithOffshore.toLocaleString()}\n` +
+        `🌿 Users with Weed: ${usersWithWeed.toLocaleString()}\n` +
+        `🗝️ Users with Hidden Weed: ${usersWithHiddenWeed.toLocaleString()}\n` +
+        `🥖 Users with Joints: ${usersWithJoints.toLocaleString()}\n` +
+        `🍝 Users with Spaghetti: ${usersWithSpaghetti.toLocaleString()}\n` +
+        `🍕 Users with Pizza: ${usersWithPizza.toLocaleString()}`
+    );
+}
+
 //-----------------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -4651,19 +4661,6 @@ if (wsmsg["text"].startsWith(".admin deleteuser ")) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-        // bran and goji with nickname
-        /*if (wsmsg['text'].toLowerCase() === "bran" || wsmsg['text'].toLowerCase() === "goji") {
-            const handle = wsmsg['handle']; // Get the handle
-            const nickname = userNicknames[userHandles[handle]]?.nickname || wsmsg['username'] || "you"; // Get nickname, fallback to username or Bot
-
-            const target = wsmsg['text'] === "bran" ? "Bran" : "Goji"; // Determine which target to use
-
-            setTimeout(() => this._send(JSON.stringify({
-                stumble: "msg",
-                text: `🤖 ${target} farted on ${nickname}!` // Message using nickname
-            })), 1000);
-        }*/
-
 // Command: "bran" or "goji" (Transfers 10 GBX & 3.5g weed to Goji)
 if (wsmsg['text'].toLowerCase() === "bran" || wsmsg['text'].toLowerCase() === "goji") {
     const handle = wsmsg['handle']; // Get the handle
@@ -4701,59 +4698,6 @@ if (wsmsg['text'].toLowerCase() === "bran" || wsmsg['text'].toLowerCase() === "g
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
-
-    // Commands: .419 to .430 + .710 + .840
-    /*if (
-        wsmsg['text'] === ".419" || wsmsg['text'] === ".420" || wsmsg['text'] === ".421" ||
-        wsmsg['text'] === ".422" || wsmsg['text'] === ".423" || wsmsg['text'] === ".424" ||
-        wsmsg['text'] === ".425" || wsmsg['text'] === ".426" || wsmsg['text'] === ".427" ||
-        wsmsg['text'] === ".428" || wsmsg['text'] === ".429" || wsmsg['text'] === ".430" ||
-        wsmsg['text'] === ".710" || wsmsg['text'] === ".840"
-    ) {
-        const handle = wsmsg['handle'];
-        const username = userHandles[handle];
-        const nickname = userNicknames[username]?.nickname || "Someone";
-
-        const timeMessages = {
-            ".419": [`${nickname} SMOKES WHEN THEY WANT!`],
-            ".420": [`${nickname} is smoking! Cheers! Happy 4:20!`],
-            ".421": [`${nickname} is smoking! Cheers! It's 4:21! Let's have some fun!`],
-            ".422": [
-                `${nickname} is smoking! Cheers! 4:20 2: Electric Boogaloo!`,
-                `${nickname} is smoking! Cheers! 4:20 2: The Sequel!`
-            ],
-            ".423": [`${nickname} is smoking! Cheers! Happy 4:23! Let's smoke some more, you’ll see!`],
-            ".424": [
-                `${nickname} is smoking! Cheers! Happy 4:24! Let's smoke some more!`,
-                `${nickname} is smoking! Cheers! Happy 4:24! Time to score!`
-            ],
-            ".425": [`Cheers! Happy 4:25! ${nickname}'s feelin alive!`],
-            ".426": [
-                `${nickname} is smoking! Cheers! Happy 4:26! Roll it quicks!`,
-                `${nickname} is smoking! Cheers! Happy 4:26! No seeds, no sticks!`
-            ],
-            ".427": [`Cheers! Happy 4:27! ${nickname}'s in heaven!`],
-            ".428": [`Cheers! Happy 4:28! ${nickname}'s always late!`],
-            ".429": [`Cheers! Happy 4:29! ${nickname}'s feelin fine!`],
-            ".430": [`${nickname} SMOKES WHEN THEY WANT!`,
-                     `${nickname} MISSED 420!`
-            ],
-            ".710": [
-                `${nickname} is smoking! Cheers! It’s 7:10! Let the dabs begin!`,
-                `${nickname} is smoking! Cheers! 7:10 again! Dab it up, my friend!`
-            ],
-            ".840": [`${nickname} is smoking! Cheers! It's 8:40! Twice the 4:20, twice the tokes! 💨`]
-        };
-
-        // Pick a random message if multiple are available
-        const messages = timeMessages[wsmsg['text']] || ["Error: Invalid time!"];
-        const message = messages[Math.floor(Math.random() * messages.length)];
-
-        this._send(JSON.stringify({
-            stumble: "msg",
-            text: `🤖 ${message} 💨`
-        }));
-    }*/
 
 // Commands: .419 to .430 + .710 + .840 (Now uses 1-3.5g of weed)
 if (
@@ -4828,18 +4772,6 @@ if (
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-    // Command: .cheers (Case-insensitive, uses handle to get nickname)
-    /*if ([".c", ".cheers"].includes(wsmsg['text'].toLowerCase())) { // Convert input to lowercase and check if it's in the list
-        const handle = wsmsg['handle']; // Get the user's handle from the message
-        const username = userHandles[handle]; // Look up the username using the handle
-        const nickname = userNicknames[username]?.nickname || "Someone"; // Get the stored nickname, or default to "Someone"
-
-        this._send(JSON.stringify({ // Send the message to the chat
-            stumble: "msg",
-            text: `🤖 ${nickname} is smokin! Cheers! 🌲💨`
-        }));
-    }*/
-
 if ([".c", ".cheers"].includes(wsmsg['text'].toLowerCase())) { // Convert input to lowercase and check if it's in the list
     const handle = wsmsg['handle']; // Get the user's handle from the message
     const username = userHandles[handle]; // Look up the username using the handle
@@ -4879,18 +4811,6 @@ if ([".c", ".cheers"].includes(wsmsg['text'].toLowerCase())) { // Convert input 
     }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
-
-    // Command: .sub cheers (case insensitive)
-    /*if ([".sc", ".subcheers", ".subchar", ".schar", ".scheers"].includes(wsmsg['text'].toLowerCase())) {
-        const handle = wsmsg['handle'];
-        const username = userHandles[handle];
-        const nickname = userNicknames[username]?.nickname || "Someone";
-
-        this._send(JSON.stringify({
-            stumble: "msg",
-            text: `🤖 ${nickname} is subbin! Char! 🌲🍻💨`
-        }));
-    }*/
 
 // Command: .sub cheers (Case insensitive, uses 0.1-1g of weed if available)
 if ([".sc", ".subcheers", ".subchar", ".schar", ".scheers"].includes(wsmsg['text'].toLowerCase())) {
@@ -4939,18 +4859,6 @@ if ([".sc", ".subcheers", ".subchar", ".schar", ".scheers"].includes(wsmsg['text
     }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
-
-    // Command: .grinding (Case-insensitive, uses handle to get nickname)
-    /*if ([".g", "grind", ".grindin", ".grinding"].includes(wsmsg['text'].toLowerCase())) { // Convert input to lowercase and check if it's in the list
-        const handle = wsmsg['handle']; // Get the user's handle from the message
-        const username = userHandles[handle]; // Look up the username using the handle
-        const nickname = userNicknames[username]?.nickname || "Someone"; // Get the stored nickname, or default to "Someone"
-
-        this._send(JSON.stringify({ // Send the message to the chat
-            stumble: "msg",
-            text: `🤖 ${nickname} is grinding bud for tokes! 🌿🔄💨`
-        }));
-    }*/
 
 // Command: .grinding (Case-insensitive, deducts 1-5g of weed for grinding)
 if ([".g", ".grind", ".grindin", ".grinding"].includes(wsmsg['text'].toLowerCase())) {
@@ -5042,18 +4950,6 @@ if ([".g", ".grind", ".grindin", ".grinding"].includes(wsmsg['text'].toLowerCase
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-    // Command: .joint (case insensitive)
-    /*if ([".j", ".joint"].includes(wsmsg['text'].toLowerCase())) {
-        const handle = wsmsg['handle'];
-        const username = userHandles[handle];
-        const nickname = userNicknames[username]?.nickname || "Someone";
-
-        this._send(JSON.stringify({
-            stumble: "msg",
-            text: `🤖 ${nickname} is smokin a joint! Cheers! 🌲💨`
-        }));
-    }*/
-
 // Command: .joint (Case insensitive, uses a joint if available, otherwise rolls & smokes 1-3.5g of weed)
 if ([".j", ".joint"].includes(wsmsg['text'].toLowerCase())) {
     const handle = wsmsg['handle'];
@@ -5121,18 +5017,6 @@ if ([".j", ".joint"].includes(wsmsg['text'].toLowerCase())) {
     }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
-
-    // Command: .set (case insensitive)
-    /*if ([".s", ".set", ".packed", ".ready"].includes(wsmsg['text'].toLowerCase())) {
-        const handle = wsmsg['handle'];
-        const username = userHandles[handle];
-        const nickname = userNicknames[username]?.nickname || "Someone";
-
-        this._send(JSON.stringify({
-            stumble: "msg",
-            text: `🤖 ${nickname} is set! 🌲`
-        }));
-    }*/
 
 // Command: .set (Case insensitive, uses 0.1-1g of weed if available)
 if ([".s", ".set", ".packed", ".ready"].includes(wsmsg['text'].toLowerCase())) {
@@ -5381,18 +5265,6 @@ if (wsmsg['text'].toLowerCase().startsWith(".vagina")) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-    // Command: .owner
-    /*if (wsmsg['text'].toLowerCase().startsWith(".owner")) {
-        const handle = wsmsg['handle'];
-        const username = userHandles[handle];
-        const nickname = userNicknames[username]?.nickname || "Someone";
-
-        this._send(JSON.stringify({
-            stumble: "msg",
-            text: `🤖 ${nickname} IS THE ROOM OWNER NOW!`
-        }));
-    }*/
-
 // Command: .owner (Requires & burns 1,000,000 GBX)
 if (wsmsg['text'].toLowerCase().startsWith(".owner")) {
     const handle = wsmsg['handle'];
@@ -5466,440 +5338,6 @@ if (wsmsg['text'].toLowerCase().startsWith(".boof")) {
             stumble: "msg",
             text: randomBoofResponse
         }));
-    }, 1000);
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-// start anal
-const triggerAnalCommands = [".anal"];
-if (triggerAnalCommands.includes(wsmsg['text'].toLowerCase())) {
-    setTimeout(() => {
-        const nickname = wsmsg['nickname'] || wsmsg['username']; // Use nickname if available, otherwise fallback to username
-        const analResponses = [
-            `${nickname} just took the backdoor express! 🚪🍑`,
-            `Uh-oh, ${nickname} went deep into uncharted territory! 🌌🍑`,
-            `Some say ${nickname} just unlocked a new level of experience. 🏆🔥`,
-            `Breaking news: ${nickname} just got a little more adventurous. 🚀🍑`,
-            `Nothing like a little backdoor surprise, right ${nickname}? 😉`,
-            `Careful, ${nickname}, once you go back, you might not go back. 🍑💨`,
-            `That escalated quickly, ${nickname}. 🍑🔥`,
-            `10/10 technique, ${nickname}. You should be in the hall of fame. 🎖️`,
-            `Legend has it ${nickname} just found the true meaning of "stretch goals." 📏🍑`,
-            `RIP ${nickname}, they took one for the team. ⚰️🔥`,
-            `BOOM! ${nickname} just went full send. 💥🍑`,
-            `The prophecy foretold that ${nickname} would go all the way... today is that day. 📜🔥`,
-            `${nickname}, welcome to the forbidden zone. 🍑🔞`,
-            `NASA just reported unusual seismic activity from ${nickname}'s location. 🌎🔥`,
-            `Hope you stretched first, ${nickname}. 🍑🧘‍♂️`,
-            `Whoa there, ${nickname}, ease into it! 🚦🍑`,
-            `Backdoor access granted. 🔓🍑 Welcome, ${nickname}.`,
-            `Let's hope ${nickname} used enough lube. 💦🍑`,
-            `Somebody get ${nickname} a trophy, that was legendary. 🏆🔥`,
-            `Breaking records, breaking barriers—${nickname} does it all! 🚀🍑`
-        ];
-        const randomAnalResponse = analResponses[Math.floor(Math.random() * analResponses.length)];
-        this._send(`{"stumble":"msg","text": "${randomAnalResponse}"}`);
-    }, 1000);
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-const triggerSlurpCommands = [".slurp"];
-if (triggerSlurpCommands.includes(wsmsg['text'].toLowerCase())) {
-    setTimeout(() => {
-        const nickname = wsmsg['nickname'] || wsmsg['username'];
-        const slurpResponses = [
-            `${nickname} just slurped it all up. 🍜💦`,
-            `Slurp detected! ${nickname} is going *all in*. 🔥`,
-            `That was a *nasty* slurp, ${nickname}. Respect. 👏`,
-            `${nickname} went full vacuum mode! 🌀💨`,
-            `Hydrated and dedicated—${nickname} never misses a sip. 🥤`,
-            `If slurping was an Olympic sport, ${nickname} would take gold. 🏆`,
-            `Someone pass ${nickname} a napkin, that was *wild*. 💦`,
-            `Careful, ${nickname}, you might create a black hole with that slurp. 🌌`
-        ];
-        this._send(`{"stumble":"msg","text": "${slurpResponses[Math.floor(Math.random() * slurpResponses.length)]}"}`);
-    }, 1000);
-}
-
-
-
-const triggerGawkCommands = [".gawk"];
-if (triggerGawkCommands.includes(wsmsg['text'].toLowerCase())) {
-    setTimeout(() => {
-        const nickname = wsmsg['nickname'] || wsmsg['username'];
-        const gawkResponses = [
-            `${nickname} just gave that *gawk-gawk 9000*! 🔥💦`,
-            `If there was a championship for gawk, ${nickname} would be undefeated. 🏆`,
-            `Some say ${nickname} has *no gag reflex*. 🤔`,
-            `Whoa, ${nickname} just went *deep* with that one. 🍆💨`,
-            `The streets will never forget ${nickname}’s legendary gawk skills. 🏅`,
-            `Rumor has it ${nickname} can drink a smoothie *without a straw*. 💀`,
-            `That was a *sloppy* one, ${nickname}. Respect. 🙏`,
-            `Someone pass ${nickname} a towel. That got *out of hand*. 💦`
-        ];
-        this._send(`{"stumble":"msg","text": "${gawkResponses[Math.floor(Math.random() * gawkResponses.length)]}"}`);
-    }, 1000);
-}
-
-
-
-const triggerClapCommands = [".clap"];
-if (triggerClapCommands.includes(wsmsg['text'].toLowerCase())) {
-    setTimeout(() => {
-        const nickname = wsmsg['nickname'] || wsmsg['username'];
-        const clapResponses = [
-            `🔊 CLAP CLAP CLAP! ${nickname} just made cheeks *applaud*! 🍑🔥`,
-            `Damn, ${nickname} just *shook the room*! 💥🍑`,
-            `We need a **seismologist**, ${nickname} is causing tremors! 🌍💨`,
-            `Some say NASA picked up ${nickname}’s cheek claps from space. 🚀🍑`,
-            `${nickname} got that **thunderous clap** energy! ⚡🍑`,
-            `The **gods** have spoken, and it sounds like ${nickname}’s *cheeks in motion*. 🔥🍑`,
-            `*Warning:* ${nickname} has entered **MAXIMUM CLAP MODE**! 🚨`,
-            `${nickname}, that **reverberation** might be *illegal* in some states. 📜🍑`
-        ];
-        this._send(`{"stumble":"msg","text": "${clapResponses[Math.floor(Math.random() * clapResponses.length)]}"}`);
-    }, 1000);
-}
-
-
-
-const triggerNutCommands = [".nut"];
-if (triggerNutCommands.includes(wsmsg['text'].toLowerCase())) {
-    setTimeout(() => {
-        const nickname = wsmsg['nickname'] || wsmsg['username'];
-        const nutResponses = [
-            `💦 BOOM! ${nickname} just **exploded**! 💥`,
-            `RIP ${nickname}, they never stood a chance. 🚑💦`,
-            `${nickname} just *lost everything in the stock market* 📉💦`,
-            `The **post-nut clarity** is hitting ${nickname} like a freight train. 🚂💨`,
-            `Someone get ${nickname} a tissue, that was *devastating*. 😔`,
-            `Scientists confirm ${nickname} just set a **new world record**. 🏅💦`,
-            `That was a *spiritual* experience, wasn’t it ${nickname}? 🧘‍♂️💦`,
-            `Emergency services are on the way. Hold tight, ${nickname}. 🚑`
-        ];
-        this._send(`{"stumble":"msg","text": "${nutResponses[Math.floor(Math.random() * nutResponses.length)]}"}`);
-    }, 1000);
-}
-
-
-
-const triggerGaspCommands = [".gasp"];
-if (triggerGaspCommands.includes(wsmsg['text'].toLowerCase())) {
-    setTimeout(() => {
-        const nickname = wsmsg['nickname'] || wsmsg['username'];
-        const gaspResponses = [
-            `😱 *GASP!* ${nickname} just witnessed something **unholy**!`,
-            `💀 RIP ${nickname}, they couldn’t handle the shock!`,
-            `${nickname} just **fainted** from sheer *drama*. 🎭`,
-            `Someone **call an ambulance**—${nickname} just saw **too much**. 🚑`,
-            `${nickname} just got hit with *pure, unfiltered disbelief*. 🤯`,
-            `THE AUDACITY! ${nickname} cannot *believe* what just happened. 🫢`,
-            `That was a **cinematic gasp**, ${nickname}. Well played. 🎬😲`,
-            `BREAKING NEWS: ${nickname} has entered **SHOCK MODE**. ⚠️`
-        ];
-        this._send(`{"stumble":"msg","text": "${gaspResponses[Math.floor(Math.random() * gaspResponses.length)]}"}`);
-    }, 1000);
-}
-
-
-
-const triggerThrustCommands = [".thrust"];
-if (triggerThrustCommands.includes(wsmsg['text'].toLowerCase())) {
-    setTimeout(() => {
-        const nickname = wsmsg['nickname'] || wsmsg['username'];
-        const thrustResponses = [
-            `🚀 ${nickname} just went full **THRUST MODE**! Hold on tight!`,
-            `Careful, ${nickname}, you might break the **sound barrier** with that! 🔊💥`,
-            `That wasn’t just a thrust, ${nickname}—that was a **launch sequence**. 🚀🍑`,
-            `My God... ${nickname} just achieved **MAXIMUM PENETRATION VELOCITY**. 🔥💨`,
-            `BREAKING NEWS: ${nickname} just caused a **6.9 magnitude earthquake.** 🌍🍑`,
-            `${nickname} has officially entered **warp speed.** 🛸🔥`,
-            `NASA just confirmed: ${nickname} is on a **collision course.** 🚀🌌`,
-            `Brace yourselves, ${nickname} is about to **BREAK ORBIT.** 💥`
-        ];
-        this._send(`{"stumble":"msg","text": "${thrustResponses[Math.floor(Math.random() * thrustResponses.length)]}"}`);
-    }, 1000);
-}
-
-
-
-const triggerMoanCommands = [".moan"];
-if (triggerMoanCommands.includes(wsmsg['text'].toLowerCase())) {
-    setTimeout(() => {
-        const nickname = wsmsg['nickname'] || wsmsg['username'];
-        const moanResponses = [
-            `😩 *Ohhh*~ ${nickname} just couldn’t keep it together!`,
-            `Someone turn the volume **down**, ${nickname} is getting *LOUD*. 🔊🍑`,
-            `That was a **5-star moan**, ${nickname}. ⭐⭐⭐⭐⭐`,
-            `Whew... ${nickname} just made the room *uncomfortably hot*. 🥵`,
-            `Yo, ${nickname}, at least **warn** people before you do that. 😳`,
-            `My neighbors just called... ${nickname} is **TOO DAMN LOUD.** 🚨`,
-            `${nickname} just hit a *new pitch*! Call an **opera instructor.** 🎤`,
-            `Who needs *auto-tune* when ${nickname} can moan like **THAT**? 🔥`
-        ];
-        this._send(`{"stumble":"msg","text": "${moanResponses[Math.floor(Math.random() * moanResponses.length)]}"}`);
-    }, 1000);
-}
-
-
-
-const triggerSpitCommands = [".spit"];
-if (triggerSpitCommands.includes(wsmsg['text'].toLowerCase())) {
-    setTimeout(() => {
-        const nickname = wsmsg['nickname'] || wsmsg['username'];
-        const spitResponses = [
-            `💦 **SPIT TAKE!** ${nickname} just lost it!`,
-            `Damn, ${nickname}, did you even **aim**? That’s a *mess*! 🤦‍♂️`,
-            `${nickname} out here making it **extra sloppy**. 🍑💦`,
-            `Whoa! Someone **get a mop**—${nickname} is *going off*! 🧹`,
-            `That was a **Hall of Fame spit moment**, ${nickname}. 🏆`,
-            `Hope you weren’t drinking anything, ${nickname}. Oh... never mind. ☕💦`,
-            `Careful, ${nickname}, you're about to start a **slip hazard.** 🚧`,
-            `If spit was a superpower, ${nickname} would be **unstoppable.** 🔥`
-        ];
-        this._send(`{"stumble":"msg","text": "${spitResponses[Math.floor(Math.random() * spitResponses.length)]}"}`);
-    }, 1000);
-}
-
-
-
-const triggerGulpCommands = [".gulp"];
-if (triggerGulpCommands.includes(wsmsg['text'].toLowerCase())) {
-    setTimeout(() => {
-        const nickname = wsmsg['nickname'] || wsmsg['username'];
-        const gulpResponses = [
-            `🍹 **GULP!** ${nickname} just took it **ALL** down!`,
-            `That was **too much** in one go, ${nickname}... you good? 😳`,
-            `🔥 DAMN, ${nickname} just *deepthroated that whole drink!*`,
-            `Yo, ${nickname}, do you even **breathe** when you drink?! 🤯`,
-            `Chill, ${nickname}, you ain't in a **speed-drinking competition!** ⏳`,
-            `My god... ${nickname} just **downed** that in *one* go! 💦`,
-            `Someone get ${nickname} a **refill**—they just **obliterated** their drink! 🍾`,
-            `Yo, ${nickname}, leave some **for the rest of us!** 🫗`
-        ];
-        this._send(`{"stumble":"msg","text": "${gulpResponses[Math.floor(Math.random() * gulpResponses.length)]}"}`);
-    }, 1000);
-}
-
-
-
-const triggerGagCommands = [".gag"];
-if (triggerGagCommands.includes(wsmsg['text'].toLowerCase())) {
-    setTimeout(() => {
-        const nickname = wsmsg['nickname'] || wsmsg['username'];
-        const gagResponses = [
-            `😵 ${nickname} just **gagged HARD.**`,
-            `RIP ${nickname}—they didn’t stand a *chance*. 💀`,
-            `Yo, someone **check on** ${nickname}... they’re struggling. 🍆💦`,
-            `Careful, ${nickname}, you *almost* didn’t make it. 😳`,
-            `DAMN, ${nickname} just went **too deep!** 🔥`,
-            `${nickname} out here testing **their limits.** 🏆`,
-            `Breathe, ${nickname}, **BREATHE!** 🫁💨`,
-            `10/10 commitment, ${nickname}. You deserve a **medal.** 🏅`
-        ];
-        this._send(`{"stumble":"msg","text": "${gagResponses[Math.floor(Math.random() * gagResponses.length)]}"}`);
-    }, 1000);
-}
-
-
-
-const triggerDroolCommands = [".drool"];
-if (triggerDroolCommands.includes(wsmsg['text'].toLowerCase())) {
-    setTimeout(() => {
-        const nickname = wsmsg['nickname'] || wsmsg['username'];
-        const droolResponses = [
-            `💦 Damn, ${nickname} just **lost all motor function!**`,
-            `Yo, someone get ${nickname} a **bib**—they're *leaking*! 🤤`,
-            `That was a **full-body reaction** from ${nickname}! 😵‍💫`,
-            `${nickname} is *straight up* **FOAMING** at the mouth. 🤯`,
-            `Jesus, ${nickname}, you’re acting like you haven’t **eaten in days.** 🍑`,
-            `That **primal instinct** just took over ${nickname}... it’s *over.* 🐺💦`,
-            `Not even gravity can contain ${nickname}’s **thirst**. 🌊💦`,
-            `${nickname} just went from **civilized** to *feral* in 0.2 seconds. 🔥`
-        ];
-        this._send(`{"stumble":"msg","text": "${droolResponses[Math.floor(Math.random() * droolResponses.length)]}"}`);
-    }, 1000);
-}
-
-
-
-const triggerQuakeCommands = [".quake"];
-if (triggerQuakeCommands.includes(wsmsg['text'].toLowerCase())) {
-    setTimeout(() => {
-        const nickname = wsmsg['nickname'] || wsmsg['username'];
-        const quakeResponses = [
-            `🌍 **SEISMIC ACTIVITY DETECTED!** ${nickname} just caused a magnitude 9.0!`,
-            `🚨 ALERT: ${nickname} just set off the **Tsunami Warning System!** 🌊`,
-            `Yo, ${nickname}, that **aftershock** was felt *worldwide*! 🌎💨`,
-            `Damn, ${nickname}, even the **tectonic plates** are *scared*. 😳`,
-            `NASA just confirmed: **${nickname} broke the Richter Scale!** 🔥`,
-            `${nickname} just made **Yellowstone look like a sparkler.** 🌋🔥`,
-            `That was a **cataclysmic** event, ${nickname}. The world will remember. 💀`,
-            `My **glass of water** just tipped over. Thanks, ${nickname}. 💦`
-        ];
-        this._send(`{"stumble":"msg","text": "${quakeResponses[Math.floor(Math.random() * quakeResponses.length)]}"}`);
-    }, 1000);
-}
-
-
-
-const triggerExplodeCommands = [".explode"];
-if (triggerExplodeCommands.includes(wsmsg['text'].toLowerCase())) {
-    setTimeout(() => {
-        const nickname = wsmsg['nickname'] || wsmsg['username'];
-        const explodeResponses = [
-            `💥 BOOM! **${nickname} just detonated!**`,
-            `RIP ${nickname}, they *couldn't hold it in.* 💀🔥`,
-            `**Cleanup on aisle 420!** ${nickname} just went nuclear. 🌍💨`,
-            `Someone pass ${nickname} a **towel**—that was *disastrous*. 💦`,
-            `${nickname} just hit **MAXIMUM LOAD CAPACITY.** 📈🔥`,
-            `The **post-explosion clarity** is about to *hit hard*, ${nickname}. 🫠`,
-            `${nickname} just **reached critical mass.** Scientists are concerned. ⚠️`,
-            `BREAKING NEWS: **${nickname} just caused a power outage.** 🔌⚡`
-        ];
-        this._send(`{"stumble":"msg","text": "${explodeResponses[Math.floor(Math.random() * explodeResponses.length)]}"}`);
-    }, 1000);
-}
-
-
-
-const triggerConvulseCommands = [".convulse"];
-if (triggerConvulseCommands.includes(wsmsg['text'].toLowerCase())) {
-    setTimeout(() => {
-        const nickname = wsmsg['nickname'] || wsmsg['username'];
-        const convulseResponses = [
-            `⚡ **EMERGENCY MEDICAL ALERT!** ${nickname} just lost control! 🚑`,
-            `Yo, ${nickname}, you *good*? You look like you're **seeing the divine.** 😵‍💫`,
-            `Someone **hold ${nickname} down!** We don’t want a **repeat of last time.** 💀`,
-            `That was **too much power** for ${nickname} to handle. 💥🔥`,
-            `${nickname} just **disassociated into another dimension.** 🌌`,
-            `The **soul left the body**—${nickname} is *gone*. 👻`,
-            `Damn, ${nickname}, even your **shadow is shaking.** 👀`,
-            `Physicists are now studying ${nickname} for *warp speed potential*. 🚀`
-        ];
-        this._send(`{"stumble":"msg","text": "${convulseResponses[Math.floor(Math.random() * convulseResponses.length)]}"}`);
-    }, 1000);
-}
-
-
-
-const triggerObliterateCommands = [".obliterate"];
-if (triggerObliterateCommands.includes(wsmsg['text'].toLowerCase())) {
-    setTimeout(() => {
-        const nickname = wsmsg['nickname'] || wsmsg['username'];
-        const obliterateResponses = [
-            `💀 **FATALITY!** ${nickname} just got **erased from existence.**`,
-            `**System Overload!** ${nickname} just got *wiped out*. 💥`,
-            `${nickname} just **ceased to be.** We will remember them. 🕊️`,
-            `RIP ${nickname}, you *will not* be making it to dinner. 🍽️`,
-            `That was a **total system failure.** Rebooting ${nickname}... 🔄`,
-            `NASA just reported an **unexplained cosmic event**. ${nickname} is gone. 🌌`,
-            `The **laws of physics** no longer apply to ${nickname}. 🚀`,
-            `${nickname} just **surpassed human limitations** and *became energy itself*. ⚡`
-        ];
-        this._send(`{"stumble":"msg","text": "${obliterateResponses[Math.floor(Math.random() * obliterateResponses.length)]}"}`);
-    }, 1000);
-}
-
-
-
-const triggerEruptCommands = [".erupt"];
-if (triggerEruptCommands.includes(wsmsg['text'].toLowerCase())) {
-    setTimeout(() => {
-        const nickname = wsmsg['nickname'] || wsmsg['username'];
-        const eruptResponses = [
-            `🌋 **MASSIVE ERUPTION DETECTED!** ${nickname} just **covered the earth** in *hot devastation*! 💦`,
-            `**Warning:** ${nickname} just triggered a **global extinction event.** 🦖💀`,
-            `💀 **CASUALTY REPORT:** ${nickname} took out **half the population** with that eruption.`,
-            `RIP ${nickname}, they **left this world in a tsunami of their own creation.** 🌊`,
-            `Yo, ${nickname}, that was *so strong*, the government **is now watching you.** 👀`,
-            `BREAKING NEWS: **Scientists are calling it "The Second Great Flood"—caused by ${nickname}.** 🌎💦`,
-            `NASA has confirmed that ${nickname} just **added a new moon to Earth's orbit.** 🌙💥`,
-            `**My crops are drowned. My town is gone.** And it’s all because of **${nickname}.** 💦🔥`
-        ];
-        this._send(`{"stumble":"msg","text": "${eruptResponses[Math.floor(Math.random() * eruptResponses.length)]}"}`);
-    }, 1000);
-}
-
-
-
-const triggerPossessCommands = [".possess"];
-if (triggerPossessCommands.includes(wsmsg['text'].toLowerCase())) {
-    setTimeout(() => {
-        const nickname = wsmsg['nickname'] || wsmsg['username'];
-        const possessResponses = [
-            `👹 **OH HELL NO—${nickname} JUST GOT POSSESSED!** 🫣🔥`,
-            `**THE LIGHTS JUST FLICKERED.** ${nickname}, WHAT HAVE YOU DONE? 👀`,
-            `We need **holy water, a priest, and maybe a shotgun.** ${nickname} ain't looking good. ☠️`,
-            `**DEMONIC PRESENCE DETECTED:** ${nickname} is now speaking in **forbidden tongues.** 🕯️`,
-            `THE POWER OF CHRIST COMPELS YOU, ${nickname}!! 📖🕊️`,
-            `⚠️ **Demonic Levels Rising...** Oh no, ${nickname} is about to go **FULL EXORCIST.** 👁️`,
-            `**That was not ${nickname} anymore.** Something else is in control now. 🔥`,
-            `🔮 **Ancient texts warned about this day...** and they mentioned **${nickname} by name.** 📜😱`
-        ];
-        this._send(`{"stumble":"msg","text": "${possessResponses[Math.floor(Math.random() * possessResponses.length)]}"}`);
-    }, 1000);
-}
-
-
-
-const triggerImplodeCommands = [".implode"];
-if (triggerImplodeCommands.includes(wsmsg['text'].toLowerCase())) {
-    setTimeout(() => {
-        const nickname = wsmsg['nickname'] || wsmsg['username'];
-        const implodeResponses = [
-            `🕳️ **WHOOPS—${nickname} JUST COLLAPSED IN ON THEMSELVES!**`,
-            `💥 *ERROR 404:* **${nickname} NOT FOUND.** They **imploded into nothingness.**`,
-            `NASA just confirmed that ${nickname} has become a **new black hole.** 🌌🔥`,
-            `Uh-oh, ${nickname} just hit the **event horizon**—there’s *no coming back.* 👁️`,
-            `That was **too much pressure,** ${nickname} folded *like a cheap lawn chair.* 🌬️`,
-            `💀 **Some say ${nickname} is still shrinking... smaller... and smaller...**`,
-            `Physics **has failed**—${nickname} just broke **all known laws of matter.** ⚛️`,
-            `BREAKING: **Scientists have classified ${nickname} as a "microscopic singularity."** 🔍🌍`
-        ];
-        this._send(`{"stumble":"msg","text": "${implodeResponses[Math.floor(Math.random() * implodeResponses.length)]}"}`);
-    }, 1000);
-}
-
-
-
-const triggerTranscendCommands = [".transcend"];
-if (triggerTranscendCommands.includes(wsmsg['text'].toLowerCase())) {
-    setTimeout(() => {
-        const nickname = wsmsg['nickname'] || wsmsg['username'];
-        const transcendResponses = [
-            `🌌 **OH SHIT—${nickname} JUST ACHIEVED ENLIGHTENMENT!** 🚀`,
-            `👁️ **All knowledge is now unlocked.** ${nickname} has **become one with the universe.**`,
-            `🔥 **${nickname} ascended so hard, they LEFT THE MORTAL PLANE.**`,
-            `💨 *We just watched ${nickname} evaporate into pure energy.*`,
-            `📡 **Alien transmissions detected.** ${nickname} is now *communing with higher beings.* 👽`,
-            `**${nickname} has cracked the simulation.** THEY KNOW EVERYTHING NOW. 🖥️`,
-            `**The voice of the cosmos whispers:** *"Well done, ${nickname}."* 🎶`,
-            `👼 **New celestial being detected:** ${nickname} is now among the **gods.**`
-        ];
-        this._send(`{"stumble":"msg","text": "${transcendResponses[Math.floor(Math.random() * transcendResponses.length)]}"}`);
-    }, 1000);
-}
-
-
-
-const triggerShatterCommands = [".shatter"];
-if (triggerShatterCommands.includes(wsmsg['text'].toLowerCase())) {
-    setTimeout(() => {
-        const nickname = wsmsg['nickname'] || wsmsg['username'];
-        const shatterResponses = [
-            `💥 **HOLY SHIT—${nickname} JUST SHATTERED REALITY!** 🔮`,
-            `⚠️ **WARNING:** ${nickname} has **torn a hole in the fabric of existence.** 🕳️`,
-            `🚨 **Temporal Disturbance Detected:** ${nickname} just broke *space-time*.`,
-            `**Dimensional rift open.** ${nickname} is now *existing in multiple realities.* 🌍🌀`,
-            `💀 **Side effects of this incident include:** distortion, hallucinations, and **${nickname}’s disintegration.**`,
-            `👁️ *Something is watching.* ${nickname}, what did you *DO?!*`,
-            `**The Universe is rebooting...** because of **${nickname}.** 🔁`,
-            `👽 **Alien civilizations have confirmed:** ${nickname} is a **cosmic threat.**`
-        ];
-        this._send(`{"stumble":"msg","text": "${shatterResponses[Math.floor(Math.random() * shatterResponses.length)]}"}`);
     }, 1000);
 }
 
@@ -6517,25 +5955,6 @@ if (wsmsg['text'].toLowerCase() === ".chucknorris" || wsmsg['text'].toLowerCase(
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-    // start boobs
-    /*const triggerCommands = [".boobs", ".tits", ".booby", ".busty", ".boobies", ".bobbles", ".titties", ".boob", ".tit", ".milkers", ".teet", ".teets", ".breast", ".breasts", ".bloons", ".melons", ".gohodonkaloos", ".honkers", ".hooters", ".knockers", ".massivenaturals"];
-    if (triggerCommands.includes(wsmsg['text'].toLowerCase())) {
-        const gifs = [
-            "https://i.imgur.com/x3dElVe.gif",
-            "https://i.imgur.com/V8ngvRm.gif",
-            "https://i.imgur.com/F2CcNyv.gif",
-            "https://i.imgur.com/DHZfM5T.gif",
-            "https://i.imgur.com/1DK3FzN.gif",
-            "https://i.imgur.com/9cQp2Iu.gif",
-            "https://i.imgur.com/bCQIiX5.gif",
-            "https://i.imgur.com/0xYIcCS.gif",
-            "https://i.imgur.com/IVHC6hy.gif",
-            "https://i.imgur.com/rIG5mzn.png"
-        ];
-        const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
-        this._send(`{"stumble":"msg","text": "${randomGif}"}`);
-    }*/
-
 // Start boobs command with GBX charge
 const triggerCommands = [".boobs", ".tits", ".booby", ".busty", ".boobies", ".bobbles", ".titties", ".boob", ".tit", ".milkers", ".teet", ".teets", ".breast", ".breasts", ".bloons", ".melons", ".gohodonkaloos", ".honkers", ".hooters", ".knockers", ".massivenaturals"];
 
@@ -6583,31 +6002,6 @@ if (triggerCommands.includes(wsmsg['text'].toLowerCase())) {
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
-
-    // start booty
-    /*const triggerBootyCommands = [".booty", ".ass", ".butt", ".donk", ".fanny", ".bongos"];
-    if (triggerBootyCommands.includes(wsmsg['text'].toLowerCase())) {
-        const bootygifs = [
-            "https://i.imgur.com/oZVxtAU.gif",
-            "https://i.imgur.com/Z3SgS85.gif",
-            "https://i.imgur.com/fGqJjtI.gif",
-            "https://i.imgur.com/WRkLICq.gif",
-            "https://i.imgur.com/GszuDNc.gif",
-            "https://i.imgur.com/Hn5LEVA.gif",
-            "https://i.imgur.com/GnXXrzM.gif",
-            "https://i.imgur.com/KgALc2j.gif",
-            "https://i.imgur.com/PAg2tA1.gif",
-            "https://i.imgur.com/uWJaIsY.gif",
-            "https://i.imgur.com/5xoHi5e.gif",
-            "https://i.imgur.com/h4bt7by.gif",
-            "https://i.imgur.com/ZrueOWT.gif",
-            "https://i.imgur.com/2dwimr2.gif",
-            "https://i.imgur.com/nJ7n1oT.gif",
-            "https://i.imgur.com/ImnJ0WV.gif"
-        ];
-        const randombootyGif = bootygifs[Math.floor(Math.random() * bootygifs.length)];
-        this._send(`{"stumble":"msg","text": "${randombootyGif}"}`);
-    }*/
 
 // Start booty command with GBX charge
 const triggerBootyCommands = [".booty", ".ass", ".butt", ".donk", ".fanny", ".bongos"];
@@ -6682,27 +6076,6 @@ if (triggerBootyCommands.includes(wsmsg['text'].toLowerCase())) {
     }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
-
-    // start dilf
-    /*const triggerDilfCommands = [".dilf"];
-    if (triggerDilfCommands.includes(wsmsg['text'].toLowerCase())) {
-        const dilfGifs = [
-            "https://i.imgur.com/oiuLfwG.png",
-            "https://i.imgur.com/vJQmSMk.gif",
-            "https://i.imgur.com/Hxap00t.gif",
-            "https://i.imgur.com/Y0gVOZr.gif",
-            "https://i.imgur.com/pxTCSZo.gif",
-            "https://i.imgur.com/Cu7AwgK.gif",
-            "https://i.imgur.com/CjRngKa.gif",
-            "https://i.imgur.com/XqzRTGk.gif",
-            "https://i.imgur.com/zgX6nDA.gif",
-            "https://i.imgur.com/aoEIL0R.gif",
-            "https://i.imgur.com/bDgntvS.gif",
-            "https://i.imgur.com/12Zpn2H.gif"
-        ];
-        const randomDilfGif = dilfGifs[Math.floor(Math.random() * dilfGifs.length)];
-        this._send(`{"stumble":"msg","text": "${randomDilfGif}"}`);
-    }*/
 
 // Start DILF command with GBX charge
 const triggerDilfCommands = [".dilf"];
@@ -6794,48 +6167,6 @@ if (triggerGrilfPilfCommands.includes(wsmsg['text'].toLowerCase())) {
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
-
-    // start snarfdilf
-    /*if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
-        this._send('{"stumble":"msg","text": "https://i.imgur.com/RSZ7xzg.jpeg"}');
-    }*/
-
-// Start snarfdilf (Costs 10k GBX, random image output)
-/*if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
-    const handle = wsmsg['handle'];
-    const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || "Someone";
-
-    if (!username) return; // Ensure the user is valid
-
-    const cost = 10_000; // Cost: 10,000 GBX
-    const userBalance = userBalances[username]?.balance || 0;
-
-    if (userBalance < cost) {
-        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 10,000 GBX to access peak snarfdilf content. Get your GBX up!`);
-        return;
-    }
-
-    // Deduct 10,000 GBX
-    userBalances[username].balance -= cost;
-    saveBalances();
-
-    // List of possible images
-    const snarfdilfImages = [
-        "https://i.imgur.com/RSZ7xzg.jpeg",
-        "https://i.imgur.com/5HSAo1l.jpeg",
-        "https://i.imgur.com/oLAqMHS.jpeg"
-    ];
-    const randomImage = snarfdilfImages[Math.floor(Math.random() * snarfdilfImages.length)];
-
-    // Send the image
-    this._send(`{"stumble":"msg","text": "${randomImage}"}`);
-
-    // Send payment confirmation after 1000ms
-    setTimeout(() => {
-        this._send(`{"stumble":"msg","text": "🤖 ${nickname} paid 💵 10,000 GBX for this snarfdilf masterpiece."}`);
-    }, 1000);
-}*/
 
 // Start snarfdilf (Costs 10k GBX, random image output)
 if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
@@ -6936,30 +6267,6 @@ if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
             }));
         }, 1000);
     }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-    // Curse word check command
-    // if (/\b(shit|fuck|bitch|asshole|damn|bastard|cock|pussy|dick|cunt|slut|fag|twat|douche|motherfucker|prick|gay|retard|nigger|whore|bastard)\b/i.test(wsmsg['text'])) {
-    /*if (/(\b|[^a-zA-Z])(n+[\W_]*[i1!|¡]+[\W_]*[g9q6]+[\W_]*[g9q6]+[\W_]*[e3]+[\W_]*[r4]+)(\b|[^a-zA-Z])/iu.test(wsmsg['text'].normalize("NFKC")) ||
-        /(\b|[^a-zA-Z])(k+[\W_]*[i1!|¡]+[\W_]*k+[\W_]*[e3]+[\W_]*[r4]+)(\b|[^a-zA-Z])/iu.test(wsmsg['text'].normalize("NFKC")) ||
-        /(\b|[^a-zA-Z])(c+[\W_]*h+[\W_]*[i1!|¡]+[\W_]*n+[\W_]*[kq]+)(\b|[^a-zA-Z])/iu.test(wsmsg['text'].normalize("NFKC")) ||
-        /(\b|[^a-zA-Z])(s+[\W_]*p+[\W_]*[i1!|¡]+[\W_]*c+)(\b|[^a-zA-Z])/iu.test(wsmsg['text'].normalize("NFKC")) ||
-        ///(\b|[^a-zA-Z])(w+[\W_]*[o0]+[\W_]*p+)(\b|[^a-zA-Z])/iu.test(wsmsg['text'].normalize("NFKC")) ||
-        /(\b|[^a-zA-Z])(g+[\W_]*[o0]+[\W_]*[o0]+[\W_]*[kq]+)(\b|[^a-zA-Z])/iu.test(wsmsg['text'].normalize("NFKC")) ||
-        /(\b|[^a-zA-Z])(t+[\W_]*[a@]+[\W_]*r+[\W_]*b+)(\b|[^a-zA-Z])/iu.test(wsmsg['text'].normalize("NFKC")) ||
-        /(\b|[^a-zA-Z])(s+[\W_]*[a@]+[\W_]*n+[\W_]*d+[\W_]*n+[\W_]*[i1!|¡]+[\W_]*[g9q6]+)(\b|[^a-zA-Z])/iu.test(wsmsg['text'].normalize("NFKC")) ||
-        /(\b|[^a-zA-Z])(m+[\W_]*[o0]+[\W_]*[o0]+[\W_]*s+[\W_]*[l1]+[\W_]*[i1!|¡]+[\W_]*m+)(\b|[^a-zA-Z])/iu.test(wsmsg['text'].normalize("NFKC"))) {
-
-        let user = wsmsg['username'] || wsmsg['handle'] || 'Unknown User';
-        let message = wsmsg['text'];
-
-        // Log in console
-        console.log(`[BAN ALERT] User: ${user} | Message: "${message}"`);
-
-        // Send ban alert + log in chat
-        this._send(`{"stumble":"msg","text":"🚨 !BAN ALERT! 🚨 ${user} said: '${message}'"}`);
-    }*/
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -7343,6 +6650,34 @@ if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
         }
 
 // Silly Commands -------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    //start smile
+    if (wsmsg['text'] === '.smile') {
+        const messages = [
+            "⣿⣿⣿⣿⣿⣿⡟⠁⠄⠄⠄⠄⣠⣤⣴⣶⣶⣶⣶⣤⡀⠈⠙⢿",
+            "⣿⣿⣿⣿⣿⡟⠄⠄⠄⠄⠄⣸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣆⠄⠈",
+            "⣿⣿⣿⣿⣿⠁⠄⠄⠄⢀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠄⠄",
+            "⣿⣿⣿⣿⣿⡄⠄⠄⠄⠙⠻⠿⣿⣿⣿⣿⠿⠿⠛⠛⠻⣿⡄⠄",
+            "⣿⣿⣿⣿⣿⡇⠄⠄⠁ ⭕ ⠄⢹⣿⡗⠄ ⭕ ⢄⡀⣾⢀⣿",
+            "⣿⣿⣿⣿⣿⡇⠘⠄⠄⠄⢀⡀⠄⣿⣿⣷⣤⣤⣾⣿⣿⣿⣧⢸",
+            "⣿⣿⣿⣿⣿⡇⠄⣰⣿⡿⠟⠃⠄⣿⣿⣿⣿⣿⡛⠿⢿⣿⣷⣾",
+            "⣿⣿⣿⣿⣿⣿⡄⠈⠁⠄⠄⠄⠄⠻⠿⢛⣿⣿⠿⠂⠄⢹⢹⣿",
+            "⣿⣿⣿⣿⣿⣿⣿⡐⠐⠄⠄⣠⣀⣀⣚⣯⣵⣶⠆⣰⠄⠞⣾⣿",
+            "⣿⣿⣿⣿⣿⣿⣿⣷⡄⠄⠄⠈⠛⠿⠿⠿⣻⡏⢠⣿⣎⣾⣿⣿",
+            "⣿⣿⣿⣿⣿⣿⡿⠟⠛⠄⠄⠄⠄⠙⣛⣿⣿⣵⣿⡿⢹⡟⣿⣿",
+            "⣿⠿⠿⠋⠉⠄⠄⠄⠄⠄⠄⠄⣀⣠⣾⣿⣿⣿⡟⠁⠹⡇⣸⣿",
+            "⠁⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠙⠿⠿⠛⠋⠄⣸⣦⣠⣿⣿"
+        ];
+
+        // Send each message with increasing delays
+        messages.forEach((message, index) => {
+            setTimeout(() => {
+                this._send(`{"stumble":"msg","text":"${message}"}`);
+            }, (index + 1) * 1000); // Each line is delayed by 1 second
+        });
+    }
+
 //-----------------------------------------------------------------------------------------------------------------------------------
 
         //start dialup chode
