@@ -9,7 +9,8 @@
 // ==/UserScript==
 
 // Notes ---
-
+// fix weed prices
+// fix bank loading etc
 
 
 (function() {
