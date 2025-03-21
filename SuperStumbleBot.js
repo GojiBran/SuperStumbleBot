@@ -1205,37 +1205,52 @@ function updateWeedPrices() {
 // Update weed prices every 30 seconds
 setInterval(updateWeedPrices, 30 * 1000);*/
 
-// 🌿 Dynamic Weed Pricing Variables
-let weedBuyPrice = parseInt(localStorage.getItem("weedBuyPrice")) || Math.floor(20 / 3.5);
-let weedSellPrice = parseInt(localStorage.getItem("weedSellPrice")) || Math.floor(20 / 3.5);
+// 🌿 Ensure weed prices are stored correctly
+let BASE_PRICE = Math.floor(20 / 3.5); // ~5 GBX per gram
+let weedBuyPrice = parseInt(localStorage.getItem("weedBuyPrice")) || BASE_PRICE;
+let weedSellPrice = parseInt(localStorage.getItem("weedSellPrice")) || Math.floor(BASE_PRICE * 0.8);
 let prevWeedBuyPrice = weedBuyPrice;
 let prevWeedSellPrice = weedSellPrice;
 
-// Base market price
-const BASE_PRICE = Math.floor(20 / 3.5); // ~5.71 → 5
-
-// Function to update weed prices based on WGH bank and randomness
 function updateWeedPrices() {
     const bank = wghBank || 0;
+    const gbxReserve = lghBank || 0;
 
-    // Calculate scarcity factor
-    // Low bank = higher price, High bank = lower price
-    // Cap bank influence to avoid wild jumps
+    // 🌿 Ensure user stash objects exist before reducing
+    const totalWeed = Object.values(userWeedStashes || {}).reduce((a, b) => a + (b || 0), 0);
+    const offshoreTotal = Object.values(userStashes || {}).reduce((a, b) => a + (b || 0), 0);
+    const hiddenTotal = Object.values(userHiddenWeed || {}).reduce((a, b) => a + (b || 0), 0);
+
+    // **Scarcity Factor Based on WGH**
     let scarcityFactor = 1.0;
+    if (bank <= 5000) scarcityFactor = 1.6;
+    else if (bank <= 10000) scarcityFactor = 1.3;
+    else if (bank >= 50000) scarcityFactor = 0.85;
+    else if (bank >= 100000) scarcityFactor = 0.7;
 
-    if (bank <= 5000) scarcityFactor = 1.5;
-    else if (bank <= 10000) scarcityFactor = 1.2;
-    else if (bank >= 50000) scarcityFactor = 0.9;
-    else if (bank >= 100000) scarcityFactor = 0.75;
+    // **Inflation Factor Based on LGH**
+    let inflationFactor = 1.0;
+    if (gbxReserve >= 1000000) inflationFactor = 1.5;
+    else if (gbxReserve >= 500000) inflationFactor = 1.3;
+    else if (gbxReserve <= 100000) inflationFactor = 0.8;
 
-    // Add a little randomness (-5% to +5%)
+    // **Demand Factor Based on User Holdings**
+    let demandFactor = 1.0;
+    if (totalWeed > 200000) demandFactor = 1.2;
+    if (offshoreTotal > 500000) demandFactor += 0.2;
+    if (hiddenTotal > 50000) demandFactor -= 0.15;
+
+    // **Final Price Modifier Calculation**
+    let finalPriceFactor = scarcityFactor * inflationFactor * demandFactor;
+
+    // **Random price shift (-5% to +5%)**
     const randomFactor = 1 + ((Math.random() * 0.1) - 0.05);
 
-    // Final price calc
-    let newBuyPrice = Math.max(1, Math.round(BASE_PRICE * scarcityFactor * randomFactor));
+    // **Calculate new prices**
+    let newBuyPrice = Math.max(1, Math.round(BASE_PRICE * finalPriceFactor * randomFactor));
     let newSellPrice = Math.max(1, Math.round(newBuyPrice * 0.8));
 
-    // Smooth transition
+    // **Smooth transition to prevent wild swings**
     let priceShift = Math.round((newBuyPrice - prevWeedBuyPrice) * 0.5);
     weedBuyPrice = Math.max(1, prevWeedBuyPrice + priceShift);
     weedSellPrice = Math.max(1, prevWeedSellPrice + Math.round(priceShift * 0.8));
@@ -1243,13 +1258,14 @@ function updateWeedPrices() {
     prevWeedBuyPrice = weedBuyPrice;
     prevWeedSellPrice = weedSellPrice;
 
+    // **Save new values**
     localStorage.setItem("weedBuyPrice", weedBuyPrice);
     localStorage.setItem("weedSellPrice", weedSellPrice);
 
-    console.log(`🌿 Weed Prices Updated: Buy ${weedBuyPrice} GBX/g | Sell ${weedSellPrice} GBX/g | WGH Bank: ${bank}`);
+    console.log(`🌿 Weed Prices Updated: Buy ${weedBuyPrice} GBX/g | Sell ${weedSellPrice} GBX/g | WGH: ${bank} | LGH: ${gbxReserve}`);
 }
 
-// One-time interval guard
+// **Run price update every 30 sec**
 if (!window._weedPriceIntervalSet) {
     setInterval(updateWeedPrices, 30 * 1000);
     window._weedPriceIntervalSet = true;
@@ -1270,7 +1286,7 @@ function saveJointStashes() {
 }
 
 // 🌿 .buyweed
-if (wsmsg["text"].toLowerCase().startsWith(".buyweed ")) {
+/*if (wsmsg["text"].toLowerCase().startsWith(".buyweed ")) {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
@@ -1330,6 +1346,61 @@ if (wsmsg["text"].toLowerCase().startsWith(".buyweed ")) {
 
         respondWithMessage.call(this, `🚔 Oh no! ${nickname} got busted and lost 🌿 ${bustAmount.toLocaleString()} grams of weed!`);
     }
+}*/
+
+// 🌿 .buyweed
+if (wsmsg["text"].toLowerCase().startsWith(".buyweed ")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].split(" ")[1];
+
+    if (!username || !args) {
+        respondWithMessage.call(this, "🤖 Usage: .buyweed [amount|max]");
+        return;
+    }
+
+    const userBalance = userBalances[username]?.balance || 0;
+    const maxAffordable = Math.floor(userBalance / (weedBuyPrice * 1.02));
+    let amount;
+
+    if (args.toLowerCase() === "max") {
+        amount = Math.min(maxAffordable, wghBank);
+        if (amount <= 0) {
+            respondWithMessage.call(this, `🤖 ${nickname}, you can't afford any weed right now or the market supply is empty.`);
+            return;
+        }
+    } else {
+        amount = parseInt(args, 10);
+        if (isNaN(amount) || amount <= 0) {
+            respondWithMessage.call(this, "🤖 Usage: .buyweed [amount|max]");
+            return;
+        }
+
+        if (amount > wghBank) {
+            respondWithMessage.call(this, `🤖 Not enough weed available in the market. Try a smaller amount.`);
+            return;
+        }
+
+        const requiredFunds = Math.ceil(amount * weedBuyPrice * 1.02);
+        if (userBalance < requiredFunds) {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough GojiBux! Weed currently costs 💵 ${weedBuyPrice} GBX per gram.`);
+            return;
+        }
+    }
+
+    const cost = Math.ceil(amount * weedBuyPrice * 1.02); // 2% Tax
+    userBalances[username].balance -= cost;
+    userWeedStashes[username] = (userWeedStashes[username] || 0) + amount;
+    wghBank -= amount;
+    lghBank += cost;
+
+    saveBalances();
+    saveWeedStashes();
+    saveWGHBank();
+    localStorage.setItem("lghBank", lghBank); // 👈 Fixed here!
+
+    respondWithMessage.call(this, `🌿 ${nickname} bought ${amount} grams of weed for 💵 ${cost.toLocaleString()} GBX.`);
 }
 
 // 💰 .sellweed
@@ -1770,9 +1841,9 @@ setInterval(() => {
 }*/
 
 // 🔥 `.weedprice` - Show current dynamic weed prices
-if (wsmsg["text"].toLowerCase() === ".weedprice") {
+/*if (wsmsg["text"].toLowerCase() === ".weedprice") {
     respondWithMessage.call(this, `🌿 Current Weed Prices:\n💵 Buy: ${weedBuyPrice.toLocaleString()} GBX/gram\n💰 Sell: ${weedSellPrice.toLocaleString()} GBX/gram`);
-}
+}*/
 
 // 🌿 .myweed
 if (wsmsg["text"].toLowerCase() === ".myweed") {
@@ -4870,6 +4941,43 @@ if (wsmsg["text"].toLowerCase().startsWith(".balance") || wsmsg["text"].toLowerC
     );
 }
 
+// 🔥 `.weedprice` - Show current dynamic weed prices + economy stats with split messages
+if (wsmsg["text"].toLowerCase() === ".weedprice") {
+    // Ensure all key economy values exist
+    const bank = wghBank || 0;
+    const gbxReserve = lghBank || 0;
+    const totalWeed = Object.values(userWeedStashes || {}).reduce((a, b) => a + (b || 0), 0);
+    const offshoreTotal = Object.values(userStashes || {}).reduce((a, b) => a + (b || 0), 0);
+    const hiddenTotal = Object.values(userHiddenWeed || {}).reduce((a, b) => a + (b || 0), 0);
+
+    // Ensure weed prices exist & are valid
+    if (isNaN(weedBuyPrice) || isNaN(weedSellPrice)) {
+        weedBuyPrice = parseInt(localStorage.getItem("weedBuyPrice")) || Math.floor(20 / 3.5);
+        weedSellPrice = parseInt(localStorage.getItem("weedSellPrice")) || Math.floor(weedBuyPrice * 0.8);
+    }
+
+    // Ensure weed prices are numbers
+    weedBuyPrice = Math.max(1, parseInt(weedBuyPrice));
+    weedSellPrice = Math.max(1, parseInt(weedSellPrice));
+
+    // First message (Weed Prices)
+    const message1 = `🌿 Current Weed Prices:\n💵 Buy: ${weedBuyPrice.toLocaleString()} GBX/g\n💰 Sell: ${weedSellPrice.toLocaleString()} GBX/g`;
+
+    // Second message (Market Stats)
+    const message2 = `📦 Market Stats:\n🏦 WGH Supply: ${bank.toLocaleString()} g\n💰 LGH Reserve: ${gbxReserve.toLocaleString()} GBX\n🌿 Total Weed: ${totalWeed.toLocaleString()} g\n🏝️ Offshore Weed: ${offshoreTotal.toLocaleString()} g\n🗝️ Hidden Weed: ${hiddenTotal.toLocaleString()} g`;
+
+    // Send first message
+    respondWithMessage.call(this, message1);
+
+    // Send second message after 1000ms delay
+    setTimeout(() => {
+        respondWithMessage.call(this, message2);
+    }, 1000);
+
+    // Debugging log (check console)
+    console.log(`🌿 .weedprice command triggered:\n- Buy Price: ${weedBuyPrice} GBX/g\n- Sell Price: ${weedSellPrice} GBX/g\n- WGH: ${bank}\n- LGH: ${gbxReserve}\n- Total Weed: ${totalWeed}\n- Offshore Weed: ${offshoreTotal}\n- Hidden Weed: ${hiddenTotal}`);
+}
+
 if (wsmsg["text"].toLowerCase() === ".stats") {
     const totalUsers = Object.keys(userNicknames).length;
     const usersWithGojiBux = Object.values(userBalances).filter(user => user.balance > 0).length;
@@ -6286,7 +6394,8 @@ if (wsmsg['text'].toLowerCase() === ".chucknorris" || wsmsg['text'].toLowerCase(
     if (wsmsg['text'].toLowerCase() === ".flamingo") {
         const gifs = [
             "https://i.imgur.com/0NysV2K.gif",
-            "https://i.imgur.com/7iJcUmV.gif"
+            "https://i.imgur.com/7iJcUmV.gif",
+            "https://i.imgur.com/xRnptLN.gif"
         ];
         const randomGif = gifs[Math.floor(Math.random() * gifs.length)];
         this._send(`{"stumble":"msg","text": "${randomGif}"}`);
