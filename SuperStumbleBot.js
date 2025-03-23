@@ -1349,7 +1349,7 @@ function saveJointStashes() {
 }*/
 
 // 🌿 .buyweed
-if (wsmsg["text"].toLowerCase().startsWith(".buyweed ")) {
+/*if (wsmsg["text"].toLowerCase().startsWith(".buyweed ")) {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
@@ -1379,6 +1379,62 @@ if (wsmsg["text"].toLowerCase().startsWith(".buyweed ")) {
 
         if (amount > wghBank) {
             respondWithMessage.call(this, `🤖 Not enough weed available in the market. Try a smaller amount.`);
+            return;
+        }
+
+        const requiredFunds = Math.ceil(amount * weedBuyPrice * 1.02);
+        if (userBalance < requiredFunds) {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough GojiBux! Weed currently costs 💵 ${weedBuyPrice} GBX per gram.`);
+            return;
+        }
+    }
+
+    const cost = Math.ceil(amount * weedBuyPrice * 1.02); // 2% Tax
+    userBalances[username].balance -= cost;
+    userWeedStashes[username] = (userWeedStashes[username] || 0) + amount;
+    wghBank -= amount;
+    lghBank += cost;
+
+    saveBalances();
+    saveWeedStashes();
+    saveWGHBank();
+    localStorage.setItem("lghBank", lghBank); // 👈 Fixed here!
+
+    respondWithMessage.call(this, `🌿 ${nickname} bought ${amount} grams of weed for 💵 ${cost.toLocaleString()} GBX.`);
+}*/
+
+// 🌿 .buyweed
+if (wsmsg["text"].toLowerCase().startsWith(".buyweed ")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].split(" ")[1];
+
+    if (!username || !args) {
+        respondWithMessage.call(this, "🤖 Usage: .buyweed [amount|max]");
+        return;
+    }
+
+    const userBalance = userBalances[username]?.balance || 0;
+    const maxAllowed = Math.floor(wghBank / 2); // Limit to half the bank
+    const maxAffordable = Math.floor(userBalance / (weedBuyPrice * 1.02));
+    let amount;
+
+    if (args.toLowerCase() === "max") {
+        amount = Math.min(maxAffordable, maxAllowed);
+        if (amount <= 0) {
+            respondWithMessage.call(this, `🤖 ${nickname}, you can't afford any weed right now or the market supply is too limited.`);
+            return;
+        }
+    } else {
+        amount = parseInt(args, 10);
+        if (isNaN(amount) || amount <= 0) {
+            respondWithMessage.call(this, "🤖 Usage: .buyweed [amount|max]");
+            return;
+        }
+
+        if (amount > maxAllowed) {
+            respondWithMessage.call(this, `🤖 You can only buy up to half of the available weed in the market (${maxAllowed}g). Try a smaller amount.`);
             return;
         }
 
@@ -1722,7 +1778,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".admin giveweed")) {
 }
 
 // 🌿 4:20 Auto-Weed & GojiBux Giveaway + WGH Deposit
-setInterval(() => {
+/*setInterval(() => {
     const now = new Date();
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
@@ -1777,16 +1833,66 @@ setInterval(() => {
                     const addedPounds = (42069 / 448).toFixed(2);
                     const wghTotalPounds = (wghBank / 448).toFixed(2);
 
-                    this._send(`{"stumble":"msg","text": "🌿 All ${userCount} users just got 420g of premium bud and 420 GBX! Blaze it & get rich! 🔥💨💰"}`);
-                    this._send(`{"stumble":"msg","text": "🌍 WGH just grew by ${addedPounds} lb [42,069g]! The global stash is now at ${wghTotalPounds} lb! 💨🔥"}`);
+                    //this._send(`{"stumble":"msg","text": "🌿 All ${userCount} users just got 420g of premium bud and 420 GBX! Blaze it & get rich! 🔥💨💰"}`);
+                    //this._send(`{"stumble":"msg","text": "🌍 WGH just grew by ${addedPounds} lb [42,069g]! The global stash is now at ${wghTotalPounds} lb! 💨🔥"}`);
 
                     // Send .help message after another delay
                     setTimeout(() => {
-                        this._send('{"stumble":"msg","text": "💡 Use .help to join the fun!"}');
+                        //this._send('{"stumble":"msg","text": "💡 Use .help to join the fun!"}');
                     }, 3000); // 3-second delay after giveaway message
                 }, 3000); // 3-second delay before giving the weed and GBX
             }, 2000); // 2-second delay after GIF before 4:20 message
         }, 1000); // 1-second delay for initial GIF message
+    }
+}, 1000);*/
+
+// 🌿 4:20 Auto-Weed & WGH Deposit Only
+setInterval(() => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const currentSecond = now.getSeconds();
+
+    // Ensure the message is only scheduled once per hour at HH:20:00
+    if (currentMinute === 20 && currentSecond === 0 && lastSentHour !== currentHour && !shouldSendMessage) {
+        lastSentHour = currentHour;
+        shouldSendMessage = true; // Set flag
+    }
+
+    // Send 4:20 alert and add 42,069g to WGH only
+    if (shouldSendMessage) {
+        shouldSendMessage = false; // Reset the flag immediately to prevent multiple sends
+
+        setTimeout(() => {
+            // Send GIF first
+            this._send('{"stumble":"msg","text": "https://i.imgur.com/Dmscsdd.gif"}');
+
+            setTimeout(() => {
+                this._send('{"stumble":"msg","text": "🤖 It\'s 4:20 somewhere! Smoke em if you got em! 💨"}');
+
+                setTimeout(() => {
+                    // Add 42,069g to WGH (Weed Global Holdings)
+                    if (!wghBank) {
+                        wghBank = 0;
+                    }
+                    wghBank += 42069;
+
+                    // Save updated WGH stash
+                    localStorage.setItem("wghBank", JSON.stringify(wghBank));
+
+                    // Format WGH in pounds for the message (1 lb = 448g)
+                    const addedPounds = (42069 / 448).toFixed(2);
+                    const wghTotalPounds = (wghBank / 448).toFixed(2);
+
+                    this._send(`{"stumble":"msg","text": "🌍 WGH just grew by ${addedPounds} lb [42,069g]! The global stash is now at ${wghTotalPounds} lb! 💨🔥"}`);
+
+                    // Optional: Send .help message after another delay
+                    // setTimeout(() => {
+                    //     this._send('{"stumble":"msg","text": "💡 Use .help to join the fun!"}');
+                    // }, 3000);
+                }, 3000); // 3-second delay before WGH message
+            }, 2000); // 2-second delay after GIF
+        }, 1000); // 1-second delay for initial GIF
     }
 }, 1000);
 
@@ -2953,6 +3059,51 @@ if (wsmsg["text"].toLowerCase().startsWith(".eatpizza")) {
     setTimeout(() => {
         respondWithMessage.call(this, response);
     }, 1000);
+}
+
+// Cookies --------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍪 Global Cookie Storage (Per-user)
+let userCookieStashes = JSON.parse(localStorage.getItem("userCookieStashes")) || {};
+let lastCookieClaim = JSON.parse(localStorage.getItem("lastCookieClaim")) || {};
+
+if (wsmsg["text"].toLowerCase() === ".cookie") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const now = Date.now();
+    const cooldown = 7 * 1000; // 7-second cooldown because cookies are FASTER
+
+    if (!username) {
+        respondWithMessage.call(this, "🍪 Error: Your cookie jar is missing.");
+        return;
+    }
+
+    if (lastCookieClaim[username] && now - lastCookieClaim[username] < cooldown) {
+        const remaining = ((cooldown - (now - lastCookieClaim[username])) / 1000).toFixed(1);
+        respondWithMessage.call(this, `⏳ ${nickname}, cool the crumbs! Wait ${remaining}s for more cookies.`);
+        return;
+    }
+
+    lastCookieClaim[username] = now;
+    localStorage.setItem("lastCookieClaim", JSON.stringify(lastCookieClaim));
+
+    const earnedCookies = Math.floor(Math.random() * 5) + 1;
+    userCookieStashes[username] = (userCookieStashes[username] || 0) + earnedCookies;
+    localStorage.setItem("userCookieStashes", JSON.stringify(userCookieStashes));
+
+    const messages = [
+        `🍪 ${nickname} caught ${earnedCookies} cookies falling from the sky! Gravity? Never heard of it.`,
+        `👀 ${nickname} stole ${earnedCookies} cookies from a raccoon wizard. They were enchanted... probably.`,
+        `😵 ${nickname} ate ${earnedCookies} cookies, wrapper and all.`,
+        `🌀 ${nickname} found ${earnedCookies} cookies swirling in a cookie vortex. Don’t question it.`,
+        `👻 ${nickname} traded a ghost a secret for ${earnedCookies} cookies.`,
+        `🥴 ${nickname} baked ${earnedCookies} cookies with *questionable* ingredients. Delicious though.`,
+        `✨ ${nickname} summoned ${earnedCookies} cookies using ancient crumbcraft.`
+    ];
+
+    respondWithMessage.call(this, messages[Math.floor(Math.random() * messages.length)]);
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -4393,6 +4544,18 @@ function saveGojiPot() {
     localStorage.setItem("lastPotClaimTime", lastPotClaimTime);
 }
 
+// 💰 .pot - Display the current pot balance including LGH contribution
+if (wsmsg["text"].toLowerCase() === ".pot") {
+    const lghContribution = Math.floor(lghBank * 0.5);
+    const totalPot = gojiPot + lghContribution;
+
+    if (totalPot <= 0) {
+        respondWithMessage.call(this, "🤖 The pot is empty. Use .givepot to contribute!");
+    } else {
+        respondWithMessage.call(this, `💰 The current pot contains 💵 ${totalPot.toLocaleString()} GBX! (💵 ${gojiPot.toLocaleString()} GBX + 💵 ${lghContribution.toLocaleString()} GBX from LGH Bank). Use .givepot to contribute or .getpot to claim it.`);
+    }
+}
+
 // 💸 .givepot [amount/max/all] - Contribute to the GojiBux Pot
 if (wsmsg["text"].toLowerCase().startsWith(".givepot")) {
     const args = wsmsg["text"].split(" ");
@@ -4483,6 +4646,10 @@ if (wsmsg["text"].toLowerCase() === ".getpot") {
     saveLghBank();
 
     respondWithMessage.call(this, `🎉 ${winnerNickname} won the pot of 💰 ${totalPot.toLocaleString()} GBX! (${gojiPot.toLocaleString()} GBX + ${lghContribution.toLocaleString()} GBX from LGH Bank) Congratulations!`);
+    //respondWithMessage.call(this, `.yt jackpot kompany`);
+    //setTimeout(() => {
+        //respondWithMessage.call(this, `🎉 ${winnerNickname} won the pot of 💰 ${totalPot.toLocaleString()} GBX! (${gojiPot.toLocaleString()} GBX + ${lghContribution.toLocaleString()} GBX from LGH Bank) Congratulations!`);
+    //}, 1000);
 
     // Reset the pot and cooldown
     gojiPot = 0;
@@ -4490,20 +4657,8 @@ if (wsmsg["text"].toLowerCase() === ".getpot") {
     saveGojiPot();
 }
 
-// 💰 .pot - Display the current pot balance including LGH contribution
-if (wsmsg["text"].toLowerCase() === ".pot") {
-    const lghContribution = Math.floor(lghBank * 0.5);
-    const totalPot = gojiPot + lghContribution;
-
-    if (totalPot <= 0) {
-        respondWithMessage.call(this, "🤖 The pot is empty. Use .givepot to contribute!");
-    } else {
-        respondWithMessage.call(this, `💰 The current pot contains 💵 ${totalPot.toLocaleString()} GBX! (💵 ${gojiPot.toLocaleString()} GBX + 💵 ${lghContribution.toLocaleString()} GBX from LGH Bank). Use .givepot to contribute or .getpot to claim it.`);
-    }
-}
-
 // 🦹 .steal [username] - Attempt to steal GojiBux from a specific user or a random one
-if (wsmsg["text"].toLowerCase().startsWith(".steal")) {
+/*if (wsmsg["text"].toLowerCase().startsWith(".steal")) {
     const args = wsmsg["text"].split(" ");
     const handle = wsmsg["handle"];
     const thiefUsername = userHandles[handle];
@@ -4610,6 +4765,101 @@ if (wsmsg["text"].toLowerCase().startsWith(".steal")) {
         userBalances[thiefUsername].balance = (userBalances[thiefUsername].balance || 0) + stealAmount;
         saveBalances();
         saveUserStashes();
+
+        respondWithMessage.call(this, `🦹 ${thiefNickname} successfully stole 💵 ${stealAmount.toLocaleString()} GBX from ${victimNickname}!`);
+    }
+}*/
+
+// 🦹 .steal [username] - Attempt to steal GojiBux from a specific user or a random one
+if (wsmsg["text"].toLowerCase().startsWith(".steal")) {
+    const args = wsmsg["text"].split(" ");
+    const handle = wsmsg["handle"];
+    const thiefUsername = userHandles[handle];
+    const thiefNickname = userNicknames[thiefUsername]?.nickname || thiefUsername || "you";
+
+    if (!thiefUsername) {
+        respondWithMessage.call(this, "🤖 Something went wrong. Try again.");
+        return;
+    }
+
+    let victimUsername;
+
+    if (args.length > 1) {
+        victimUsername = args[1];
+        if (victimUsername === thiefUsername) {
+            respondWithMessage.call(this, "🤖 You can't steal from yourself, nice try.");
+            return;
+        }
+
+        if (!userBalances[victimUsername] || (userBalances[victimUsername].balance || 0) < 1000) {
+            respondWithMessage.call(this, `🤖 ${victimUsername} doesn't have enough GojiBux to steal from.`);
+            return;
+        }
+    } else {
+        const potentialVictims = Object.keys(userBalances).filter(
+            (username) => username !== thiefUsername && (userBalances[username].balance || 0) >= 1000
+        );
+
+        if (potentialVictims.length === 0) {
+            respondWithMessage.call(this, "🤖 Nobody has enough GojiBux to steal from.");
+            return;
+        }
+
+        victimUsername = potentialVictims[Math.floor(Math.random() * potentialVictims.length)];
+    }
+
+    const victimNickname = userNicknames[victimUsername]?.nickname || victimUsername;
+
+    let victimBalance = userBalances[victimUsername].balance || 0;
+    let thiefBalance = userBalances[thiefUsername].balance || 0;
+    let thiefStash = userStashes[thiefUsername] || 0;
+
+    let victimTotal = victimBalance;
+    let thiefTotal = thiefBalance + thiefStash;
+
+    if (victimTotal < 1000) {
+        respondWithMessage.call(this, `🤖 ${victimNickname} doesn't have enough GojiBux to steal from.`);
+        return;
+    }
+
+    let stealAmount = Math.max(1, Math.floor(victimTotal * (Math.random() * 0.1 + 0.05)));
+    stealAmount = Math.min(stealAmount, Math.floor(victimTotal * 0.5));
+
+    let caught = Math.random() < 0.5;
+
+    if (caught) {
+        // Penalty = same as attempted steal, capped at 50% of thief's total
+        let penalty = Math.min(stealAmount, Math.floor(thiefTotal * 0.5));
+        let amountPaid = 0;
+
+        if (thiefBalance + thiefStash >= penalty) {
+            let fromBalance = Math.min(thiefBalance, penalty);
+            let fromStash = penalty - fromBalance;
+
+            userBalances[thiefUsername].balance -= fromBalance;
+            userStashes[thiefUsername] -= fromStash;
+            amountPaid = penalty;
+        } else {
+            amountPaid = thiefBalance + thiefStash;
+            userBalances[thiefUsername].balance = 0;
+            userStashes[thiefUsername] = 0;
+        }
+
+        userBalances[victimUsername].balance += amountPaid;
+        saveBalances();
+        saveUserStashes();
+
+        respondWithMessage.call(this, `🚨 ${thiefNickname} got CAUGHT trying to steal 💵 ${stealAmount.toLocaleString()} GBX from ${victimNickname} and had to pay 💵 ${amountPaid.toLocaleString()} GBX as a penalty!`);
+    } else {
+        if (victimBalance >= stealAmount) {
+            userBalances[victimUsername].balance -= stealAmount;
+        } else {
+            stealAmount = victimBalance;
+            userBalances[victimUsername].balance = 0;
+        }
+
+        userBalances[thiefUsername].balance = (userBalances[thiefUsername].balance || 0) + stealAmount;
+        saveBalances();
 
         respondWithMessage.call(this, `🦹 ${thiefNickname} successfully stole 💵 ${stealAmount.toLocaleString()} GBX from ${victimNickname}!`);
     }
@@ -4848,6 +5098,39 @@ if (wsmsg["text"].toLowerCase() === ".toppizza") {
         const nickname = userNicknames[username]?.nickname || username;
         //leaderboard += `${index + 1}. ${nickname} (${username}) - 🍕 ${stash.toLocaleString()} PZA\n`;
         leaderboard += `${index + 1}. ${username} - 🍕 ${stash.toLocaleString()} PZA\n`;
+    });
+
+    respondWithMessage.call(this, leaderboard.trim());
+}
+
+if (wsmsg["text"].toLowerCase() === ".topcookie") {
+    let sortedUsers = Object.entries(userCookieStashes)
+        .sort((a, b) => (b[1] || 0) - (a[1] || 0))
+        .slice(0, 10);
+
+    if (sortedUsers.length === 0) {
+        respondWithMessage.call(this, "🍪 No cookies? CRUMBS! Somebody dunk something!");
+        return;
+    }
+
+    let leaderboard = "🍪😵 Cookie Chaos Leaderboard 😵🍪\n";
+    const cookieTitles = [
+        "👑 Crumb Commander",
+        "🐿️ Supreme Snacker",
+        "🎩 Cookie Collector Deluxe",
+        "🌀 Chaos Dunker",
+        "🚀 Intergalactic Biscuit Baron",
+        "🫖 Tea Party Tyrant",
+        "💫 Dough Whisperer",
+        "😈 Feral Nibbler",
+        "🛏️ Bedtime Snack Bandit",
+        "🌋 Volcano Baked Beast"
+    ];
+
+    sortedUsers.forEach(([username, stash], index) => {
+        const nickname = userNicknames[username]?.nickname || username;
+        const title = cookieTitles[index] || "🍪 Cookie Creature";
+        leaderboard += `${index + 1}. ${nickname} - ${title} - ${stash.toLocaleString()} COOKIES\n`;
     });
 
     respondWithMessage.call(this, leaderboard.trim());
@@ -5841,11 +6124,11 @@ if ([".help", ".halp"].includes(wsmsg['text'].toLowerCase())) {
     const messages = [
         "🤖 Need help? No worries!",
         "- Use .commands to see a list of available commands.",
-        "- Use .gojibux to start playing.",
-        "- Use .grow to get weed.",
-        "- Economy commands: https://tinyurl.com/GojiBux",
-        "- This bot keeps the vibes high and the chat rolling! 💨🌲",
-        "- Have fun and don't forget to pass it to the left! 🔥"
+        //"- Use .gojibux to start playing.",
+        //"- Use .grow to get weed.",
+        "- Economy commands: https://tinyurl.com/getgbx",
+        //"- This bot keeps the vibes high and the chat rolling! 💨🌲",
+        //"- Have fun and don't forget to pass it to the left! 🔥"
     ];
 
     messages.forEach((msg, index) => {
@@ -5939,13 +6222,6 @@ if ([".help", ".halp"].includes(wsmsg['text'].toLowerCase())) {
     // Start whiteboard commands
     if ([".whiteboard", ".board", ".draw"].includes(wsmsg['text'].toLowerCase())) {
         this._send('{"stumble":"msg","text":"LGH Whiteboard (this could be chaos 😅): https://www.tldraw.com/f/76S9QIaur32SEs33sbUlG"}');
-    }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-    // start discord
-    if (wsmsg['text'].toLowerCase() === ".discord") {
-        this._send('{"stumble":"msg","text":"Join Discord: https://discord.gg/apu9gzGYMD (no video, use stumble)"}');
     }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
