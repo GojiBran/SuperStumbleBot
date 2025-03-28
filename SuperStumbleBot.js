@@ -2080,6 +2080,9 @@ if (wsmsg["text"].toLowerCase().startsWith(".gamble ") || wsmsg["text"].toLowerC
 // Spaget ---------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+let userSpaghettiStashes = JSON.parse(localStorage.getItem("userSpaghettiStashes")) || {};
+
+
 if (wsmsg["text"].toLowerCase().startsWith(".buyspaget")) {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
@@ -3937,7 +3940,6 @@ if (wsmsg["text"].toLowerCase().startsWith(".stealbux")) {
     }
 }
 
-/*
 if (wsmsg["text"].toLowerCase() === ".top" || wsmsg["text"].toLowerCase() === ".leaderboard") {
     let categories = [
         { name: "GojiBux", emoji: "💵", data: userBalances, key: "balance", unit: "GBX" },
@@ -3969,10 +3971,9 @@ if (wsmsg["text"].toLowerCase() === ".top" || wsmsg["text"].toLowerCase() === ".
 
     respondWithMessage.call(this, leaderboard.trim());
 }
-*/
 
 // 🏆 `.topall` / `.leaderboard` / `.top` - Show top users in each category (single message)
-const topallTriggers = [".topall", ".leaderboard", ".top"];
+/*const topallTriggers = [".topall", ".leaderboard", ".top"];
 const commandText = wsmsg["text"].toLowerCase().trim();
 
 if (topallTriggers.includes(commandText)) {
@@ -4012,7 +4013,7 @@ if (topallTriggers.includes(commandText)) {
 
     const message = lines.join("\n");
     respondWithMessage(message.length > 300 ? message.slice(0, 295) + "…" : message);
-}
+}*/
 
 if (wsmsg["text"].toLowerCase() === ".topcoin") {
     let gojiCoinBalances = JSON.parse(localStorage.getItem("gojiCoinBalances")) || {};
