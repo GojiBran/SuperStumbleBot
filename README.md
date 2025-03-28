@@ -84,22 +84,12 @@ The bot features a dynamic **GojiBux** economy where users can earn, gamble, and
 | **`.dance`** | Sends a dancing GIF. |
 | **`.calc 2+2`** | Performs calculations. |
 | **`.currency 50 usd to dkk`** | Converts currencies. |
-| **`.roll 2d6`** | Rolls dice. |
+| **`.dice 2d6`** | Rolls dice. |
 | **`.time pst`** | Displays PST time. |
 | **`.me says hello!`** | Sends "nickname says hello!" |
 | **`.my beer`** | Sends "nickname's beer" |
 | **`.note bing bong`** | Saves a note. |
 | **`.notes`** | Displays stored notes. |
-
----
-
-## **Planned Features & Future Updates**  
-- **Enhanced Gambling**: Blackjack, poker, progressive jackpots.  
-- **Weed Customization**: Users can **name their strains**.  
-- **Black Market Expansion**: More **risk/reward** options.  
-- **Item Shops & Crafting**: Users can **create, sell, and trade** unique items.  
-- **Achievements & Titles**: Unlock **custom roles** for economy milestones.  
-- **Admin Tools**: Easier **GojiBux balancing & economy tweaks**.  
 
 ---
 
