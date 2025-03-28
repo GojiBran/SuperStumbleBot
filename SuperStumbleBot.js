@@ -3937,6 +3937,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".stealbux")) {
     }
 }
 
+/*
 if (wsmsg["text"].toLowerCase() === ".top" || wsmsg["text"].toLowerCase() === ".leaderboard") {
     let categories = [
         { name: "GojiBux", emoji: "💵", data: userBalances, key: "balance", unit: "GBX" },
@@ -3967,6 +3968,50 @@ if (wsmsg["text"].toLowerCase() === ".top" || wsmsg["text"].toLowerCase() === ".
     });
 
     respondWithMessage.call(this, leaderboard.trim());
+}
+*/
+
+// 🏆 `.topall` / `.leaderboard` / `.top` - Show top users in each category (single message)
+const topallTriggers = [".topall", ".leaderboard", ".top"];
+const commandText = wsmsg["text"].toLowerCase().trim();
+
+if (topallTriggers.includes(commandText)) {
+    let categories = [
+        { name: "GojiBux", emoji: "💵", data: userBalances, key: "balance", unit: "GBX" },
+        { name: "Offshore", emoji: "💰", data: userStashes, key: null, unit: "GBX" },
+        { name: "Weed", emoji: "🥦", data: userWeedStashes, key: null, unit: "g" },
+        { name: "Hidden Weed", emoji: "🔒", data: userHiddenWeed, key: null, unit: "g" },
+        { name: "Joints", emoji: "🥖", data: userJointStashes, key: null, unit: "Joints" },
+        { name: "Spaget", emoji: "🍝", data: userSpaghettiStashes, key: null, unit: "SPG" },
+        { name: "Pizza", emoji: "🍕", data: userPizzaStashes, key: null, unit: "PZA" },
+        { name: "Cookies", emoji: "🍪", data: userCookieStashes, key: null, unit: "Cookies" },
+        { name: "Frogs", emoji: "🐸", data: userFrogCounts, key: null, unit: "Frogs" },
+        { name: "Potatoes", emoji: "🥔", data: userPotatoCounts, key: null, unit: "Potatoes" }
+    ];
+
+    let lines = ["🏆 Top Players 🏆"];
+
+    categories.forEach(({ name, emoji, data, key, unit }) => {
+        const sortedUsers = Object.entries(data || {})
+            .sort((a, b) => ((key ? (b[1]?.[key] || 0) : (b[1] || 0)) - (key ? (a[1]?.[key] || 0) : (a[1] || 0))));
+
+        if (sortedUsers.length > 0) {
+            const [username, stash] = sortedUsers[0];
+            const value = key ? stash[key] || 0 : stash || 0;
+
+            if (value > 0) {
+                const nickname = userNicknames[username]?.nickname || username;
+                lines.push(`${emoji} ${nickname} - ${value.toLocaleString()} ${unit}`);
+            } else {
+                lines.push(`${emoji} No ${name.toLowerCase()} data found.`);
+            }
+        } else {
+            lines.push(`${emoji} No ${name.toLowerCase()} data found.`);
+        }
+    });
+
+    const message = lines.join("\n");
+    respondWithMessage(message.length > 300 ? message.slice(0, 295) + "…" : message);
 }
 
 if (wsmsg["text"].toLowerCase() === ".topcoin") {
