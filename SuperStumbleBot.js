@@ -916,6 +916,14 @@ function saveBalances() {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+let userStats = JSON.parse(localStorage.getItem("userStats") || "{}");
+
+function saveUserStats() {
+    localStorage.setItem("userStats", JSON.stringify(userStats));
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
 // 💵 `.mybux` - Display the user's GojiBux balance
 if (wsmsg["text"].toLowerCase() === ".mybux") {
     const handle = wsmsg["handle"];
@@ -1539,7 +1547,7 @@ function saveJointStashes() {
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 🥦➕ `.buyweed [amount|max|all]` - Buy weed using GBX, with price markup and market cap
-const buyweedTriggers = [".buyweed"]; // add aliases here like ".getweed"
+/*const buyweedTriggers = [".buyweed"]; // add aliases here like ".getweed"
 if (buyweedTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
@@ -1592,6 +1600,78 @@ if (buyweedTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     saveWeedStashes();
     saveWGHBank();
     localStorage.setItem("lghBank", lghBank);
+
+    respondWithMessage.call(this, `🥦➕ ${nickname} bought 🥦 ${amount}g of weed for 💵 ${cost.toLocaleString()} GBX.`);
+}*/
+
+// 🥦➕ `.buyweed [amount|max|all]` - Buy weed using GBX, with price markup and market cap
+if (wsmsg["text"].toLowerCase().startsWith(".buyweed ")) {
+    const args = wsmsg["text"].split(" ");
+    const amountArg = args[1]?.toLowerCase();
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    if (!username || !amountArg) {
+        respondWithMessage.call(this, "🤖 Usage: .buyweed [amount|max|all]");
+        return;
+    }
+
+    // 🕒 Check 30s cooldown
+    if (!userStats[username]) userStats[username] = {};
+    const now = Date.now();
+    const lastBuyTime = userStats[username].lastBuyWeed || 0;
+    const cooldown = 30 * 1000;
+
+    if (now - lastBuyTime < cooldown) {
+        const remaining = Math.ceil((cooldown - (now - lastBuyTime)) / 1000);
+        respondWithMessage.call(this, `🕒 ${nickname}, wait ${remaining}s before buying weed again.`);
+        return;
+    }
+
+    const userBalance = userBalances[username]?.balance || 0;
+    const maxAllowed = Math.floor(wghBank / 2);
+    const maxAffordable = Math.floor(userBalance / (weedBuyPrice * 1.02));
+    let amount;
+
+    if (amountArg === "max" || amountArg === "all") {
+        amount = Math.min(maxAffordable, maxAllowed);
+        if (amount <= 0) {
+            respondWithMessage.call(this, `🤖 ${nickname}, you can't afford any weed right now or the market supply is too limited.`);
+            return;
+        }
+    } else {
+        amount = parseInt(amountArg, 10);
+        if (isNaN(amount) || amount <= 0) {
+            respondWithMessage.call(this, "🤖 Usage: .buyweed [amount|max|all]");
+            return;
+        }
+
+        if (amount > maxAllowed) {
+            respondWithMessage.call(this, `🤖 You can only buy up to half the available weed 🏬 (${maxAllowed}g).`);
+            return;
+        }
+
+        const requiredFunds = Math.ceil(amount * weedBuyPrice * 1.02);
+        if (userBalance < requiredFunds) {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough GBX. Weed is 💵 ${weedBuyPrice} GBX/g.`);
+            return;
+        }
+    }
+
+    const cost = Math.ceil(amount * weedBuyPrice * 1.02);
+    userBalances[username].balance -= cost;
+    userWeedStashes[username] = (userWeedStashes[username] || 0) + amount;
+    wghBank -= amount;
+    lghBank += cost;
+
+    // 💾 Save and set cooldown
+    saveBalances();
+    saveWeedStashes();
+    saveWGHBank();
+    localStorage.setItem("lghBank", lghBank);
+    userStats[username].lastBuyWeed = now;
+    saveUserStats();
 
     respondWithMessage.call(this, `🥦➕ ${nickname} bought 🥦 ${amount}g of weed for 💵 ${cost.toLocaleString()} GBX.`);
 }
@@ -4533,14 +4613,6 @@ if ([".getpot", ".getlottery"].includes(wsmsg["text"].toLowerCase())) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-let userStats = JSON.parse(localStorage.getItem("userStats") || "{}");
-
-function saveUserStats() {
-    localStorage.setItem("userStats", JSON.stringify(userStats));
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
 // 🎰 `.gamble AMOUNT` or `.bet AMOUNT` - Bet GojiBux for a chance to win!
 if (wsmsg["text"].toLowerCase().startsWith(".gamble ") || wsmsg["text"].toLowerCase().startsWith(".bet ")) {
     const args = wsmsg["text"].split(" ");
@@ -4648,10 +4720,18 @@ if (wsmsg["text"].toLowerCase().startsWith(".gamble ") || wsmsg["text"].toLowerC
     }
 
     if (lotteryContribution > 0) {
-        gojiPot += lotteryContribution;
+        const halfToLGH = Math.floor(lotteryContribution / 2);
+        const halfToPot = lotteryContribution - halfToLGH;
+
+        gojiPot += halfToPot;
+        lghBank += halfToLGH;
+
         saveGojiPot();
-        resultMessage += ` 🎟️ ${lotteryContribution.toLocaleString()} GBX added to the lottery pot!`;
+        localStorage.setItem("lghBank", lghBank.toString());
+
+        resultMessage += ` 🎟️ ${halfToPot.toLocaleString()} GBX added to the lottery pot! 🏦 ${halfToLGH.toLocaleString()} GBX sent to LGH Bank.`;
     }
+
 
     // 🎁 Random bonus drop
     if (Math.random() < 0.01) {
@@ -4666,7 +4746,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".gamble ") || wsmsg["text"].toLowerC
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 💵🤏 .stealbux [username] - Attempt to steal GojiBux from a specific user or a random one
-if (wsmsg["text"].toLowerCase().startsWith(".stealbux")) {
+/*if (wsmsg["text"].toLowerCase().startsWith(".stealbux")) {
     const args = wsmsg["text"].split(" ");
     const handle = wsmsg["handle"];
     const thiefUsername = userHandles[handle];
@@ -4758,6 +4838,120 @@ if (wsmsg["text"].toLowerCase().startsWith(".stealbux")) {
 
         respondWithMessage.call(this, `💵🤏 ${thiefNickname} successfully stole 💵 ${stealAmount.toLocaleString()} GBX from ${victimNickname}!`);
     }
+}*/
+
+// 💵🤏 .stealbux [username] - Attempt to steal GojiBux from a specific user or a random one
+if (wsmsg["text"].toLowerCase().startsWith(".stealbux")) {
+    const args = wsmsg["text"].split(" ");
+    const handle = wsmsg["handle"];
+    const thiefUsername = userHandles[handle];
+    const thiefNickname = userNicknames[thiefUsername]?.nickname || thiefUsername || "you";
+
+    if (!thiefUsername) {
+        respondWithMessage.call(this, "🤖 Something went wrong. Try again.");
+        return;
+    }
+
+    if (!userStats[thiefUsername]) userStats[thiefUsername] = {};
+    if (!userStats[thiefUsername].stealCooldowns) userStats[thiefUsername].stealCooldowns = {};
+
+    let victimUsername;
+
+    if (args.length > 1) {
+        victimUsername = args[1];
+        if (victimUsername === thiefUsername) {
+            respondWithMessage.call(this, "🤖 You can't steal from yourself, nice try.");
+            return;
+        }
+
+        if (!userBalances[victimUsername] || (userBalances[victimUsername].balance || 0) < 1000) {
+            respondWithMessage.call(this, `🤖 ${victimUsername} doesn't have enough 💵 GojiBux to steal from.`);
+            return;
+        }
+    } else {
+        const potentialVictims = Object.keys(userBalances).filter(
+            (username) => username !== thiefUsername && (userBalances[username].balance || 0) >= 1000
+        );
+
+        if (potentialVictims.length === 0) {
+            respondWithMessage.call(this, "🤖 Nobody has enough 💵 GojiBux to steal from.");
+            return;
+        }
+
+        victimUsername = potentialVictims[Math.floor(Math.random() * potentialVictims.length)];
+    }
+
+    const victimNickname = userNicknames[victimUsername]?.nickname || victimUsername;
+    const now = Date.now();
+    const cooldown = 5 * 60 * 1000; // 5 minutes
+
+    const lastSteal = userStats[thiefUsername].stealCooldowns[victimUsername] || 0;
+    if (now - lastSteal < cooldown) {
+        const remaining = Math.ceil((cooldown - (now - lastSteal)) / 1000);
+        const mins = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        respondWithMessage.call(this, `⏳ ${thiefNickname}, you must wait ${mins}m ${secs}s before trying to steal from ${victimNickname} again.`);
+        return;
+    }
+
+    // Store cooldown
+    userStats[thiefUsername].stealCooldowns[victimUsername] = now;
+
+    let victimBalance = userBalances[victimUsername].balance || 0;
+    let thiefBalance = userBalances[thiefUsername].balance || 0;
+    let thiefStash = userStashes[thiefUsername] || 0;
+
+    let victimTotal = victimBalance;
+    let thiefTotal = thiefBalance + thiefStash;
+
+    if (victimTotal < 1000) {
+        respondWithMessage.call(this, `🤖 ${victimNickname} doesn't have enough 💵 GojiBux to steal from.`);
+        return;
+    }
+
+    let stealAmount = Math.max(1, Math.floor(victimTotal * (Math.random() * 0.1 + 0.05)));
+    stealAmount = Math.min(stealAmount, Math.floor(victimTotal * 0.5));
+
+    let caught = Math.random() < 0.5;
+
+    if (caught) {
+        // Penalty = same as attempted steal, capped at 50% of thief's total
+        let penalty = Math.min(stealAmount, Math.floor(thiefTotal * 0.5));
+        let amountPaid = 0;
+
+        if (thiefBalance + thiefStash >= penalty) {
+            let fromBalance = Math.min(thiefBalance, penalty);
+            let fromStash = penalty - fromBalance;
+
+            userBalances[thiefUsername].balance -= fromBalance;
+            userStashes[thiefUsername] -= fromStash;
+            amountPaid = penalty;
+        } else {
+            amountPaid = thiefBalance + thiefStash;
+            userBalances[thiefUsername].balance = 0;
+            userStashes[thiefUsername] = 0;
+        }
+
+        userBalances[victimUsername].balance += amountPaid;
+        saveBalances();
+        saveUserStashes();
+        saveUserStats();
+
+        respondWithMessage.call(this, `🚨 ${thiefNickname} got CAUGHT trying to steal 💵 ${stealAmount.toLocaleString()} GBX from ${victimNickname} and had to pay 💵➖ ${amountPaid.toLocaleString()} GBX as a penalty!`);
+    } else {
+        if (victimBalance >= stealAmount) {
+            userBalances[victimUsername].balance -= stealAmount;
+        } else {
+            stealAmount = victimBalance;
+            userBalances[victimUsername].balance = 0;
+        }
+
+        userBalances[thiefUsername].balance = (userBalances[thiefUsername].balance || 0) + stealAmount;
+        saveBalances();
+        saveUserStats();
+
+        respondWithMessage.call(this, `💵🤏 ${thiefNickname} successfully stole 💵 ${stealAmount.toLocaleString()} GBX from ${victimNickname}!`);
+    }
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -4794,49 +4988,58 @@ if (wsmsg["text"].toLowerCase().startsWith(".stealbux")) {
     respondWithMessage.call(this, leaderboard.trim());
 }*/
 
-//-----------------------------------------------------------------------------------------------------------------------------------
-
 // 🏆 `.topall` / `.leaderboard` / `.top` - Show top users in each category (single message)
 const topallTriggers = [".topall", ".leaderboard", ".top"];
-const commandText = wsmsg["text"].toLowerCase().trim();
+const commandText = wsmsg["text"]?.toLowerCase().trim();
 
 if (topallTriggers.includes(commandText)) {
-    let categories = [
-        { name: "GojiBux", emoji: "💵", data: userBalances, key: "balance", unit: "GBX" },
-        { name: "Offshore", emoji: "💰", data: userStashes, key: null, unit: "GBX" },
-        { name: "Weed", emoji: "🥦", data: userWeedStashes, key: null, unit: "g" },
-        { name: "Hidden Weed", emoji: "🔒", data: userHiddenWeed, key: null, unit: "g" },
-        { name: "Joints", emoji: "🥖", data: userJointStashes, key: null, unit: "Joints" },
-        { name: "Spaget", emoji: "🍝", data: userSpaghettiStashes, key: null, unit: "SPG" },
-        { name: "Pizza", emoji: "🍕", data: userPizzaStashes, key: null, unit: "PZA" },
-        { name: "Cookies", emoji: "🍪", data: userCookieStashes, key: null, unit: "Cookies" },
-        { name: "Frogs", emoji: "🐸", data: userFrogCounts, key: null, unit: "Frogs" },
-        { name: "Potatoes", emoji: "🥔", data: userPotatoCounts, key: null, unit: "Potatoes" }
-    ];
+    try {
+        console.log("🟢 Trigger matched for .topall");
 
-    let lines = ["🏆 Top Players 🏆"];
+        const categories = [
+            { name: "GojiBux", emoji: "💵", data: userBalances, key: "balance", unit: "GBX" },
+            { name: "Offshore", emoji: "💰", data: userStashes, key: null, unit: "GBX" },
+            { name: "Weed", emoji: "🥦", data: userWeedStashes, key: null, unit: "g" },
+            { name: "Hidden Weed", emoji: "🔒", data: userHiddenWeed, key: null, unit: "g" },
+            { name: "Joints", emoji: "🥖", data: userJointStashes, key: null, unit: "Joints" },
+            { name: "Spaget", emoji: "🍝", data: userSpaghettiStashes, key: null, unit: "SPG" },
+            { name: "Pizza", emoji: "🍕", data: userPizzaStashes, key: null, unit: "PZA" },
+            { name: "Cookies", emoji: "🍪", data: userCookieStashes, key: null, unit: "Cookies" },
+            { name: "Frogs", emoji: "🐸", data: userFrogCounts, key: null, unit: "Frogs" },
+            { name: "Potatoes", emoji: "🥔", data: userPotatoCounts, key: null, unit: "Potatoes" }
+        ];
 
-    categories.forEach(({ name, emoji, data, key, unit }) => {
-        const sortedUsers = Object.entries(data || {})
-            .sort((a, b) => ((key ? (b[1]?.[key] || 0) : (b[1] || 0)) - (key ? (a[1]?.[key] || 0) : (a[1] || 0))));
+        const lines = ["🏆 Top Players 🏆"];
 
-        if (sortedUsers.length > 0) {
+        categories.forEach(({ name, emoji, data, key, unit }) => {
+            if (!data || Object.keys(data).length === 0) {
+                lines.push(`${emoji} No ${name.toLowerCase()} data found.`);
+                return;
+            }
+
+            const sortedUsers = Object.entries(data).sort((a, b) => {
+                const valA = key ? a[1]?.[key] || 0 : a[1] || 0;
+                const valB = key ? b[1]?.[key] || 0 : b[1] || 0;
+                return valB - valA;
+            });
+
             const [username, stash] = sortedUsers[0];
-            const value = key ? stash[key] || 0 : stash || 0;
+            const value = key ? stash?.[key] || 0 : stash || 0;
 
             if (value > 0) {
-                const nickname = userNicknames[username]?.nickname || username;
+                const nickname = userNicknames?.[username]?.nickname || username;
                 lines.push(`${emoji} ${nickname} - ${value.toLocaleString()} ${unit}`);
             } else {
                 lines.push(`${emoji} No ${name.toLowerCase()} data found.`);
             }
-        } else {
-            lines.push(`${emoji} No ${name.toLowerCase()} data found.`);
-        }
-    });
+        });
 
-    const message = lines.join("\n");
-    respondWithMessage(message.length > 300 ? message.slice(0, 295) + "…" : message);
+        const message = lines.join("\n");
+        respondWithMessage(message.length > 300 ? message.slice(0, 295) + "…" : message);
+    } catch (err) {
+        console.error("❌ Error in .topall command:", err);
+        respondWithMessage("⚠️ Something went wrong with the leaderboard.");
+    }
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -4864,7 +5067,7 @@ if (wsmsg["text"].toLowerCase() === ".topcoin") {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-if (wsmsg["text"].toLowerCase() === ".topbux") {
+/*if (wsmsg["text"].toLowerCase() === ".topbux") {
     let sortedUsers = Object.entries(userBalances)
         .sort((a, b) => (b[1]?.balance || 0) - (a[1]?.balance || 0))
         .slice(0, 3);
@@ -4880,6 +5083,26 @@ if (wsmsg["text"].toLowerCase() === ".topbux") {
     sortedUsers.forEach(([username, data], index) => {
         const nickname = userNicknames[username]?.nickname || username;
         leaderboard += `${medals[index]} ${nickname} - 💵 ${data.balance.toLocaleString()} GBX\n`;
+    });
+
+    respondWithMessage.call(this, leaderboard.trim());
+}*/
+
+if (wsmsg["text"].toLowerCase() === ".topbux") {
+    let sortedUsers = Object.entries(userBalances)
+        .sort((a, b) => (b[1]?.balance || 0) - (a[1]?.balance || 0))
+        .slice(0, 3);
+
+    if (sortedUsers.length === 0) {
+        respondWithMessage.call(this, "🤖 No GojiBux data available.");
+        return;
+    }
+
+    let leaderboard = "🏆 Top 3 GojiBux Holders 💵\n";
+    const medals = ["🥇", "🥈", "🥉"];
+
+    sortedUsers.forEach(([username, data], index) => {
+        leaderboard += `${medals[index]} ${username} - 💵 ${data.balance.toLocaleString()} GBX\n`;
     });
 
     respondWithMessage.call(this, leaderboard.trim());
@@ -5128,6 +5351,51 @@ if (wsmsg["text"].toLowerCase() === ".leastweed") {
 
     respondWithMessage.call(this, leaderboard.trim());
 }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🏆 `.topall` / `.leaderboard` / `.top` - Show top users in each category (single message)
+/*const topallTriggers = [".topall", ".leaderboard", ".top"];
+const commandText = wsmsg["text"].toLowerCase().trim();
+
+if (topallTriggers.includes(commandText)) {
+    let categories = [
+        { name: "GojiBux", emoji: "💵", data: userBalances, key: "balance", unit: "GBX" },
+        { name: "Offshore", emoji: "💰", data: userStashes, key: null, unit: "GBX" },
+        { name: "Weed", emoji: "🥦", data: userWeedStashes, key: null, unit: "g" },
+        { name: "Hidden Weed", emoji: "🔒", data: userHiddenWeed, key: null, unit: "g" },
+        { name: "Joints", emoji: "🥖", data: userJointStashes, key: null, unit: "Joints" },
+        { name: "Spaget", emoji: "🍝", data: userSpaghettiStashes, key: null, unit: "SPG" },
+        { name: "Pizza", emoji: "🍕", data: userPizzaStashes, key: null, unit: "PZA" },
+        { name: "Cookies", emoji: "🍪", data: userCookieStashes, key: null, unit: "Cookies" },
+        { name: "Frogs", emoji: "🐸", data: userFrogCounts, key: null, unit: "Frogs" },
+        { name: "Potatoes", emoji: "🥔", data: userPotatoCounts, key: null, unit: "Potatoes" }
+    ];
+
+    let lines = ["🏆 Top Players 🏆"];
+
+    categories.forEach(({ name, emoji, data, key, unit }) => {
+        const sortedUsers = Object.entries(data || {})
+            .sort((a, b) => ((key ? (b[1]?.[key] || 0) : (b[1] || 0)) - (key ? (a[1]?.[key] || 0) : (a[1] || 0))));
+
+        if (sortedUsers.length > 0) {
+            const [username, stash] = sortedUsers[0];
+            const value = key ? stash[key] || 0 : stash || 0;
+
+            if (value > 0) {
+                const nickname = userNicknames[username]?.nickname || username;
+                lines.push(`${emoji} ${nickname} - ${value.toLocaleString()} ${unit}`);
+            } else {
+                lines.push(`${emoji} No ${name.toLowerCase()} data found.`);
+            }
+        } else {
+            lines.push(`${emoji} No ${name.toLowerCase()} data found.`);
+        }
+    });
+
+    const message = lines.join("\n");
+    respondWithMessage(message.length > 300 ? message.slice(0, 295) + "…" : message);
+}*/
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
