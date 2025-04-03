@@ -40,6 +40,87 @@ setInterval(() => {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+// ⏱️ parseFlexibleTime(str)
+// Supports formats like: 90m, 1.5h, 1h5m30s, 4:20pm, tomorrow, next week, in 10 minutes
+function parseFlexibleTime(str) {
+    const now = new Date();
+    str = str.trim().toLowerCase();
+
+    // 🌙 Natural language options
+    if (str === "tomorrow") return 24 * 60 * 60 * 1000;
+    if (str === "next week") return 7 * 24 * 60 * 60 * 1000;
+    if (str.startsWith("in ")) {
+        str = str.slice(3); // e.g., "in 5 minutes"
+    }
+
+    // 🕒 Match HH:MM or HH:MMam/pm (e.g., 16:20 or 4:20pm)
+    const timeMatch = str.match(/^(\d{1,2}):(\d{2})(am|pm)?$/i);
+    if (timeMatch) {
+        let hours = parseInt(timeMatch[1]);
+        const minutes = parseInt(timeMatch[2]);
+        const ampm = timeMatch[3];
+
+        if (ampm) {
+            if (ampm.toLowerCase() === "pm" && hours < 12) hours += 12;
+            if (ampm.toLowerCase() === "am" && hours === 12) hours = 0;
+        }
+
+        const target = new Date();
+        target.setHours(hours, minutes, 0, 0);
+        if (target <= now) target.setDate(target.getDate() + 1); // ⏭️ tomorrow if time already passed
+
+        return target.getTime() - now.getTime();
+    }
+
+    // 🧮 Decimal hours (e.g., 1.5h)
+    const decimalH = str.match(/^(\d+(?:\.\d+)?)h$/);
+    if (decimalH) return parseFloat(decimalH[1]) * 3600000;
+
+    // 🧩 Full combo (e.g., 2h15m30s)
+    const full = str.match(/^(?:(\d+(?:\.\d+)?)h)?(?:(\d+(?:\.\d+)?)m)?(?:(\d+(?:\.\d+)?)s)?$/);
+    if (full) {
+        const h = parseFloat(full[1]) || 0;
+        const m = parseFloat(full[2]) || 0;
+        const s = parseFloat(full[3]) || 0;
+        const total = (h * 3600 + m * 60 + s) * 1000;
+        return total > 0 ? total : null;
+    }
+
+    // 🧾 Simple format (e.g., 90m, 30s, 2h)
+    const simple = str.match(/^(\d+(?:\.\d+)?)([hms])$/);
+    if (simple) {
+        const value = parseFloat(simple[1]);
+        const unit = simple[2];
+        if (unit === "h") return value * 3600000;
+        if (unit === "m") return value * 60000;
+        if (unit === "s") return value * 1000;
+    }
+
+    return null; // ❌ Invalid format
+}
+
+// 🔁 Load existing reminders from localStorage and clean expired
+let activeReminders = JSON.parse(localStorage.getItem("activeReminders") || "[]");
+activeReminders = activeReminders.filter(r => r.time > Date.now());
+localStorage.setItem("activeReminders", JSON.stringify(activeReminders));
+
+// 🧠 Reminder Checker (runs every second to post when due)
+setInterval(() => {
+    const now = Date.now();
+    const due = activeReminders.filter(r => r.time <= now);
+
+    if (due.length > 0 && typeof window.stumbleBotSend === "function") {
+        due.forEach(r => {
+            window.stumbleBotSend(`⏰ Reminder for ${r.user}: ${r.message}`);
+        });
+
+        activeReminders = activeReminders.filter(r => r.time > now);
+        localStorage.setItem("activeReminders", JSON.stringify(activeReminders));
+    }
+}, 1000);
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
 (function() {
     // Load userNicknames from localStorage (if any)
     let userNicknames = JSON.parse(localStorage.getItem('userNicknames')) || {};
@@ -1133,6 +1214,96 @@ if (wsmsg['text'] === ".clearNotes") {
     localStorage.removeItem("universalNotes");
     respondWithMessage.call(this, "🤖 All notes cleared.");
 }*/
+
+// Reminders ------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 📡 Hook bot send function to allow reminders to talk outside of commands
+if (!window.stumbleBotSend) {
+    window.stumbleBotSend = (msg) => this._send(`{"stumble":"msg","text": "${msg}"}`);
+}
+
+// ⏰ .remind / .remindat / .rm / .remindme / .reminder [time] [message]
+if (/^\.?(remind|remindat|rm|remindme|reminder)\s/i.test(wsmsg['text'])) {
+    const handle = wsmsg['handle'];
+    const username = userHandles[handle];
+    const user = userNicknames[username];
+
+    if (!user || !user.username) {
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        return;
+    }
+
+    const args = wsmsg['text'].split(" ");
+    const timeArg = args[1];
+    const message = args.slice(2).join(" ").trim();
+
+    if (!timeArg || !message) {
+        respondWithMessage.call(this, "🕐 Usage: `.remind [time] [message]` — try `10m`, `4:20pm`, or `tomorrow`");
+        return;
+    }
+
+    const duration = parseFlexibleTime(timeArg);
+    if (!duration || duration < 5000 || duration > 86400000) {
+        respondWithMessage.call(this, "⚠️ Time must be between 5 seconds and 24 hours. (e.g. `5s`, `1.5h`, `in 10 minutes`, `16:20`)");
+        return;
+    }
+
+    const reminder = {
+        user: user.nickname || user.username,
+        username: user.username,
+        message,
+        time: Date.now() + duration
+    };
+
+    activeReminders.push(reminder);
+    localStorage.setItem("activeReminders", JSON.stringify(activeReminders));
+
+    respondWithMessage.call(this, `✅ Reminder set for ${timeArg} from now.`);
+}
+
+// 🗓️ .myreminders [page] — show your scheduled reminders
+if (wsmsg['text'].toLowerCase().startsWith(".myreminders")) {
+    const handle = wsmsg['handle'];
+    const username = userHandles[handle];
+    const user = userNicknames[username];
+
+    if (!user || !user.username) {
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        return;
+    }
+
+    const args = wsmsg['text'].split(" ");
+    const page = parseInt(args[1]) || 1;
+    const itemsPerPage = 5;
+
+    const userReminders = activeReminders
+        .filter(r => r.username === user.username)
+        .sort((a, b) => b.time - a.time);
+
+    if (userReminders.length === 0) {
+        respondWithMessage.call(this, "🔕 You have no active reminders.");
+        return;
+    }
+
+    const totalPages = Math.ceil(userReminders.length / itemsPerPage);
+    if (page < 1 || page > totalPages) {
+        respondWithMessage.call(this, `⚠️ Invalid page. Use \`.myreminders [1-${totalPages}]\`.`);
+        return;
+    }
+
+    const start = (page - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const remindersToShow = userReminders.slice(start, end);
+
+    respondWithMessage.call(this, `⏳ Your Reminders — Page ${page}/${totalPages}`);
+    remindersToShow.forEach((r, i) => {
+        setTimeout(() => {
+            const minsLeft = Math.ceil((r.time - Date.now()) / 60000);
+            respondWithMessage.call(this, `${start + i + 1}. ${r.message} — in ${minsLeft} min`);
+        }, i * 1000);
+    });
+}
 
 // GojiBux --------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -4793,7 +4964,7 @@ if ([".getpot", ".getlottery"].includes(wsmsg["text"].toLowerCase())) {
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 💰 GojiBux Pot System
-let gojiPot = localStorage.getItem("gojiPot") ? parseInt(localStorage.getItem("gojiPot")) : 0;
+/*let gojiPot = localStorage.getItem("gojiPot") ? parseInt(localStorage.getItem("gojiPot")) : 0;
 let lastPotClaimTime = localStorage.getItem("lastPotClaimTime") ? parseInt(localStorage.getItem("lastPotClaimTime")) : 0;
 let lastPotMilestone = parseFloat(localStorage.getItem("lastPotMilestone") || "0");
 let potEligibleUsers = JSON.parse(localStorage.getItem("potEligibleUsers") || "[]");
@@ -4970,7 +5141,223 @@ if ([".getpot", ".getlottery"].includes(wsmsg["text"].toLowerCase())) {
         `├ 💵 ${totalPot - lghContribution} GBX from users\n` +
         `└ 💵 ${lghContribution.toLocaleString()} GBX from 🏦 LGH Bank\nCongratulations!`
     );
+}*/
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 💰 GojiBux Pot System
+let gojiPot = localStorage.getItem("gojiPot") ? parseInt(localStorage.getItem("gojiPot")) : 0;
+let lastPotClaimTime = localStorage.getItem("lastPotClaimTime") ? parseInt(localStorage.getItem("lastPotClaimTime")) : 0;
+let lastPotMilestone = parseFloat(localStorage.getItem("lastPotMilestone") || "0");
+let potEligibleUsers = JSON.parse(localStorage.getItem("potEligibleUsers") || "[]");
+let eligibleUserSet = new Set(potEligibleUsers);
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 💾 Save Pot & Milestone
+function saveGojiPot() {
+    localStorage.setItem("gojiPot", gojiPot);
+    localStorage.setItem("lastPotClaimTime", lastPotClaimTime);
 }
+function savePotMilestone(value) {
+    lastPotMilestone = value;
+    localStorage.setItem("lastPotMilestone", value.toString());
+}
+function saveEligibleUsers() {
+    localStorage.setItem("potEligibleUsers", JSON.stringify([...eligibleUserSet]));
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 📊 Pot Bar Generator (1B goal)
+function generatePotBar(total, max = 1_000_000_000, width = 12) {
+    const percent = Math.min(total / max, 1);
+    const filled = Math.floor(percent * width);
+    const empty = width - filled;
+    const bar = "█".repeat(filled) + "░".repeat(empty);
+    return `[${bar}] ${(percent * 100).toFixed(1)}%`;
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 📊 `.pot` or `.lottery` - Show current pot and progress bar
+if ([".pot", ".lottery"].includes(wsmsg["text"].toLowerCase())) {
+    // 💸 Preview potential millionaire contributions (10% max each, if >1M)
+    let millionairePot = 0;
+    for (const [user, data] of Object.entries(userBalances)) {
+        const bal = data?.balance || 0;
+        if (bal > 1_000_000) {
+            millionairePot += Math.floor(bal * 0.10);
+        }
+    }
+
+    const totalPot = gojiPot + millionairePot;
+    const potBar = generatePotBar(totalPot);
+    const potPercent = totalPot / 1_000_000_000;
+
+    if (totalPot <= 0) {
+        respondWithMessage.call(this, "🤖 The lottery is empty. Use `.givepot` to contribute!");
+    } else {
+        respondWithMessage.call(this,
+            `🎫 The current pot contains 💵 ${totalPot.toLocaleString()} GBX!\n` +
+            `📊 Pot Level: ${potBar}\n` +
+            `├ 💵 ${gojiPot.toLocaleString()} GBX from users\n` +
+            `└ 💵 ${millionairePot.toLocaleString()} GBX from potential Goji Millionaires 💸\n` +
+            `Use .givepot to contribute or .getpot to claim it.`
+        );
+    }
+
+    // 🏆 Milestone Alerts
+    if (potPercent >= 1.00 && lastPotMilestone < 1.00) {
+        respondWithMessage.call(this, `💎💥 THE POT HAS HIT 1 BILLION GBX!!! LEGENDARY JACKPOT UNLOCKED!`);
+        savePotMilestone(1.00);
+    } else if (potPercent >= 0.75 && lastPotMilestone < 0.75) {
+        respondWithMessage.call(this, `🥇 The pot has reached GOLD TIER (75%)! The stakes are 🔥`);
+        savePotMilestone(0.75);
+    } else if (potPercent >= 0.5 && lastPotMilestone < 0.5) {
+        respondWithMessage.call(this, `🥈 SILVER TIER UNLOCKED (50%)! Keep it growing 💰`);
+        savePotMilestone(0.5);
+    } else if (potPercent >= 0.25 && lastPotMilestone < 0.25) {
+        respondWithMessage.call(this, `🥉 The pot has reached BRONZE Tier (25%)! Let’s gooo 🚀`);
+        savePotMilestone(0.25);
+    }
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 💸 `.givepot [amount|max|all]` - Contribute GBX to the pot
+const givepotTriggers = [".givepot", ".givelottery"];
+if (givepotTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const args = wsmsg["text"].trim().split(/\s+/);
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    if (!username || args.length < 2) {
+        respondWithMessage.call(this, "🤖 Usage: `.givepot [amount|max|all]`");
+        return;
+    }
+
+    let amount = args[1].toLowerCase();
+    const userBalance = userBalances[username]?.balance || 0;
+
+    if (amount === "max" || amount === "all") {
+        amount = userBalance;
+    } else {
+        amount = parseInt(amount, 10);
+        if (isNaN(amount) || amount <= 0) {
+            respondWithMessage.call(this, "❌ Enter a valid amount greater than zero.");
+            return;
+        }
+    }
+
+    if (amount > userBalance) {
+        respondWithMessage.call(this, "🤖 You don't have enough GojiBux to contribute.");
+        return;
+    }
+
+    if (amount < 10) {
+        respondWithMessage.call(this, "🤖 Minimum contribution to the pot is 💵 10 GBX.");
+        return;
+    }
+
+    userBalances[username].balance -= amount;
+    gojiPot += amount;
+    eligibleUserSet.add(username);
+    saveGojiPot();
+    saveBalances();
+    saveEligibleUsers();
+
+    respondWithMessage.call(this,
+        `🎫🎁 ${nickname} added 💵 ${amount.toLocaleString()} GBX to the pot!\n` +
+        `Current pot (user-funded only): 💵 ${gojiPot.toLocaleString()} GBX`
+    );
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🎰 `.getpot` or `.getlottery` - Claim the pot (1 hour cooldown)
+if ([".getpot", ".getlottery"].includes(wsmsg["text"].toLowerCase())) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    const currentTime = Date.now();
+    const cooldown = 1 * 60 * 60 * 1000; // 1 hour
+
+    if (currentTime - lastPotClaimTime < cooldown) {
+        const remainingTime = Math.ceil((cooldown - (currentTime - lastPotClaimTime)) / 60000);
+        respondWithMessage.call(this, `⏳ The pot can be claimed in ${remainingTime} minute(s).`);
+        return;
+    }
+
+    // 💸 Actual millionaire contributions (10% max, >1M only)
+    let millionaireContribution = 0;
+    const contributingMillionaires = [];
+
+    for (const [user, data] of Object.entries(userBalances)) {
+        const bal = data?.balance || 0;
+        if (bal > 1_000_000) {
+            const skim = Math.floor(bal * 0.10);
+            userBalances[user].balance -= skim;
+            millionaireContribution += skim;
+            contributingMillionaires.push({ user, amount: skim });
+        }
+    }
+
+    gojiPot += millionaireContribution;
+    saveBalances();
+    saveGojiPot();
+
+    const eligibleUsers = [...eligibleUserSet].filter(u => userBalances[u]);
+    if (eligibleUsers.length === 0) {
+        respondWithMessage.call(this, "🤖 No eligible users to receive the pot. Contribute or gamble to enter!");
+        return;
+    }
+
+    const winner = eligibleUsers[Math.floor(Math.random() * eligibleUsers.length)];
+    const winnerNickname = userNicknames[winner]?.nickname || winner;
+
+    // 💰 Calculate LGH Bank 10% cut
+    const totalPot = gojiPot;
+    const userOnlyPot = totalPot - millionaireContribution;
+    const lghCut = Math.floor(totalPot * 0.10);
+    const winnerAmount = totalPot - lghCut;
+
+    // 💸 Pay winner + bank
+    if (!userBalances[winner]) {
+        userBalances[winner] = { balance: 0 };
+    }
+    userBalances[winner].balance += winnerAmount;
+    lghBank += lghCut;
+
+    // 🧹 Reset
+    gojiPot = 0;
+    lastPotClaimTime = currentTime;
+    lastPotMilestone = 0;
+    eligibleUserSet.clear();
+
+    saveGojiPot();
+    saveLghBank();
+    saveBalances();
+    saveEligibleUsers();
+    localStorage.setItem("lastPotMilestone", "0");
+
+    respondWithMessage.call(this,
+        `🎫🎊 ${winnerNickname} won the pot of 💵 ${totalPot.toLocaleString()} GBX!\n` +
+        `├ 💵 ${winnerAmount.toLocaleString()} GBX received (after 10% LGH cut)\n` +
+        `├ 💵 ${userOnlyPot.toLocaleString()} GBX from users\n` +
+        `└ 💵 ${millionaireContribution.toLocaleString()} GBX from Goji Millionaires 💸\n` +
+        `🏦 LGH Bank takes 💵 ${lghCut.toLocaleString()} GBX (10% house cut)\nCongratulations!`
+    );
+
+    if (contributingMillionaires.length > 0) {
+        respondWithMessage.call(this,
+            `💰 Millionaire Contribution Activated!\n🤑 ${contributingMillionaires.length} rich user(s) funded the pot with 💵 ${millionaireContribution.toLocaleString()} GBX from their excess wealth.`
+        );
+    }
+}
+
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -5113,7 +5500,7 @@ if ([".getpot", ".getlottery"].includes(wsmsg["text"].toLowerCase())) {
 }*/
 
 // 🎰 `.gamble AMOUNT` or `.bet AMOUNT` - Bet GojiBux for a chance to win!
-if (wsmsg["text"].toLowerCase().startsWith(".gamble ") || wsmsg["text"].toLowerCase().startsWith(".bet ")) {
+/*if (wsmsg["text"].toLowerCase().startsWith(".gamble ") || wsmsg["text"].toLowerCase().startsWith(".bet ")) {
     const args = wsmsg["text"].split(" ");
     const betInput = args[1]?.toLowerCase();
     const handle = wsmsg["handle"];
@@ -5264,6 +5651,224 @@ if (wsmsg["text"].toLowerCase().startsWith(".gamble ") || wsmsg["text"].toLowerC
     localStorage.setItem("lghBank", lghBank.toString());
 
     respondWithMessage.call(this, resultMessage);
+}*/
+
+// 🎰 `.gamble AMOUNT` or `.bet AMOUNT` - Bet GojiBux for a chance to win!
+if (
+    wsmsg["text"].toLowerCase().startsWith(".gamble ") ||
+    wsmsg["text"].toLowerCase().startsWith(".bet ")
+) {
+    const args = wsmsg["text"].split(" ");
+    const betInput = args[1]?.toLowerCase();
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    if (!username) {
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        return;
+    }
+
+    if (!userStats[username]) userStats[username] = {};
+    if (userStats[username].luckyCoins === undefined) userStats[username].luckyCoins = 0;
+
+    const lastGambleTime = userStats[username].lastGamble || 0;
+    const now = Date.now();
+    const cooldown = 30 * 1000; // 30 seconds
+
+    if (now - lastGambleTime < cooldown) {
+        const remaining = Math.ceil((cooldown - (now - lastGambleTime)) / 1000);
+        respondWithMessage.call(this, `⏳ You need to wait ${remaining} more second(s) before gambling again.`);
+        return;
+    }
+
+    let betAmount;
+    const balance = userBalances[username].balance;
+
+    if (["max", "all", "yolo", "degenerate"].includes(betInput)) {
+        betAmount = balance;
+    } else if (betInput === "half") {
+        betAmount = Math.floor(balance / 2);
+    } else if (betInput === "quarter") {
+        betAmount = Math.floor(balance / 4);
+    } else if (betInput === "random") {
+        betAmount = Math.floor(Math.random() * balance) + 1;
+    } else if (/^\d+(\.\d+)?%$/.test(betInput)) {
+        const percent = parseFloat(betInput.replace("%", ""));
+        betAmount = Math.floor((percent / 100) * balance);
+    } else if (/^\d+(\.\d+)?[kmb]$/i.test(betInput)) {
+        const num = parseFloat(betInput);
+        const suffix = betInput.slice(-1).toLowerCase();
+        const multiplier = suffix === "k" ? 1e3 : suffix === "m" ? 1e6 : 1e9;
+        betAmount = Math.floor(num * multiplier);
+    } else {
+        betAmount = parseInt(betInput);
+    }
+
+    if (isNaN(betAmount) || betAmount <= 0) {
+        respondWithMessage.call(
+            this,
+            "❌ Invalid amount! Try `.bet 500`, `.bet max`, `.bet 25%`, `.bet 2k`, `.bet random`, or `.bet yolo`."
+        );
+        return;
+    }
+
+    if (balance < betAmount) {
+        respondWithMessage.call(
+            this,
+            `🤖 Not enough GojiBux! You only have ${balance.toLocaleString()} GBX.`
+        );
+        return;
+    }
+
+    const roll = Math.random();
+    let winnings = 0;
+    let resultMessage = "";
+    let usedLuckyCoin = false;
+
+    let previewWinnings = 0;
+    if (roll < 0.03) previewWinnings = betAmount * 4;
+    else if (roll < 0.15) previewWinnings = betAmount * 2;
+    else if (roll < 0.55) previewWinnings = betAmount;
+    else if (roll < 0.80) previewWinnings = Math.floor(betAmount * 0.25);
+
+    if (previewWinnings > 0) {
+        const potTax = Math.floor(previewWinnings * 0.10);
+        const totalCost = previewWinnings + potTax;
+
+        if (lghBank < totalCost) {
+            if (userStats[username].luckyCoins > 0) {
+                userStats[username].luckyCoins--;
+                usedLuckyCoin = true;
+            } else {
+                respondWithMessage.call(
+                    this,
+                    `🚫 LGH Bank is broke! Not enough funds to cover your potential winnings. Try again later.`
+                );
+                return;
+            }
+        }
+    }
+
+    if (roll < 0.03) {
+        winnings = betAmount * 4;
+        resultMessage = `🎰 JACKPOT!!! ${nickname} turned 💵 ${betAmount.toLocaleString()} into 💵➕ ${winnings.toLocaleString()} GBX! 🥳💸`;
+    } else if (roll < 0.15) {
+        winnings = betAmount * 2;
+        resultMessage = `🔥 HOT STREAK! ${nickname} scored a BIG WIN: 💵➕ ${winnings.toLocaleString()} GBX! 🤑🔥`;
+    } else if (roll < 0.55) {
+        winnings = betAmount;
+        resultMessage = `✅ Clean win! ${nickname} doubled up: 💵➕ ${winnings.toLocaleString()} GBX! 💰`;
+    } else if (roll < 0.80) {
+        winnings = Math.floor(betAmount * 0.25);
+        resultMessage = `🍬 Not bad! ${nickname} got a boost: 💵➕ ${winnings.toLocaleString()} GBX. Take the W!`;
+    } else if (roll < 0.99) {
+        winnings = -Math.floor(betAmount / 2);
+        resultMessage = `😬 Close call. ${nickname} lost half their bet: 💵➖ ${Math.abs(winnings).toLocaleString()} GBX.`;
+    } else {
+        winnings = -betAmount;
+        resultMessage = `💸 WRECKED! ${nickname} lost it all: 💵➖ ${Math.abs(winnings).toLocaleString()} GBX. 😭 Rarest L!`;
+    }
+
+    if (winnings > 0) {
+        const potTax = Math.floor(winnings * 0.10);
+        const netWinnings = winnings - potTax;
+        const totalCost = winnings + potTax;
+
+        userBalances[username].balance += netWinnings;
+        if (!usedLuckyCoin) lghBank -= totalCost;
+        gojiPot += potTax;
+
+        resultMessage += ` 🎟️ ${potTax.toLocaleString()} GBX added to the lottery pot.`;
+        if (usedLuckyCoin) {
+            resultMessage += ` 🍀 A Lucky Coin shimmered... LGH Bank was broke, but fate smiled upon you!`;
+        }
+    } else {
+        const loss = Math.abs(winnings);
+        userBalances[username].balance -= loss;
+        gojiPot += loss;
+
+        resultMessage += ` 🎟️ ${loss.toLocaleString()} GBX added to the lottery pot.`;
+    }
+
+    if (winnings > 0) {
+        userStats[username].winStreak = (userStats[username].winStreak || 0) + 1;
+    } else {
+        userStats[username].winStreak = 0;
+    }
+
+    userStats[username].lastGamble = now;
+
+    if (userStats[username].winStreak >= 5 && winnings > 0) {
+        const bonus = Math.floor((winnings + betAmount) * (userStats[username].winStreak * 0.05));
+        userBalances[username].balance += bonus;
+        resultMessage += ` 🔥 ${nickname} is on a ${userStats[username].winStreak}-win streak! Bonus 💵➕ ${bonus.toLocaleString()} GBX!`;
+    }
+
+    if (Math.random() < 0.01) {
+        userStats[username].luckyCoins++;
+        resultMessage += ` 🍀 ${nickname} found a Lucky Coin! You now have ${userStats[username].luckyCoins}.`;
+    }
+
+    eligibleUserSet.add(username);
+    saveEligibleUsers();
+    saveBalances();
+    saveGojiPot();
+    saveUserStats();
+    localStorage.setItem("lghBank", lghBank.toString());
+
+    respondWithMessage.call(this, resultMessage);
+}
+
+// 💲 `.luckycoins` command
+if (wsmsg["text"].toLowerCase().startsWith(".luckycoins")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    if (!username) {
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        return;
+    }
+
+    if (!userStats[username]) userStats[username] = {};
+    if (userStats[username].luckyCoins === undefined) userStats[username].luckyCoins = 0;
+
+    const coins = userStats[username].luckyCoins;
+    respondWithMessage.call(this, `🍀 ${nickname}, you have ${coins} Lucky Coin${coins !== 1 ? "s" : ""}.`);
+    return;
+}
+
+// 🎁 `.giftluckycoin USER` command
+if (wsmsg["text"].toLowerCase().startsWith(".giftluckycoin ")) {
+    const args = wsmsg["text"].split(" ");
+    const targetName = args[1]?.toLowerCase();
+    const handle = wsmsg["handle"];
+    const sender = userHandles[handle];
+    const senderNickname = userNicknames[sender]?.nickname || sender || "you";
+
+    if (!sender || !targetName) {
+        respondWithMessage.call(this, "🤖 Usage: .giftluckycoin USERNAME");
+        return;
+    }
+
+    if (!userStats[sender]) userStats[sender] = {};
+    if (userStats[sender].luckyCoins === undefined) userStats[sender].luckyCoins = 0;
+
+    if (userStats[sender].luckyCoins <= 0) {
+        respondWithMessage.call(this, `❌ You don’t have any Lucky Coins to give, ${senderNickname}.`);
+        return;
+    }
+
+    if (!userStats[targetName]) userStats[targetName] = {};
+    if (userStats[targetName].luckyCoins === undefined) userStats[targetName].luckyCoins = 0;
+
+    userStats[sender].luckyCoins--;
+    userStats[targetName].luckyCoins++;
+
+    respondWithMessage.call(this, `🍀 ${senderNickname} gifted a Lucky Coin to @${targetName}. May fortune favor them!`);
+    saveUserStats();
+    return;
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -7411,6 +8016,13 @@ if (wsmsg['text'].toLowerCase() === ".chucknorris" || wsmsg['text'].toLowerCase(
     // start claptrick
     if (wsmsg['text'].toLowerCase() === ".claptrick") {
         this._send('{"stumble":"msg","text": "https://i.imgur.com/hWUWU2P.gif"}');
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+    // start tea
+    if (wsmsg['text'].toLowerCase() === ".tea") {
+        this._send('{"stumble":"msg","text": "https://i.imgur.com/AxxjoC0.gif"}');
     }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
