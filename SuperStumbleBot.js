@@ -2823,14 +2823,14 @@ if (stealweedTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 🏛 `.lgh` - Show the total GojiBux stored in the LGH Bank
-if (wsmsg["text"].toLowerCase() === ".lgh") {
+if ([".lgh", ".bank"].includes(wsmsg["text"].toLowerCase())) {
     respondWithMessage.call(this, `🏦 LGH Bank: 💵 ${lghBank.toLocaleString()} GBX`);
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 🏦 `.wgh` - Check global stash
-if (wsmsg["text"].toLowerCase() === ".wgh") {
+if ([".wgh", ".dispo"].includes(wsmsg["text"].toLowerCase())) {
     respondWithMessage.call(this, `🏬 WGH Dispo: 🥦 ${wghBank.toLocaleString()}g`);
 }
 
@@ -8042,6 +8042,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".myitems")) {
     const allItems = [
         { emoji: "💎", name: "GojiCoins", value: gojiCoinBalances[username] || 0, price: 1_000_000_000 },
         { emoji: "🐸", name: "Frogs", value: userFrogCounts[username] || 0, price: 1_000_000 },
+        { emoji: "🍆", name: "Dildos", value: userDildoStashes?.[username] || 0, price: 50000 },
         { emoji: "🥩", name: "Steak", value: userSteakStashes?.[username] || 0, price: 15_000 },
         { emoji: "🍝", name: "Spaget", value: userSpaghettiStashes[username] || 0, price: 10_000 },
         { emoji: "🍣", name: "Sushi", value: userSushiStashes?.[username] || 0, price: 8_888 },
