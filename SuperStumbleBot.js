@@ -3011,7 +3011,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".buyspaget")) {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
-    const costPer = 20;
+    const costPer = 10000; // Updated cost
 
     const args = wsmsg["text"].trim().split(/\s+/);
     const rawAmount = args[1] || "1"; // fixed from args[2] to args[1]
@@ -3221,10 +3221,10 @@ if (wsmsg["text"].toLowerCase().startsWith(".buypizza")) {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
-    const costPer = 10;
+    const costPer = 5000; // Updated cost
 
     const args = wsmsg["text"].trim().split(/\s+/);
-    const rawAmount = args[1] || "1"; // fixed from args[2] to args[1]
+    const rawAmount = args[1] || "1";
 
     const userBalance = userBalances[username]?.balance || 0;
     const maxAffordable = Math.floor(userBalance / costPer);
@@ -3366,6 +3366,3263 @@ if (eatpizzaTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     ];
 
     const response = `${messages[Math.floor(Math.random() * messages.length)]}\nYou have 🍕 ${remaining} pizza left.`;
+
+    setTimeout(() => {
+        respondWithMessage.call(this, response);
+    }, 1000);
+}
+
+// Eggz -----------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥚 Global Egg Storage (Per-user)
+let userEggStashes = JSON.parse(localStorage.getItem("userEggStashes")) || {};
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥚 `.buyegg` - Purchase egg(s) for 💵 100 GBX each
+if (wsmsg["text"].toLowerCase().startsWith(".buyegg")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const costPer = 100;
+
+    const args = wsmsg["text"].trim().split(/\s+/);
+    const rawAmount = args[1] || "1";
+
+    const userBalance = userBalances[username]?.balance || 0;
+    const maxAffordable = Math.floor(userBalance / costPer);
+    let amount = rawAmount.toLowerCase() === "all" || rawAmount.toLowerCase() === "max"
+        ? maxAffordable
+        : parseInt(rawAmount, 10);
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+        respondWithMessage.call(this, `🤖 Invalid amount. You can afford up to 🥚 ${maxAffordable} egg${maxAffordable !== 1 ? "s" : ""}.`);
+        return;
+    }
+
+    const totalCost = costPer * amount;
+    if (userBalance < totalCost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 ${totalCost.toLocaleString()} GBX for 🥚 ${amount} egg${amount !== 1 ? "s" : ""}.`);
+        return;
+    }
+
+    userBalances[username].balance -= totalCost;
+    lghBank += totalCost;
+    userEggStashes[username] = (userEggStashes[username] || 0) + amount;
+
+    saveBalances();
+    localStorage.setItem("lghBank", lghBank);
+    localStorage.setItem("userEggStashes", JSON.stringify(userEggStashes));
+
+    respondWithMessage.call(this, `🥚➕ ${nickname} bought 🥚 ${amount} egg${amount !== 1 ? "s" : ""} for 💵 ${totalCost.toLocaleString()} GBX.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥚🎒 `.myegg` - Display user's egg stash
+if (wsmsg["text"].toLowerCase() === ".myegg") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const stash = userEggStashes[username] || 0;
+
+    respondWithMessage.call(this, `🥚🎒 ${nickname}, you have 🥚 ${stash} egg${stash !== 1 ? "s" : ""}.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥚🎁 `.giveegg [username] [amount|max|all]` - Send eggs to another user
+const giveeggTriggers = [".giveegg"]; // add aliases here like ".sendegg"
+if (giveeggTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const args = wsmsg["text"].trim().split(/\s+/);
+    if (args.length < 3) {
+        respondWithMessage.call(this, "🤖 Usage: .giveegg [username] [amount|max|all]");
+        return;
+    }
+
+    const handle = wsmsg["handle"];
+    const sender = userHandles[handle];
+    const senderNickname = userNicknames[sender]?.nickname || sender || "you";
+    const recipientUsername = args[1];
+    const amountArg = args[2]?.toLowerCase();
+    const senderStash = userEggStashes[sender] || 0;
+
+    if (!sender || !userNicknames[recipientUsername]) {
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        return;
+    }
+
+    let amount;
+    if (amountArg === "max" || amountArg === "all") {
+        amount = senderStash;
+        if (amount <= 0) {
+            respondWithMessage.call(this, "🤖 You don't have any 🥚 eggs to give.");
+            return;
+        }
+    } else {
+        amount = parseInt(amountArg, 10);
+        if (isNaN(amount) || amount <= 0 || senderStash < amount) {
+            respondWithMessage.call(this, "🤖 Invalid amount or insufficient stash.");
+            return;
+        }
+    }
+
+    userEggStashes[sender] -= amount;
+    userEggStashes[recipientUsername] = (userEggStashes[recipientUsername] || 0) + amount;
+    localStorage.setItem("userEggStashes", JSON.stringify(userEggStashes));
+
+    const recipientNickname = userNicknames[recipientUsername]?.nickname || recipientUsername;
+    respondWithMessage.call(this, `🥚🎁 ${senderNickname} gave 🥚 ${amount} egg${amount !== 1 ? "s" : ""} to ${recipientNickname}! Crackin’ good trade.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥚🍳 `.eategg [amount|max|all]` - Eat some eggs from your stash
+const eateggTriggers = [".eategg"]; // add aliases here like ".nomegg"
+if (eateggTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].trim().split(/\s+/);
+
+    if (!username || args.length < 2) {
+        setTimeout(() => {
+            respondWithMessage.call(this, "🤖 Usage: .eategg [amount|max|all]");
+        }, 1000);
+        return;
+    }
+
+    const stash = userEggStashes[username] || 0;
+    const arg = args[1].toLowerCase();
+    let amount;
+
+    if (arg === "max" || arg === "all") {
+        amount = stash;
+    } else {
+        amount = parseInt(arg, 10);
+        if (isNaN(amount) || amount <= 0) {
+            setTimeout(() => {
+                respondWithMessage.call(this, "🤖 Invalid amount. Try .eategg [amount|max|all]");
+            }, 1000);
+            return;
+        }
+    }
+
+    if (amount > stash) {
+        setTimeout(() => {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough 🥚 eggs to eat!`);
+        }, 1000);
+        return;
+    }
+
+    userEggStashes[username] -= amount;
+    localStorage.setItem("userEggStashes", JSON.stringify(userEggStashes));
+
+    const remaining = userEggStashes[username];
+
+    const messages = [
+        `🍳 ${nickname} cracked open and ate 🥚 ${amount} egg${amount !== 1 ? "s" : ""}. Protein boost!`,
+        `🍳 ${nickname} devoured 🥚 ${amount} egg${amount !== 1 ? "s" : ""}. Shells included. 😬`,
+        `🍳 ${nickname} just made a mystery omelet with 🥚 ${amount} egg${amount !== 1 ? "s" : ""}. Bold move.`,
+        `🍳 ${nickname} went full goblin mode and raw'd 🥚 ${amount} egg${amount !== 1 ? "s" : ""}. Respect.`,
+    ];
+
+    const response = `${messages[Math.floor(Math.random() * messages.length)]}\nYou have 🥚 ${remaining} egg${remaining !== 1 ? "s" : ""} left.`;
+
+    setTimeout(() => {
+        respondWithMessage.call(this, response);
+    }, 1000);
+}
+
+// Bananaz ---------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍌 Global Banana Storage (Per-user)
+let userBananaStashes = JSON.parse(localStorage.getItem("userBananaStashes")) || {};
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍌 `.buybanana` - Purchase banana(s) for 💵 333 GBX each
+if (wsmsg["text"].toLowerCase().startsWith(".buybanana")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const costPer = 333;
+
+    const args = wsmsg["text"].trim().split(/\s+/);
+    const rawAmount = args[1] || "1";
+
+    const userBalance = userBalances[username]?.balance || 0;
+    const maxAffordable = Math.floor(userBalance / costPer);
+    let amount = rawAmount.toLowerCase() === "all" || rawAmount.toLowerCase() === "max"
+        ? maxAffordable
+        : parseInt(rawAmount, 10);
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+        respondWithMessage.call(this, `🤖 Invalid amount. You can afford up to 🍌 ${maxAffordable} banana${maxAffordable !== 1 ? "s" : ""}.`);
+        return;
+    }
+
+    const totalCost = costPer * amount;
+    if (userBalance < totalCost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 ${totalCost.toLocaleString()} GBX for 🍌 ${amount} banana${amount !== 1 ? "s" : ""}.`);
+        return;
+    }
+
+    userBalances[username].balance -= totalCost;
+    lghBank += totalCost;
+    userBananaStashes[username] = (userBananaStashes[username] || 0) + amount;
+
+    saveBalances();
+    localStorage.setItem("lghBank", lghBank);
+    localStorage.setItem("userBananaStashes", JSON.stringify(userBananaStashes));
+
+    respondWithMessage.call(this, `🍌➕ ${nickname} bought 🍌 ${amount} banana${amount !== 1 ? "s" : ""} for 💵 ${totalCost.toLocaleString()} GBX. Slippery deal!`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍌🎒 `.mybanana` - Display user's banana stash
+if (wsmsg["text"].toLowerCase() === ".mybanana") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const stash = userBananaStashes[username] || 0;
+
+    respondWithMessage.call(this, `🍌🎒 ${nickname}, you have 🍌 ${stash} banana${stash !== 1 ? "s" : ""}. Don’t slip!`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍌🎁 `.givebanana [username] [amount|max|all]` - Send bananas to another user
+const givebananaTriggers = [".givebanana"]; // add aliases here like ".sendbanana"
+if (givebananaTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const args = wsmsg["text"].trim().split(/\s+/);
+    if (args.length < 3) {
+        respondWithMessage.call(this, "🤖 Usage: .givebanana [username] [amount|max|all]");
+        return;
+    }
+
+    const handle = wsmsg["handle"];
+    const sender = userHandles[handle];
+    const senderNickname = userNicknames[sender]?.nickname || sender || "you";
+    const recipientUsername = args[1];
+    const amountArg = args[2]?.toLowerCase();
+    const senderStash = userBananaStashes[sender] || 0;
+
+    if (!sender || !userNicknames[recipientUsername]) {
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        return;
+    }
+
+    let amount;
+    if (amountArg === "max" || amountArg === "all") {
+        amount = senderStash;
+        if (amount <= 0) {
+            respondWithMessage.call(this, "🤖 You don't have any 🍌 bananas to give.");
+            return;
+        }
+    } else {
+        amount = parseInt(amountArg, 10);
+        if (isNaN(amount) || amount <= 0 || senderStash < amount) {
+            respondWithMessage.call(this, "🤖 Invalid amount or insufficient stash.");
+            return;
+        }
+    }
+
+    userBananaStashes[sender] -= amount;
+    userBananaStashes[recipientUsername] = (userBananaStashes[recipientUsername] || 0) + amount;
+    localStorage.setItem("userBananaStashes", JSON.stringify(userBananaStashes));
+
+    const recipientNickname = userNicknames[recipientUsername]?.nickname || recipientUsername;
+    respondWithMessage.call(this, `🍌🎁 ${senderNickname} gave 🍌 ${amount} banana${amount !== 1 ? "s" : ""} to ${recipientNickname}! That’s bananas!`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍌😋 `.eatbanana [amount|max|all]` - Eat some bananas from your stash
+const eatbananaTriggers = [".eatbanana"]; // add aliases here like ".nombanana"
+if (eatbananaTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].trim().split(/\s+/);
+
+    if (!username || args.length < 2) {
+        setTimeout(() => {
+            respondWithMessage.call(this, "🤖 Usage: .eatbanana [amount|max|all]");
+        }, 1000);
+        return;
+    }
+
+    const stash = userBananaStashes[username] || 0;
+    const arg = args[1].toLowerCase();
+    let amount;
+
+    if (arg === "max" || arg === "all") {
+        amount = stash;
+    } else {
+        amount = parseInt(arg, 10);
+        if (isNaN(amount) || amount <= 0) {
+            setTimeout(() => {
+                respondWithMessage.call(this, "🤖 Invalid amount. Try .eatbanana [amount|max|all]");
+            }, 1000);
+            return;
+        }
+    }
+
+    if (amount > stash) {
+        setTimeout(() => {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough 🍌 bananas to eat!`);
+        }, 1000);
+        return;
+    }
+
+    userBananaStashes[username] -= amount;
+    localStorage.setItem("userBananaStashes", JSON.stringify(userBananaStashes));
+
+    const remaining = userBananaStashes[username];
+
+    const messages = [
+        `🐒 ${nickname} peeled and ate 🍌 ${amount} banana${amount !== 1 ? "s" : ""}. Monkey approved.`,
+        `🐵 ${nickname} devoured 🍌 ${amount} banana${amount !== 1 ? "s" : ""} like a jungle king.`,
+        `🍌 ${nickname} chomped 🍌 ${amount} banana${amount !== 1 ? "s" : ""}. A+ potassium intake.`,
+        `🍌 ${nickname} inhaled 🍌 ${amount} banana${amount !== 1 ? "s" : ""} in one go. Legend.`,
+    ];
+
+    const response = `${messages[Math.floor(Math.random() * messages.length)]}\nYou have 🍌 ${remaining} banana${remaining !== 1 ? "s" : ""} left.`;
+
+    setTimeout(() => {
+        respondWithMessage.call(this, response);
+    }, 1000);
+}
+
+// Applez ----------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍎 Global Apple Storage (Per-user)
+let userAppleStashes = JSON.parse(localStorage.getItem("userAppleStashes")) || {};
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍎 `.buyapple` - Purchase apple(s) for 💵 420 GBX each
+if (wsmsg["text"].toLowerCase().startsWith(".buyapple")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const costPer = 420;
+
+    const args = wsmsg["text"].trim().split(/\s+/);
+    const rawAmount = args[1] || "1";
+
+    const userBalance = userBalances[username]?.balance || 0;
+    const maxAffordable = Math.floor(userBalance / costPer);
+    let amount = rawAmount.toLowerCase() === "all" || rawAmount.toLowerCase() === "max"
+        ? maxAffordable
+        : parseInt(rawAmount, 10);
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+        respondWithMessage.call(this, `🤖 Invalid amount. You can afford up to 🍎 ${maxAffordable} apple${maxAffordable !== 1 ? "s" : ""}.`);
+        return;
+    }
+
+    const totalCost = costPer * amount;
+    if (userBalance < totalCost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 ${totalCost.toLocaleString()} GBX for 🍎 ${amount} apple${amount !== 1 ? "s" : ""}.`);
+        return;
+    }
+
+    userBalances[username].balance -= totalCost;
+    lghBank += totalCost;
+    userAppleStashes[username] = (userAppleStashes[username] || 0) + amount;
+
+    saveBalances();
+    localStorage.setItem("lghBank", lghBank);
+    localStorage.setItem("userAppleStashes", JSON.stringify(userAppleStashes));
+
+    respondWithMessage.call(this, `🍎➕ ${nickname} bought 🍎 ${amount} apple${amount !== 1 ? "s" : ""} for 💵 ${totalCost.toLocaleString()} GBX. A crisp decision!`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍎🎒 `.myapple` - Display user's apple stash
+if (wsmsg["text"].toLowerCase() === ".myapple") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const stash = userAppleStashes[username] || 0;
+
+    respondWithMessage.call(this, `🍎🎒 ${nickname}, you have 🍎 ${stash} apple${stash !== 1 ? "s" : ""}. Tempting, huh?`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍎🎁 `.giveapple [username] [amount|max|all]` - Send apples to another user
+const giveappleTriggers = [".giveapple"]; // add aliases here like ".sendapple"
+if (giveappleTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const args = wsmsg["text"].trim().split(/\s+/);
+    if (args.length < 3) {
+        respondWithMessage.call(this, "🤖 Usage: .giveapple [username] [amount|max|all]");
+        return;
+    }
+
+    const handle = wsmsg["handle"];
+    const sender = userHandles[handle];
+    const senderNickname = userNicknames[sender]?.nickname || sender || "you";
+    const recipientUsername = args[1];
+    const amountArg = args[2]?.toLowerCase();
+    const senderStash = userAppleStashes[sender] || 0;
+
+    if (!sender || !userNicknames[recipientUsername]) {
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        return;
+    }
+
+    let amount;
+    if (amountArg === "max" || amountArg === "all") {
+        amount = senderStash;
+        if (amount <= 0) {
+            respondWithMessage.call(this, "🤖 You don't have any 🍎 apples to give.");
+            return;
+        }
+    } else {
+        amount = parseInt(amountArg, 10);
+        if (isNaN(amount) || amount <= 0 || senderStash < amount) {
+            respondWithMessage.call(this, "🤖 Invalid amount or insufficient stash.");
+            return;
+        }
+    }
+
+    userAppleStashes[sender] -= amount;
+    userAppleStashes[recipientUsername] = (userAppleStashes[recipientUsername] || 0) + amount;
+    localStorage.setItem("userAppleStashes", JSON.stringify(userAppleStashes));
+
+    const recipientNickname = userNicknames[recipientUsername]?.nickname || recipientUsername;
+    respondWithMessage.call(this, `🍎🎁 ${senderNickname} gave 🍎 ${amount} apple${amount !== 1 ? "s" : ""} to ${recipientNickname}! Now that’s the core of friendship.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍎😋 `.eatapple [amount|max|all]` - Eat some apples from your stash
+const eatappleTriggers = [".eatapple"]; // add aliases here like ".nomapple"
+if (eatappleTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].trim().split(/\s+/);
+
+    if (!username || args.length < 2) {
+        setTimeout(() => {
+            respondWithMessage.call(this, "🤖 Usage: .eatapple [amount|max|all]");
+        }, 1000);
+        return;
+    }
+
+    const stash = userAppleStashes[username] || 0;
+    const arg = args[1].toLowerCase();
+    let amount;
+
+    if (arg === "max" || arg === "all") {
+        amount = stash;
+    } else {
+        amount = parseInt(arg, 10);
+        if (isNaN(amount) || amount <= 0) {
+            setTimeout(() => {
+                respondWithMessage.call(this, "🤖 Invalid amount. Try .eatapple [amount|max|all]");
+            }, 1000);
+            return;
+        }
+    }
+
+    if (amount > stash) {
+        setTimeout(() => {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough 🍎 apples to eat!`);
+        }, 1000);
+        return;
+    }
+
+    userAppleStashes[username] -= amount;
+    localStorage.setItem("userAppleStashes", JSON.stringify(userAppleStashes));
+
+    const remaining = userAppleStashes[username];
+
+    const messages = [
+        `🍏 ${nickname} chomped down 🍎 ${amount} apple${amount !== 1 ? "s" : ""}. Crunchy and satisfying.`,
+        `🍏 ${nickname} took a big bite of 🍎 ${amount} apple${amount !== 1 ? "s" : ""}. Temptation never tasted so good.`,
+        `🍏 ${nickname} munched on 🍎 ${amount} apple${amount !== 1 ? "s" : ""} like a true fruit fan.`,
+        `🍏 ${nickname} inhaled 🍎 ${amount} apple${amount !== 1 ? "s" : ""} and now looks wise as hell.`,
+    ];
+
+    const response = `${messages[Math.floor(Math.random() * messages.length)]}\nYou have 🍎 ${remaining} apple${remaining !== 1 ? "s" : ""} left.`;
+
+    setTimeout(() => {
+        respondWithMessage.call(this, response);
+    }, 1000);
+}
+
+// Icecremz -------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍦 Global Icecream Storage (Per-user)
+let userIcecreamStashes = JSON.parse(localStorage.getItem("userIcecreamStashes")) || {};
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍦 `.buyicecream` - Purchase icecream(s) for 💵 450 GBX each
+if (wsmsg["text"].toLowerCase().startsWith(".buyicecream")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const costPer = 450;
+
+    const args = wsmsg["text"].trim().split(/\s+/);
+    const rawAmount = args[1] || "1";
+
+    const userBalance = userBalances[username]?.balance || 0;
+    const maxAffordable = Math.floor(userBalance / costPer);
+    let amount = rawAmount.toLowerCase() === "all" || rawAmount.toLowerCase() === "max"
+        ? maxAffordable
+        : parseInt(rawAmount, 10);
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+        respondWithMessage.call(this, `🤖 Invalid amount. You can afford up to 🍦 ${maxAffordable} icecream${maxAffordable !== 1 ? "s" : ""}.`);
+        return;
+    }
+
+    const totalCost = costPer * amount;
+    if (userBalance < totalCost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 ${totalCost.toLocaleString()} GBX for 🍦 ${amount} icecream${amount !== 1 ? "s" : ""}.`);
+        return;
+    }
+
+    userBalances[username].balance -= totalCost;
+    lghBank += totalCost;
+    userIcecreamStashes[username] = (userIcecreamStashes[username] || 0) + amount;
+
+    saveBalances();
+    localStorage.setItem("lghBank", lghBank);
+    localStorage.setItem("userIcecreamStashes", JSON.stringify(userIcecreamStashes));
+
+    respondWithMessage.call(this, `🍦➕ ${nickname} bought 🍦 ${amount} icecream${amount !== 1 ? "s" : ""} for 💵 ${totalCost.toLocaleString()} GBX. Cool move!`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍦🎒 `.myicecream` - Display user's icecream stash
+if (wsmsg["text"].toLowerCase() === ".myicecream") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const stash = userIcecreamStashes[username] || 0;
+
+    respondWithMessage.call(this, `🍦🎒 ${nickname}, you have 🍦 ${stash} icecream${stash !== 1 ? "s" : ""}. Brain freeze optional.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍦🎁 `.giveicecream [username] [amount|max|all]` - Send icecream to another user
+const giveicecreamTriggers = [".giveicecream"]; // add aliases here like ".sendicecream"
+if (giveicecreamTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const args = wsmsg["text"].trim().split(/\s+/);
+    if (args.length < 3) {
+        respondWithMessage.call(this, "🤖 Usage: .giveicecream [username] [amount|max|all]");
+        return;
+    }
+
+    const handle = wsmsg["handle"];
+    const sender = userHandles[handle];
+    const senderNickname = userNicknames[sender]?.nickname || sender || "you";
+    const recipientUsername = args[1];
+    const amountArg = args[2]?.toLowerCase();
+    const senderStash = userIcecreamStashes[sender] || 0;
+
+    if (!sender || !userNicknames[recipientUsername]) {
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        return;
+    }
+
+    let amount;
+    if (amountArg === "max" || amountArg === "all") {
+        amount = senderStash;
+        if (amount <= 0) {
+            respondWithMessage.call(this, "🤖 You don't have any 🍦 icecream to give.");
+            return;
+        }
+    } else {
+        amount = parseInt(amountArg, 10);
+        if (isNaN(amount) || amount <= 0 || senderStash < amount) {
+            respondWithMessage.call(this, "🤖 Invalid amount or insufficient stash.");
+            return;
+        }
+    }
+
+    userIcecreamStashes[sender] -= amount;
+    userIcecreamStashes[recipientUsername] = (userIcecreamStashes[recipientUsername] || 0) + amount;
+    localStorage.setItem("userIcecreamStashes", JSON.stringify(userIcecreamStashes));
+
+    const recipientNickname = userNicknames[recipientUsername]?.nickname || recipientUsername;
+    respondWithMessage.call(this, `🍦🎁 ${senderNickname} gave 🍦 ${amount} icecream${amount !== 1 ? "s" : ""} to ${recipientNickname}! Sweet generosity!`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍦😋 `.eaticecream [amount|max|all]` - Eat some icecream from your stash
+const eaticecreamTriggers = [".eaticecream"]; // add aliases here like ".nomicecream"
+if (eaticecreamTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].trim().split(/\s+/);
+
+    if (!username || args.length < 2) {
+        setTimeout(() => {
+            respondWithMessage.call(this, "🤖 Usage: .eaticecream [amount|max|all]");
+        }, 1000);
+        return;
+    }
+
+    const stash = userIcecreamStashes[username] || 0;
+    const arg = args[1].toLowerCase();
+    let amount;
+
+    if (arg === "max" || arg === "all") {
+        amount = stash;
+    } else {
+        amount = parseInt(arg, 10);
+        if (isNaN(amount) || amount <= 0) {
+            setTimeout(() => {
+                respondWithMessage.call(this, "🤖 Invalid amount. Try .eaticecream [amount|max|all]");
+            }, 1000);
+            return;
+        }
+    }
+
+    if (amount > stash) {
+        setTimeout(() => {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough 🍦 icecream to eat!`);
+        }, 1000);
+        return;
+    }
+
+    userIcecreamStashes[username] -= amount;
+    localStorage.setItem("userIcecreamStashes", JSON.stringify(userIcecreamStashes));
+
+    const remaining = userIcecreamStashes[username];
+
+    const messages = [
+        `🍨 ${nickname} licked 🍦 ${amount} icecream${amount !== 1 ? "s" : ""}. Chillin’ hard.`,
+        `🍨 ${nickname} slurped up 🍦 ${amount} icecream${amount !== 1 ? "s" : ""} with zero regrets.`,
+        `🍨 ${nickname} destroyed 🍦 ${amount} icecream${amount !== 1 ? "s" : ""}. Brain freeze imminent.`,
+        `🍨 ${nickname} ate 🍦 ${amount} icecream${amount !== 1 ? "s" : ""} in one go. Cold-blooded.`,
+    ];
+
+    const response = `${messages[Math.floor(Math.random() * messages.length)]}\nYou have 🍦 ${remaining} icecream${remaining !== 1 ? "s" : ""} left.`;
+
+    setTimeout(() => {
+        respondWithMessage.call(this, response);
+    }, 1000);
+}
+
+// Candeez --------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍬 Global Candy Storage (Per-user)
+let userCandyStashes = JSON.parse(localStorage.getItem("userCandyStashes")) || {};
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍬 `.buycandy` - Purchase candy for 💵 500 GBX each
+if (wsmsg["text"].toLowerCase().startsWith(".buycandy")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const costPer = 500;
+
+    const args = wsmsg["text"].trim().split(/\s+/);
+    const rawAmount = args[1] || "1";
+
+    const userBalance = userBalances[username]?.balance || 0;
+    const maxAffordable = Math.floor(userBalance / costPer);
+    let amount = rawAmount.toLowerCase() === "all" || rawAmount.toLowerCase() === "max"
+        ? maxAffordable
+        : parseInt(rawAmount, 10);
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+        respondWithMessage.call(this, `🤖 Invalid amount. You can afford up to 🍬 ${maxAffordable} candy.`);
+        return;
+    }
+
+    const totalCost = costPer * amount;
+    if (userBalance < totalCost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 ${totalCost.toLocaleString()} GBX for 🍬 ${amount} candy.`);
+        return;
+    }
+
+    userBalances[username].balance -= totalCost;
+    lghBank += totalCost;
+    userCandyStashes[username] = (userCandyStashes[username] || 0) + amount;
+
+    saveBalances();
+    localStorage.setItem("lghBank", lghBank);
+    localStorage.setItem("userCandyStashes", JSON.stringify(userCandyStashes));
+
+    respondWithMessage.call(this, `🍬➕ ${nickname} bought 🍬 ${amount} candy for 💵 ${totalCost.toLocaleString()} GBX. Sugar rush unlocked!`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍬🎒 `.mycandy` - Display user's candy stash
+if (wsmsg["text"].toLowerCase() === ".mycandy") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const stash = userCandyStashes[username] || 0;
+
+    respondWithMessage.call(this, `🍬🎒 ${nickname}, you have 🍬 ${stash} candy${stash !== 1 ? "ies" : ""}. Don't eat it all at once!`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍬🎁 `.givecandy [username] [amount|max|all]` - Send candy to another user
+const givecandyTriggers = [".givecandy"]; // add aliases here like ".sendcandy"
+if (givecandyTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const args = wsmsg["text"].trim().split(/\s+/);
+    if (args.length < 3) {
+        respondWithMessage.call(this, "🤖 Usage: .givecandy [username] [amount|max|all]");
+        return;
+    }
+
+    const handle = wsmsg["handle"];
+    const sender = userHandles[handle];
+    const senderNickname = userNicknames[sender]?.nickname || sender || "you";
+    const recipientUsername = args[1];
+    const amountArg = args[2]?.toLowerCase();
+    const senderStash = userCandyStashes[sender] || 0;
+
+    if (!sender || !userNicknames[recipientUsername]) {
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        return;
+    }
+
+    let amount;
+    if (amountArg === "max" || amountArg === "all") {
+        amount = senderStash;
+        if (amount <= 0) {
+            respondWithMessage.call(this, "🤖 You don't have any 🍬 candy to give.");
+            return;
+        }
+    } else {
+        amount = parseInt(amountArg, 10);
+        if (isNaN(amount) || amount <= 0 || senderStash < amount) {
+            respondWithMessage.call(this, "🤖 Invalid amount or insufficient stash.");
+            return;
+        }
+    }
+
+    userCandyStashes[sender] -= amount;
+    userCandyStashes[recipientUsername] = (userCandyStashes[recipientUsername] || 0) + amount;
+    localStorage.setItem("userCandyStashes", JSON.stringify(userCandyStashes));
+
+    const recipientNickname = userNicknames[recipientUsername]?.nickname || recipientUsername;
+    respondWithMessage.call(this, `🍬🎁 ${senderNickname} gave 🍬 ${amount} candy to ${recipientNickname}! Sweetest move ever!`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍬😋 `.eatcandy [amount|max|all]` - Eat some candy from your stash
+const eatcandyTriggers = [".eatcandy"]; // add aliases here like ".nomcandy"
+if (eatcandyTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].trim().split(/\s+/);
+
+    if (!username || args.length < 2) {
+        setTimeout(() => {
+            respondWithMessage.call(this, "🤖 Usage: .eatcandy [amount|max|all]");
+        }, 1000);
+        return;
+    }
+
+    const stash = userCandyStashes[username] || 0;
+    const arg = args[1].toLowerCase();
+    let amount;
+
+    if (arg === "max" || arg === "all") {
+        amount = stash;
+    } else {
+        amount = parseInt(arg, 10);
+        if (isNaN(amount) || amount <= 0) {
+            setTimeout(() => {
+                respondWithMessage.call(this, "🤖 Invalid amount. Try .eatcandy [amount|max|all]");
+            }, 1000);
+            return;
+        }
+    }
+
+    if (amount > stash) {
+        setTimeout(() => {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough 🍬 candy to eat!`);
+        }, 1000);
+        return;
+    }
+
+    userCandyStashes[username] -= amount;
+    localStorage.setItem("userCandyStashes", JSON.stringify(userCandyStashes));
+
+    const remaining = userCandyStashes[username];
+
+    const messages = [
+        `🍭 ${nickname} devoured 🍬 ${amount} candy and started vibrating.`,
+        `🍭 ${nickname} ate 🍬 ${amount} candy. You can hear the sugar coursing.`,
+        `🍭 ${nickname} demolished 🍬 ${amount} candy like a kid on Halloween.`,
+        `🍭 ${nickname} nommed 🍬 ${amount} candy! Sweet tooth satisfied.`,
+    ];
+
+    const response = `${messages[Math.floor(Math.random() * messages.length)]}\nYou have 🍬 ${remaining} candy${remaining !== 1 ? "ies" : ""} left.`;
+
+    setTimeout(() => {
+        respondWithMessage.call(this, response);
+    }, 1000);
+}
+
+// Bredd -----------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥖 Global Bread Storage (Per-user)
+let userBreadStashes = JSON.parse(localStorage.getItem("userBreadStashes")) || {};
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥖 `.buybread` - Purchase bread for 💵 666 GBX each
+if (wsmsg["text"].toLowerCase().startsWith(".buybread")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const costPer = 666;
+
+    const args = wsmsg["text"].trim().split(/\s+/);
+    const rawAmount = args[1] || "1";
+
+    const userBalance = userBalances[username]?.balance || 0;
+    const maxAffordable = Math.floor(userBalance / costPer);
+    let amount = rawAmount.toLowerCase() === "all" || rawAmount.toLowerCase() === "max"
+        ? maxAffordable
+        : parseInt(rawAmount, 10);
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+        respondWithMessage.call(this, `🤖 Invalid amount. You can afford up to 🥖 ${maxAffordable} bread.`);
+        return;
+    }
+
+    const totalCost = costPer * amount;
+    if (userBalance < totalCost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 ${totalCost.toLocaleString()} GBX for 🥖 ${amount} bread.`);
+        return;
+    }
+
+    userBalances[username].balance -= totalCost;
+    lghBank += totalCost;
+    userBreadStashes[username] = (userBreadStashes[username] || 0) + amount;
+
+    saveBalances();
+    localStorage.setItem("lghBank", lghBank);
+    localStorage.setItem("userBreadStashes", JSON.stringify(userBreadStashes));
+
+    respondWithMessage.call(this, `🥖➕ ${nickname} bought 🥖 ${amount} bread for 💵 ${totalCost.toLocaleString()} GBX. Holy carb!`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥖🎒 `.mybread` - Display user's bread stash
+if (wsmsg["text"].toLowerCase() === ".mybread") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const stash = userBreadStashes[username] || 0;
+
+    respondWithMessage.call(this, `🥖🎒 ${nickname}, you have 🥖 ${stash} bread${stash !== 1 ? "s" : ""}. Praise be.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥖🎁 `.givebread [username] [amount|max|all]` - Send bread to another user
+const givebreadTriggers = [".givebread"]; // add aliases here like ".sendbread"
+if (givebreadTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const args = wsmsg["text"].trim().split(/\s+/);
+    if (args.length < 3) {
+        respondWithMessage.call(this, "🤖 Usage: .givebread [username] [amount|max|all]");
+        return;
+    }
+
+    const handle = wsmsg["handle"];
+    const sender = userHandles[handle];
+    const senderNickname = userNicknames[sender]?.nickname || sender || "you";
+    const recipientUsername = args[1];
+    const amountArg = args[2]?.toLowerCase();
+    const senderStash = userBreadStashes[sender] || 0;
+
+    if (!sender || !userNicknames[recipientUsername]) {
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        return;
+    }
+
+    let amount;
+    if (amountArg === "max" || amountArg === "all") {
+        amount = senderStash;
+        if (amount <= 0) {
+            respondWithMessage.call(this, "🤖 You don't have any 🥖 bread to give.");
+            return;
+        }
+    } else {
+        amount = parseInt(amountArg, 10);
+        if (isNaN(amount) || amount <= 0 || senderStash < amount) {
+            respondWithMessage.call(this, "🤖 Invalid amount or insufficient stash.");
+            return;
+        }
+    }
+
+    userBreadStashes[sender] -= amount;
+    userBreadStashes[recipientUsername] = (userBreadStashes[recipientUsername] || 0) + amount;
+    localStorage.setItem("userBreadStashes", JSON.stringify(userBreadStashes));
+
+    const recipientNickname = userNicknames[recipientUsername]?.nickname || recipientUsername;
+    respondWithMessage.call(this, `🥖🎁 ${senderNickname} gave 🥖 ${amount} bread to ${recipientNickname}. Let us break bread together.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥖😋 `.eatbread [amount|max|all]` - Eat some bread from your stash
+const eatbreadTriggers = [".eatbread"]; // add aliases here like ".nombread"
+if (eatbreadTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].trim().split(/\s+/);
+
+    if (!username || args.length < 2) {
+        setTimeout(() => {
+            respondWithMessage.call(this, "🤖 Usage: .eatbread [amount|max|all]");
+        }, 1000);
+        return;
+    }
+
+    const stash = userBreadStashes[username] || 0;
+    const arg = args[1].toLowerCase();
+    let amount;
+
+    if (arg === "max" || arg === "all") {
+        amount = stash;
+    } else {
+        amount = parseInt(arg, 10);
+        if (isNaN(amount) || amount <= 0) {
+            setTimeout(() => {
+                respondWithMessage.call(this, "🤖 Invalid amount. Try .eatbread [amount|max|all]");
+            }, 1000);
+            return;
+        }
+    }
+
+    if (amount > stash) {
+        setTimeout(() => {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough 🥖 bread to eat!`);
+        }, 1000);
+        return;
+    }
+
+    userBreadStashes[username] -= amount;
+    localStorage.setItem("userBreadStashes", JSON.stringify(userBreadStashes));
+
+    const remaining = userBreadStashes[username];
+
+    const messages = [
+        `🍞 ${nickname} broke and ate 🥖 ${amount} bread. Divine.`,
+        `🍞 ${nickname} toasted 🥖 ${amount} bread and devoured it. Classic comfort.`,
+        `🍞 ${nickname} munched 🥖 ${amount} bread. The carbs are calling.`,
+        `🍞 ${nickname} consumed 🥖 ${amount} bread like a true carb warrior.`,
+    ];
+
+    const response = `${messages[Math.floor(Math.random() * messages.length)]}\nYou have 🥖 ${remaining} bread${remaining !== 1 ? "s" : ""} left.`;
+
+    setTimeout(() => {
+        respondWithMessage.call(this, response);
+    }, 1000);
+}
+
+// Donutz ----------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍩 Global Donut Storage (Per-user)
+let userDonutStashes = JSON.parse(localStorage.getItem("userDonutStashes")) || {};
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍩 `.buydonut` - Purchase donut(s) for 💵 999 GBX each
+if (wsmsg["text"].toLowerCase().startsWith(".buydonut")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const costPer = 999;
+
+    const args = wsmsg["text"].trim().split(/\s+/);
+    const rawAmount = args[1] || "1";
+
+    const userBalance = userBalances[username]?.balance || 0;
+    const maxAffordable = Math.floor(userBalance / costPer);
+    let amount = rawAmount.toLowerCase() === "all" || rawAmount.toLowerCase() === "max"
+        ? maxAffordable
+        : parseInt(rawAmount, 10);
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+        respondWithMessage.call(this, `🤖 Invalid amount. You can afford up to 🍩 ${maxAffordable} donut${maxAffordable !== 1 ? "s" : ""}.`);
+        return;
+    }
+
+    const totalCost = costPer * amount;
+    if (userBalance < totalCost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 ${totalCost.toLocaleString()} GBX for 🍩 ${amount} donut${amount !== 1 ? "s" : ""}.`);
+        return;
+    }
+
+    userBalances[username].balance -= totalCost;
+    lghBank += totalCost;
+    userDonutStashes[username] = (userDonutStashes[username] || 0) + amount;
+
+    saveBalances();
+    localStorage.setItem("lghBank", lghBank);
+    localStorage.setItem("userDonutStashes", JSON.stringify(userDonutStashes));
+
+    respondWithMessage.call(this, `🍩➕ ${nickname} bought 🍩 ${amount} donut${amount !== 1 ? "s" : ""} for 💵 ${totalCost.toLocaleString()} GBX. Frosted, fried, and fabulous.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍩🎒 `.mydonut` - Display user's donut stash
+if (wsmsg["text"].toLowerCase() === ".mydonut") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const stash = userDonutStashes[username] || 0;
+
+    respondWithMessage.call(this, `🍩🎒 ${nickname}, you have 🍩 ${stash} donut${stash !== 1 ? "s" : ""}. Glazed glory.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍩🎁 `.givedonut [username] [amount|max|all]` - Send donuts to another user
+const givedonutTriggers = [".givedonut"]; // add aliases here like ".senddonut"
+if (givedonutTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const args = wsmsg["text"].trim().split(/\s+/);
+    if (args.length < 3) {
+        respondWithMessage.call(this, "🤖 Usage: .givedonut [username] [amount|max|all]");
+        return;
+    }
+
+    const handle = wsmsg["handle"];
+    const sender = userHandles[handle];
+    const senderNickname = userNicknames[sender]?.nickname || sender || "you";
+    const recipientUsername = args[1];
+    const amountArg = args[2]?.toLowerCase();
+    const senderStash = userDonutStashes[sender] || 0;
+
+    if (!sender || !userNicknames[recipientUsername]) {
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        return;
+    }
+
+    let amount;
+    if (amountArg === "max" || amountArg === "all") {
+        amount = senderStash;
+        if (amount <= 0) {
+            respondWithMessage.call(this, "🤖 You don't have any 🍩 donuts to give.");
+            return;
+        }
+    } else {
+        amount = parseInt(amountArg, 10);
+        if (isNaN(amount) || amount <= 0 || senderStash < amount) {
+            respondWithMessage.call(this, "🤖 Invalid amount or insufficient stash.");
+            return;
+        }
+    }
+
+    userDonutStashes[sender] -= amount;
+    userDonutStashes[recipientUsername] = (userDonutStashes[recipientUsername] || 0) + amount;
+    localStorage.setItem("userDonutStashes", JSON.stringify(userDonutStashes));
+
+    const recipientNickname = userNicknames[recipientUsername]?.nickname || recipientUsername;
+    respondWithMessage.call(this, `🍩🎁 ${senderNickname} gave 🍩 ${amount} donut${amount !== 1 ? "s" : ""} to ${recipientNickname}! Sweetest flex.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍩😋 `.eatdonut [amount|max|all]` - Eat some donuts from your stash
+const eatdonutTriggers = [".eatdonut"]; // add aliases here like ".nomdonut"
+if (eatdonutTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].trim().split(/\s+/);
+
+    if (!username || args.length < 2) {
+        setTimeout(() => {
+            respondWithMessage.call(this, "🤖 Usage: .eatdonut [amount|max|all]");
+        }, 1000);
+        return;
+    }
+
+    const stash = userDonutStashes[username] || 0;
+    const arg = args[1].toLowerCase();
+    let amount;
+
+    if (arg === "max" || arg === "all") {
+        amount = stash;
+    } else {
+        amount = parseInt(arg, 10);
+        if (isNaN(amount) || amount <= 0) {
+            setTimeout(() => {
+                respondWithMessage.call(this, "🤖 Invalid amount. Try .eatdonut [amount|max|all]");
+            }, 1000);
+            return;
+        }
+    }
+
+    if (amount > stash) {
+        setTimeout(() => {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough 🍩 donuts to eat!`);
+        }, 1000);
+        return;
+    }
+
+    userDonutStashes[username] -= amount;
+    localStorage.setItem("userDonutStashes", JSON.stringify(userDonutStashes));
+
+    const remaining = userDonutStashes[username];
+
+    const messages = [
+        `😋 ${nickname} inhaled 🍩 ${amount} donut${amount !== 1 ? "s" : ""}. Sugar coma loading...`,
+        `🍩 ${nickname} bit into 🍩 ${amount} donut${amount !== 1 ? "s" : ""}. Frosting everywhere.`,
+        `🍩 ${nickname} devoured 🍩 ${amount} donut${amount !== 1 ? "s" : ""} like a pastry beast.`,
+        `🍩 ${nickname} munched 🍩 ${amount} donut${amount !== 1 ? "s" : ""}. No regrets.`,
+    ];
+
+    const response = `${messages[Math.floor(Math.random() * messages.length)]}\nYou have 🍩 ${remaining} donut${remaining !== 1 ? "s" : ""} left.`;
+
+    setTimeout(() => {
+        respondWithMessage.call(this, response);
+    }, 1000);
+}
+
+// Cheez -----------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🧀 Global Cheese Storage (Per-user)
+let userCheeseStashes = JSON.parse(localStorage.getItem("userCheeseStashes")) || {};
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🧀 `.buycheese` - Purchase cheese for 💵 1,111 GBX each
+if (wsmsg["text"].toLowerCase().startsWith(".buycheese")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const costPer = 1111;
+
+    const args = wsmsg["text"].trim().split(/\s+/);
+    const rawAmount = args[1] || "1";
+
+    const userBalance = userBalances[username]?.balance || 0;
+    const maxAffordable = Math.floor(userBalance / costPer);
+    let amount = rawAmount.toLowerCase() === "all" || rawAmount.toLowerCase() === "max"
+        ? maxAffordable
+        : parseInt(rawAmount, 10);
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+        respondWithMessage.call(this, `🤖 Invalid amount. You can afford up to 🧀 ${maxAffordable} cheese.`);
+        return;
+    }
+
+    const totalCost = costPer * amount;
+    if (userBalance < totalCost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 ${totalCost.toLocaleString()} GBX for 🧀 ${amount} cheese.`);
+        return;
+    }
+
+    userBalances[username].balance -= totalCost;
+    lghBank += totalCost;
+    userCheeseStashes[username] = (userCheeseStashes[username] || 0) + amount;
+
+    saveBalances();
+    localStorage.setItem("lghBank", lghBank);
+    localStorage.setItem("userCheeseStashes", JSON.stringify(userCheeseStashes));
+
+    respondWithMessage.call(this, `🧀➕ ${nickname} bought 🧀 ${amount} cheese for 💵 ${totalCost.toLocaleString()} GBX. Smells stronger than your will.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🧀🎒 `.mycheese` - Display user's cheese stash
+if (wsmsg["text"].toLowerCase() === ".mycheese") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const stash = userCheeseStashes[username] || 0;
+
+    respondWithMessage.call(this, `🧀🎒 ${nickname}, you have 🧀 ${stash} cheese${stash !== 1 ? "s" : ""}. Fragrant.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🧀🎁 `.givecheese [username] [amount|max|all]` - Send cheese to another user
+const givecheeseTriggers = [".givecheese"]; // add aliases here like ".sendcheese"
+if (givecheeseTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const args = wsmsg["text"].trim().split(/\s+/);
+    if (args.length < 3) {
+        respondWithMessage.call(this, "🤖 Usage: .givecheese [username] [amount|max|all]");
+        return;
+    }
+
+    const handle = wsmsg["handle"];
+    const sender = userHandles[handle];
+    const senderNickname = userNicknames[sender]?.nickname || sender || "you";
+    const recipientUsername = args[1];
+    const amountArg = args[2]?.toLowerCase();
+    const senderStash = userCheeseStashes[sender] || 0;
+
+    if (!sender || !userNicknames[recipientUsername]) {
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        return;
+    }
+
+    let amount;
+    if (amountArg === "max" || amountArg === "all") {
+        amount = senderStash;
+        if (amount <= 0) {
+            respondWithMessage.call(this, "🤖 You don't have any 🧀 cheese to give.");
+            return;
+        }
+    } else {
+        amount = parseInt(amountArg, 10);
+        if (isNaN(amount) || amount <= 0 || senderStash < amount) {
+            respondWithMessage.call(this, "🤖 Invalid amount or insufficient stash.");
+            return;
+        }
+    }
+
+    userCheeseStashes[sender] -= amount;
+    userCheeseStashes[recipientUsername] = (userCheeseStashes[recipientUsername] || 0) + amount;
+    localStorage.setItem("userCheeseStashes", JSON.stringify(userCheeseStashes));
+
+    const recipientNickname = userNicknames[recipientUsername]?.nickname || recipientUsername;
+    respondWithMessage.call(this, `🧀🎁 ${senderNickname} gave 🧀 ${amount} cheese to ${recipientNickname}. Bold and brie-lliant.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🧀😋 `.eatcheese [amount|max|all]` - Eat some cheese from your stash
+const eatcheeseTriggers = [".eatcheese"]; // add aliases here like ".nomcheese"
+if (eatcheeseTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].trim().split(/\s+/);
+
+    if (!username || args.length < 2) {
+        setTimeout(() => {
+            respondWithMessage.call(this, "🤖 Usage: .eatcheese [amount|max|all]");
+        }, 1000);
+        return;
+    }
+
+    const stash = userCheeseStashes[username] || 0;
+    const arg = args[1].toLowerCase();
+    let amount;
+
+    if (arg === "max" || arg === "all") {
+        amount = stash;
+    } else {
+        amount = parseInt(arg, 10);
+        if (isNaN(amount) || amount <= 0) {
+            setTimeout(() => {
+                respondWithMessage.call(this, "🤖 Invalid amount. Try .eatcheese [amount|max|all]");
+            }, 1000);
+            return;
+        }
+    }
+
+    if (amount > stash) {
+        setTimeout(() => {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough 🧀 cheese to eat!`);
+        }, 1000);
+        return;
+    }
+
+    userCheeseStashes[username] -= amount;
+    localStorage.setItem("userCheeseStashes", JSON.stringify(userCheeseStashes));
+
+    const remaining = userCheeseStashes[username];
+
+    const messages = [
+        `🧀 ${nickname} ate 🧀 ${amount} cheese. Smelled like feet, tasted like victory.`,
+        `🧀 ${nickname} devoured 🧀 ${amount} cheese. Lactose tolerance? Unnecessary.`,
+        `🧀 ${nickname} downed 🧀 ${amount} cheese like a dairy demon.`,
+        `🧀 ${nickname} inhaled 🧀 ${amount} cheese. Gouda job.`,
+    ];
+
+    const response = `${messages[Math.floor(Math.random() * messages.length)]}\nYou have 🧀 ${remaining} cheese${remaining !== 1 ? "s" : ""} left.`;
+
+    setTimeout(() => {
+        respondWithMessage.call(this, response);
+    }, 1000);
+}
+
+// Wafflez ---------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🧇 Global Waffle Storage (Per-user)
+let userWaffleStashes = JSON.parse(localStorage.getItem("userWaffleStashes")) || {};
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🧇 `.buywaffle` - Purchase waffles for 💵 2,000 GBX each
+if (wsmsg["text"].toLowerCase().startsWith(".buywaffle")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const costPer = 2000;
+
+    const args = wsmsg["text"].trim().split(/\s+/);
+    const rawAmount = args[1] || "1";
+
+    const userBalance = userBalances[username]?.balance || 0;
+    const maxAffordable = Math.floor(userBalance / costPer);
+    let amount = rawAmount.toLowerCase() === "all" || rawAmount.toLowerCase() === "max"
+        ? maxAffordable
+        : parseInt(rawAmount, 10);
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+        respondWithMessage.call(this, `🤖 Invalid amount. You can afford up to 🧇 ${maxAffordable} waffle${maxAffordable !== 1 ? "s" : ""}.`);
+        return;
+    }
+
+    const totalCost = costPer * amount;
+    if (userBalance < totalCost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 ${totalCost.toLocaleString()} GBX for 🧇 ${amount} waffle${amount !== 1 ? "s" : ""}.`);
+        return;
+    }
+
+    userBalances[username].balance -= totalCost;
+    lghBank += totalCost;
+    userWaffleStashes[username] = (userWaffleStashes[username] || 0) + amount;
+
+    saveBalances();
+    localStorage.setItem("lghBank", lghBank);
+    localStorage.setItem("userWaffleStashes", JSON.stringify(userWaffleStashes));
+
+    respondWithMessage.call(this, `🧇➕ ${nickname} bought 🧇 ${amount} waffle${amount !== 1 ? "s" : ""} for 💵 ${totalCost.toLocaleString()} GBX. Grid of deliciousness!`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🧇🎒 `.mywaffle` - Display user's waffle stash
+if (wsmsg["text"].toLowerCase() === ".mywaffle") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const stash = userWaffleStashes[username] || 0;
+
+    respondWithMessage.call(this, `🧇🎒 ${nickname}, you have 🧇 ${stash} waffle${stash !== 1 ? "s" : ""}. Syrup not included.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🧇🎁 `.givewaffle [username] [amount|max|all]` - Send waffles to another user
+const givewaffleTriggers = [".givewaffle"]; // add aliases here like ".sendwaffle"
+if (givewaffleTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const args = wsmsg["text"].trim().split(/\s+/);
+    if (args.length < 3) {
+        respondWithMessage.call(this, "🤖 Usage: .givewaffle [username] [amount|max|all]");
+        return;
+    }
+
+    const handle = wsmsg["handle"];
+    const sender = userHandles[handle];
+    const senderNickname = userNicknames[sender]?.nickname || sender || "you";
+    const recipientUsername = args[1];
+    const amountArg = args[2]?.toLowerCase();
+    const senderStash = userWaffleStashes[sender] || 0;
+
+    if (!sender || !userNicknames[recipientUsername]) {
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        return;
+    }
+
+    let amount;
+    if (amountArg === "max" || amountArg === "all") {
+        amount = senderStash;
+        if (amount <= 0) {
+            respondWithMessage.call(this, "🤖 You don't have any 🧇 waffles to give.");
+            return;
+        }
+    } else {
+        amount = parseInt(amountArg, 10);
+        if (isNaN(amount) || amount <= 0 || senderStash < amount) {
+            respondWithMessage.call(this, "🤖 Invalid amount or insufficient stash.");
+            return;
+        }
+    }
+
+    userWaffleStashes[sender] -= amount;
+    userWaffleStashes[recipientUsername] = (userWaffleStashes[recipientUsername] || 0) + amount;
+    localStorage.setItem("userWaffleStashes", JSON.stringify(userWaffleStashes));
+
+    const recipientNickname = userNicknames[recipientUsername]?.nickname || recipientUsername;
+    respondWithMessage.call(this, `🧇🎁 ${senderNickname} gave 🧇 ${amount} waffle${amount !== 1 ? "s" : ""} to ${recipientNickname}! That’s some golden generosity.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🧇😋 `.eatwaffle [amount|max|all]` - Eat some waffles from your stash
+const eatwaffleTriggers = [".eatwaffle"]; // add aliases here like ".nomwaffle"
+if (eatwaffleTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].trim().split(/\s+/);
+
+    if (!username || args.length < 2) {
+        setTimeout(() => {
+            respondWithMessage.call(this, "🤖 Usage: .eatwaffle [amount|max|all]");
+        }, 1000);
+        return;
+    }
+
+    const stash = userWaffleStashes[username] || 0;
+    const arg = args[1].toLowerCase();
+    let amount;
+
+    if (arg === "max" || arg === "all") {
+        amount = stash;
+    } else {
+        amount = parseInt(arg, 10);
+        if (isNaN(amount) || amount <= 0) {
+            setTimeout(() => {
+                respondWithMessage.call(this, "🤖 Invalid amount. Try .eatwaffle [amount|max|all]");
+            }, 1000);
+            return;
+        }
+    }
+
+    if (amount > stash) {
+        setTimeout(() => {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough 🧇 waffles to eat!`);
+        }, 1000);
+        return;
+    }
+
+    userWaffleStashes[username] -= amount;
+    localStorage.setItem("userWaffleStashes", JSON.stringify(userWaffleStashes));
+
+    const remaining = userWaffleStashes[username];
+
+    const messages = [
+        `🧇 ${nickname} devoured 🧇 ${amount} waffle${amount !== 1 ? "s" : ""}. Syrup on the ceiling.`,
+        `🧇 ${nickname} chomped 🧇 ${amount} waffle${amount !== 1 ? "s" : ""}. Butter everywhere.`,
+        `🧇 ${nickname} enjoyed 🧇 ${amount} waffle${amount !== 1 ? "s" : ""} with dramatic flair.`,
+        `🧇 ${nickname} inhaled 🧇 ${amount} waffle${amount !== 1 ? "s" : ""}. No regrets.`,
+    ];
+
+    const response = `${messages[Math.floor(Math.random() * messages.length)]}\nYou have 🧇 ${remaining} waffle${remaining !== 1 ? "s" : ""} left.`;
+
+    setTimeout(() => {
+        respondWithMessage.call(this, response);
+    }, 1000);
+}
+
+// Flapjacks -------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥞 Global Pancake Storage (Per-user)
+let userPancakeStashes = JSON.parse(localStorage.getItem("userPancakeStashes")) || {};
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥞 `.buypancake` - Purchase pancake(s) for 💵 2,222 GBX each
+if (wsmsg["text"].toLowerCase().startsWith(".buypancake")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const costPer = 2222;
+
+    const args = wsmsg["text"].trim().split(/\s+/);
+    const rawAmount = args[1] || "1";
+
+    const userBalance = userBalances[username]?.balance || 0;
+    const maxAffordable = Math.floor(userBalance / costPer);
+    let amount = rawAmount.toLowerCase() === "all" || rawAmount.toLowerCase() === "max"
+        ? maxAffordable
+        : parseInt(rawAmount, 10);
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+        respondWithMessage.call(this, `🤖 Invalid amount. You can afford up to 🥞 ${maxAffordable} pancake${maxAffordable !== 1 ? "s" : ""}.`);
+        return;
+    }
+
+    const totalCost = costPer * amount;
+    if (userBalance < totalCost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 ${totalCost.toLocaleString()} GBX for 🥞 ${amount} pancake${amount !== 1 ? "s" : ""}.`);
+        return;
+    }
+
+    userBalances[username].balance -= totalCost;
+    lghBank += totalCost;
+    userPancakeStashes[username] = (userPancakeStashes[username] || 0) + amount;
+
+    saveBalances();
+    localStorage.setItem("lghBank", lghBank);
+    localStorage.setItem("userPancakeStashes", JSON.stringify(userPancakeStashes));
+
+    respondWithMessage.call(this, `🥞➕ ${nickname} bought 🥞 ${amount} pancake${amount !== 1 ? "s" : ""} for 💵 ${totalCost.toLocaleString()} GBX. Stacks on stacks.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥞🎒 `.mypancake` - Display user's pancake stash
+if (wsmsg["text"].toLowerCase() === ".mypancake") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const stash = userPancakeStashes[username] || 0;
+
+    respondWithMessage.call(this, `🥞🎒 ${nickname}, you have 🥞 ${stash} pancake${stash !== 1 ? "s" : ""}. Syrup dreams.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥞🎁 `.givepancake [username] [amount|max|all]` - Send pancakes to another user
+const givepancakeTriggers = [".givepancake"]; // add aliases here like ".sendpancake"
+if (givepancakeTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const args = wsmsg["text"].trim().split(/\s+/);
+    if (args.length < 3) {
+        respondWithMessage.call(this, "🤖 Usage: .givepancake [username] [amount|max|all]");
+        return;
+    }
+
+    const handle = wsmsg["handle"];
+    const sender = userHandles[handle];
+    const senderNickname = userNicknames[sender]?.nickname || sender || "you";
+    const recipientUsername = args[1];
+    const amountArg = args[2]?.toLowerCase();
+    const senderStash = userPancakeStashes[sender] || 0;
+
+    if (!sender || !userNicknames[recipientUsername]) {
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        return;
+    }
+
+    let amount;
+    if (amountArg === "max" || amountArg === "all") {
+        amount = senderStash;
+        if (amount <= 0) {
+            respondWithMessage.call(this, "🤖 You don't have any 🥞 pancakes to give.");
+            return;
+        }
+    } else {
+        amount = parseInt(amountArg, 10);
+        if (isNaN(amount) || amount <= 0 || senderStash < amount) {
+            respondWithMessage.call(this, "🤖 Invalid amount or insufficient stash.");
+            return;
+        }
+    }
+
+    userPancakeStashes[sender] -= amount;
+    userPancakeStashes[recipientUsername] = (userPancakeStashes[recipientUsername] || 0) + amount;
+    localStorage.setItem("userPancakeStashes", JSON.stringify(userPancakeStashes));
+
+    const recipientNickname = userNicknames[recipientUsername]?.nickname || recipientUsername;
+    respondWithMessage.call(this, `🥞🎁 ${senderNickname} gave 🥞 ${amount} pancake${amount !== 1 ? "s" : ""} to ${recipientNickname}! That's a breakfast blessing.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥞😋 `.eatpancake [amount|max|all]` - Eat some pancakes from your stash
+const eatpancakeTriggers = [".eatpancake"]; // add aliases here like ".nompancake"
+if (eatpancakeTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].trim().split(/\s+/);
+
+    if (!username || args.length < 2) {
+        setTimeout(() => {
+            respondWithMessage.call(this, "🤖 Usage: .eatpancake [amount|max|all]");
+        }, 1000);
+        return;
+    }
+
+    const stash = userPancakeStashes[username] || 0;
+    const arg = args[1].toLowerCase();
+    let amount;
+
+    if (arg === "max" || arg === "all") {
+        amount = stash;
+    } else {
+        amount = parseInt(arg, 10);
+        if (isNaN(amount) || amount <= 0) {
+            setTimeout(() => {
+                respondWithMessage.call(this, "🤖 Invalid amount. Try .eatpancake [amount|max|all]");
+            }, 1000);
+            return;
+        }
+    }
+
+    if (amount > stash) {
+        setTimeout(() => {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough 🥞 pancakes to eat!`);
+        }, 1000);
+        return;
+    }
+
+    userPancakeStashes[username] -= amount;
+    localStorage.setItem("userPancakeStashes", JSON.stringify(userPancakeStashes));
+
+    const remaining = userPancakeStashes[username];
+
+    const messages = [
+        `🥞 ${nickname} demolished 🥞 ${amount} pancake${amount !== 1 ? "s" : ""}. Syrup everywhere.`,
+        `🥞 ${nickname} stacked it up and devoured 🥞 ${amount} pancake${amount !== 1 ? "s" : ""}.`,
+        `🥞 ${nickname} ate 🥞 ${amount} pancake${amount !== 1 ? "s" : ""}. Sweet satisfaction.`,
+        `🥞 ${nickname} inhaled 🥞 ${amount} pancake${amount !== 1 ? "s" : ""}. No crumbs left.`,
+    ];
+
+    const response = `${messages[Math.floor(Math.random() * messages.length)]}\nYou have 🥞 ${remaining} pancake${remaining !== 1 ? "s" : ""} left.`;
+
+    setTimeout(() => {
+        respondWithMessage.call(this, response);
+    }, 1000);
+}
+
+// Ramenzone ------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍜 Global Ramen Storage (Per-user)
+let userRamenStashes = JSON.parse(localStorage.getItem("userRamenStashes")) || {};
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍜 `.buyramen` - Purchase ramen(s) for 💵 3,000 GBX each
+if (wsmsg["text"].toLowerCase().startsWith(".buyramen")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const costPer = 3000;
+
+    const args = wsmsg["text"].trim().split(/\s+/);
+    const rawAmount = args[1] || "1";
+
+    const userBalance = userBalances[username]?.balance || 0;
+    const maxAffordable = Math.floor(userBalance / costPer);
+    let amount = rawAmount.toLowerCase() === "all" || rawAmount.toLowerCase() === "max"
+        ? maxAffordable
+        : parseInt(rawAmount, 10);
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+        respondWithMessage.call(this, `🤖 Invalid amount. You can afford up to 🍜 ${maxAffordable} ramen.`);
+        return;
+    }
+
+    const totalCost = costPer * amount;
+    if (userBalance < totalCost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 ${totalCost.toLocaleString()} GBX for 🍜 ${amount} ramen.`);
+        return;
+    }
+
+    userBalances[username].balance -= totalCost;
+    lghBank += totalCost;
+    userRamenStashes[username] = (userRamenStashes[username] || 0) + amount;
+
+    saveBalances();
+    localStorage.setItem("lghBank", lghBank);
+    localStorage.setItem("userRamenStashes", JSON.stringify(userRamenStashes));
+
+    respondWithMessage.call(this, `🍜➕ ${nickname} bought 🍜 ${amount} ramen for 💵 ${totalCost.toLocaleString()} GBX. Hot noodle soup for the soul.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍜🎒 `.myramen` - Display user's ramen stash
+if (wsmsg["text"].toLowerCase() === ".myramen") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const stash = userRamenStashes[username] || 0;
+
+    respondWithMessage.call(this, `🍜🎒 ${nickname}, you have 🍜 ${stash} ramen${stash !== 1 ? "s" : ""}. Slurp responsibly.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍜🎁 `.giveramen [username] [amount|max|all]` - Send ramen to another user
+const giveramenTriggers = [".giveramen"]; // add aliases here like ".sendramen"
+if (giveramenTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const args = wsmsg["text"].trim().split(/\s+/);
+    if (args.length < 3) {
+        respondWithMessage.call(this, "🤖 Usage: .giveramen [username] [amount|max|all]");
+        return;
+    }
+
+    const handle = wsmsg["handle"];
+    const sender = userHandles[handle];
+    const senderNickname = userNicknames[sender]?.nickname || sender || "you";
+    const recipientUsername = args[1];
+    const amountArg = args[2]?.toLowerCase();
+    const senderStash = userRamenStashes[sender] || 0;
+
+    if (!sender || !userNicknames[recipientUsername]) {
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        return;
+    }
+
+    let amount;
+    if (amountArg === "max" || amountArg === "all") {
+        amount = senderStash;
+        if (amount <= 0) {
+            respondWithMessage.call(this, "🤖 You don't have any 🍜 ramen to give.");
+            return;
+        }
+    } else {
+        amount = parseInt(amountArg, 10);
+        if (isNaN(amount) || amount <= 0 || senderStash < amount) {
+            respondWithMessage.call(this, "🤖 Invalid amount or insufficient stash.");
+            return;
+        }
+    }
+
+    userRamenStashes[sender] -= amount;
+    userRamenStashes[recipientUsername] = (userRamenStashes[recipientUsername] || 0) + amount;
+    localStorage.setItem("userRamenStashes", JSON.stringify(userRamenStashes));
+
+    const recipientNickname = userNicknames[recipientUsername]?.nickname || recipientUsername;
+    respondWithMessage.call(this, `🍜🎁 ${senderNickname} gave 🍜 ${amount} ramen to ${recipientNickname}! That’s broth-level kindness.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍜😋 `.eatramen [amount|max|all]` - Eat some ramen from your stash
+const eatramenTriggers = [".eatramen"]; // add aliases here like ".nomramen"
+if (eatramenTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].trim().split(/\s+/);
+
+    if (!username || args.length < 2) {
+        setTimeout(() => {
+            respondWithMessage.call(this, "🤖 Usage: .eatramen [amount|max|all]");
+        }, 1000);
+        return;
+    }
+
+    const stash = userRamenStashes[username] || 0;
+    const arg = args[1].toLowerCase();
+    let amount;
+
+    if (arg === "max" || arg === "all") {
+        amount = stash;
+    } else {
+        amount = parseInt(arg, 10);
+        if (isNaN(amount) || amount <= 0) {
+            setTimeout(() => {
+                respondWithMessage.call(this, "🤖 Invalid amount. Try .eatramen [amount|max|all]");
+            }, 1000);
+            return;
+        }
+    }
+
+    if (amount > stash) {
+        setTimeout(() => {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough 🍜 ramen to eat!`);
+        }, 1000);
+        return;
+    }
+
+    userRamenStashes[username] -= amount;
+    localStorage.setItem("userRamenStashes", JSON.stringify(userRamenStashes));
+
+    const remaining = userRamenStashes[username];
+
+    const messages = [
+        `🔥 ${nickname} slurped 🍜 ${amount} ramen like a noodle ninja.`,
+        `🍜 ${nickname} devoured 🍜 ${amount} ramen. That broth hits deep.`,
+        `🍜 ${nickname} inhaled 🍜 ${amount} ramen. Steam rising, soul blessed.`,
+        `🍜 ${nickname} just nuked 🍜 ${amount} ramen. Nothing left but spice.`,
+    ];
+
+    const response = `${messages[Math.floor(Math.random() * messages.length)]}\nYou have 🍜 ${remaining} ramen${remaining !== 1 ? "s" : ""} left.`;
+
+    setTimeout(() => {
+        respondWithMessage.call(this, response);
+    }, 1000);
+}
+
+// Sammiches -------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥪 Global Sammich Storage (Per-user)
+let userSammichStashes = JSON.parse(localStorage.getItem("userSammichStashes")) || {};
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥪 `.buysammich` - Purchase sammiches for 💵 3,500 GBX each
+if (wsmsg["text"].toLowerCase().startsWith(".buysammich")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const costPer = 3500;
+
+    const args = wsmsg["text"].trim().split(/\s+/);
+    const rawAmount = args[1] || "1";
+
+    const userBalance = userBalances[username]?.balance || 0;
+    const maxAffordable = Math.floor(userBalance / costPer);
+    let amount = rawAmount.toLowerCase() === "all" || rawAmount.toLowerCase() === "max"
+        ? maxAffordable
+        : parseInt(rawAmount, 10);
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+        respondWithMessage.call(this, `🤖 Invalid amount. You can afford up to 🥪 ${maxAffordable} sammich${maxAffordable !== 1 ? "es" : ""}.`);
+        return;
+    }
+
+    const totalCost = costPer * amount;
+    if (userBalance < totalCost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 ${totalCost.toLocaleString()} GBX for 🥪 ${amount} sammich.`);
+        return;
+    }
+
+    userBalances[username].balance -= totalCost;
+    lghBank += totalCost;
+    userSammichStashes[username] = (userSammichStashes[username] || 0) + amount;
+
+    saveBalances();
+    localStorage.setItem("lghBank", lghBank);
+    localStorage.setItem("userSammichStashes", JSON.stringify(userSammichStashes));
+
+    respondWithMessage.call(this, `🥪➕ ${nickname} bought 🥪 ${amount} sammich${amount !== 1 ? "es" : ""} for 💵 ${totalCost.toLocaleString()} GBX. Two breads. Infinite possibilities.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥪🎒 `.mysammich` - Display user's sammich stash
+if (wsmsg["text"].toLowerCase() === ".mysammich") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const stash = userSammichStashes[username] || 0;
+
+    respondWithMessage.call(this, `🥪🎒 ${nickname}, you have 🥪 ${stash} sammich${stash !== 1 ? "es" : ""}. Classic and crunchy.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥪🎁 `.givesammich [username] [amount|max|all]` - Send sammiches to another user
+const givesammichTriggers = [".givesammich"]; // add aliases here like ".sendsammich"
+if (givesammichTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const args = wsmsg["text"].trim().split(/\s+/);
+    if (args.length < 3) {
+        respondWithMessage.call(this, "🤖 Usage: .givesammich [username] [amount|max|all]");
+        return;
+    }
+
+    const handle = wsmsg["handle"];
+    const sender = userHandles[handle];
+    const senderNickname = userNicknames[sender]?.nickname || sender || "you";
+    const recipientUsername = args[1];
+    const amountArg = args[2]?.toLowerCase();
+    const senderStash = userSammichStashes[sender] || 0;
+
+    if (!sender || !userNicknames[recipientUsername]) {
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        return;
+    }
+
+    let amount;
+    if (amountArg === "max" || amountArg === "all") {
+        amount = senderStash;
+        if (amount <= 0) {
+            respondWithMessage.call(this, "🤖 You don't have any 🥪 sammiches to give.");
+            return;
+        }
+    } else {
+        amount = parseInt(amountArg, 10);
+        if (isNaN(amount) || amount <= 0 || senderStash < amount) {
+            respondWithMessage.call(this, "🤖 Invalid amount or insufficient stash.");
+            return;
+        }
+    }
+
+    userSammichStashes[sender] -= amount;
+    userSammichStashes[recipientUsername] = (userSammichStashes[recipientUsername] || 0) + amount;
+    localStorage.setItem("userSammichStashes", JSON.stringify(userSammichStashes));
+
+    const recipientNickname = userNicknames[recipientUsername]?.nickname || recipientUsername;
+    respondWithMessage.call(this, `🥪🎁 ${senderNickname} gave 🥪 ${amount} sammich${amount !== 1 ? "es" : ""} to ${recipientNickname}. That’s a stacked favor.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥪😋 `.eatsammich [amount|max|all]` - Eat some sammiches from your stash
+const eatsammichTriggers = [".eatsammich"]; // add aliases here like ".nomsammich"
+if (eatsammichTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].trim().split(/\s+/);
+
+    if (!username || args.length < 2) {
+        setTimeout(() => {
+            respondWithMessage.call(this, "🤖 Usage: .eatsammich [amount|max|all]");
+        }, 1000);
+        return;
+    }
+
+    const stash = userSammichStashes[username] || 0;
+    const arg = args[1].toLowerCase();
+    let amount;
+
+    if (arg === "max" || arg === "all") {
+        amount = stash;
+    } else {
+        amount = parseInt(arg, 10);
+        if (isNaN(amount) || amount <= 0) {
+            setTimeout(() => {
+                respondWithMessage.call(this, "🤖 Invalid amount. Try .eatsammich [amount|max|all]");
+            }, 1000);
+            return;
+        }
+    }
+
+    if (amount > stash) {
+        setTimeout(() => {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough 🥪 sammiches to eat!`);
+        }, 1000);
+        return;
+    }
+
+    userSammichStashes[username] -= amount;
+    localStorage.setItem("userSammichStashes", JSON.stringify(userSammichStashes));
+
+    const remaining = userSammichStashes[username];
+
+    const messages = [
+        `🌀 ${nickname} chomped down 🥪 ${amount} sammich${amount !== 1 ? "es" : ""}. Infinite flavor layers unlocked.`,
+        `🌀 ${nickname} devoured 🥪 ${amount} sammich${amount !== 1 ? "es" : ""}. No crust left behind.`,
+        `🌀 ${nickname} inhaled 🥪 ${amount} sammich${amount !== 1 ? "es" : ""}. Double meat, double joy.`,
+        `🌀 ${nickname} munched 🥪 ${amount} sammich${amount !== 1 ? "es" : ""}. Sandwich supremacy achieved.`,
+    ];
+
+    const response = `${messages[Math.floor(Math.random() * messages.length)]}\nYou have 🥪 ${remaining} sammich${remaining !== 1 ? "es" : ""} left.`;
+
+    setTimeout(() => {
+        respondWithMessage.call(this, response);
+    }, 1000);
+}
+
+// Glizzyzone ------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🌭 Global Hotdog Storage (Per-user)
+let userHotdogStashes = JSON.parse(localStorage.getItem("userHotdogStashes")) || {};
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🌭 `.buyhotdog` - Purchase hotdogs for 💵 3,750 GBX each
+if (wsmsg["text"].toLowerCase().startsWith(".buyhotdog")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const costPer = 3750;
+
+    const args = wsmsg["text"].trim().split(/\s+/);
+    const rawAmount = args[1] || "1";
+
+    const userBalance = userBalances[username]?.balance || 0;
+    const maxAffordable = Math.floor(userBalance / costPer);
+    let amount = rawAmount.toLowerCase() === "all" || rawAmount.toLowerCase() === "max"
+        ? maxAffordable
+        : parseInt(rawAmount, 10);
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+        respondWithMessage.call(this, `🤖 Invalid amount. You can afford up to 🌭 ${maxAffordable} hotdog${maxAffordable !== 1 ? "s" : ""}.`);
+        return;
+    }
+
+    const totalCost = costPer * amount;
+    if (userBalance < totalCost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 ${totalCost.toLocaleString()} GBX for 🌭 ${amount} hotdog${amount !== 1 ? "s" : ""}.`);
+        return;
+    }
+
+    userBalances[username].balance -= totalCost;
+    lghBank += totalCost;
+    userHotdogStashes[username] = (userHotdogStashes[username] || 0) + amount;
+
+    saveBalances();
+    localStorage.setItem("lghBank", lghBank);
+    localStorage.setItem("userHotdogStashes", JSON.stringify(userHotdogStashes));
+
+    respondWithMessage.call(this, `🌭➕ ${nickname} bought 🌭 ${amount} hotdog${amount !== 1 ? "s" : ""} for 💵 ${totalCost.toLocaleString()} GBX. The forbidden sandwich.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🌭🎒 `.myhotdog` - Display user's hotdog stash
+if (wsmsg["text"].toLowerCase() === ".myhotdog") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const stash = userHotdogStashes[username] || 0;
+
+    respondWithMessage.call(this, `🌭🎒 ${nickname}, you have 🌭 ${stash} hotdog${stash !== 1 ? "s" : ""}. Definitely not a sandwich.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🌭🎁 `.givehotdog [username] [amount|max|all]` - Send hotdogs to another user
+const givehotdogTriggers = [".givehotdog"]; // add aliases like ".sendglizzy"
+if (givehotdogTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const args = wsmsg["text"].trim().split(/\s+/);
+    if (args.length < 3) {
+        respondWithMessage.call(this, "🤖 Usage: .givehotdog [username] [amount|max|all]");
+        return;
+    }
+
+    const handle = wsmsg["handle"];
+    const sender = userHandles[handle];
+    const senderNickname = userNicknames[sender]?.nickname || sender || "you";
+    const recipientUsername = args[1];
+    const amountArg = args[2]?.toLowerCase();
+    const senderStash = userHotdogStashes[sender] || 0;
+
+    if (!sender || !userNicknames[recipientUsername]) {
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        return;
+    }
+
+    let amount;
+    if (amountArg === "max" || amountArg === "all") {
+        amount = senderStash;
+        if (amount <= 0) {
+            respondWithMessage.call(this, "🤖 You don't have any 🌭 hotdogs to give.");
+            return;
+        }
+    } else {
+        amount = parseInt(amountArg, 10);
+        if (isNaN(amount) || amount <= 0 || senderStash < amount) {
+            respondWithMessage.call(this, "🤖 Invalid amount or insufficient stash.");
+            return;
+        }
+    }
+
+    userHotdogStashes[sender] -= amount;
+    userHotdogStashes[recipientUsername] = (userHotdogStashes[recipientUsername] || 0) + amount;
+    localStorage.setItem("userHotdogStashes", JSON.stringify(userHotdogStashes));
+
+    const recipientNickname = userNicknames[recipientUsername]?.nickname || recipientUsername;
+    respondWithMessage.call(this, `🌭🎁 ${senderNickname} gave 🌭 ${amount} hotdog${amount !== 1 ? "s" : ""} to ${recipientNickname}. Glizzy gifted.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🌭😋 `.eathotdog [amount|max|all]` - Eat some hotdogs from your stash
+const eathotdogTriggers = [".eathotdog"]; // add aliases here like ".glizzydown"
+if (eathotdogTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].trim().split(/\s+/);
+
+    if (!username || args.length < 2) {
+        setTimeout(() => {
+            respondWithMessage.call(this, "🤖 Usage: .eathotdog [amount|max|all]");
+        }, 1000);
+        return;
+    }
+
+    const stash = userHotdogStashes[username] || 0;
+    const arg = args[1].toLowerCase();
+    let amount;
+
+    if (arg === "max" || arg === "all") {
+        amount = stash;
+    } else {
+        amount = parseInt(arg, 10);
+        if (isNaN(amount) || amount <= 0) {
+            setTimeout(() => {
+                respondWithMessage.call(this, "🤖 Invalid amount. Try .eathotdog [amount|max|all]");
+            }, 1000);
+            return;
+        }
+    }
+
+    if (amount > stash) {
+        setTimeout(() => {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough 🌭 hotdogs to eat!`);
+        }, 1000);
+        return;
+    }
+
+    userHotdogStashes[username] -= amount;
+    localStorage.setItem("userHotdogStashes", JSON.stringify(userHotdogStashes));
+
+    const remaining = userHotdogStashes[username];
+
+    const messages = [
+        `🤔 ${nickname} devoured 🌭 ${amount} hotdog${amount !== 1 ? "s" : ""}. Debate continues: sandwich or not?`,
+        `🌭 ${nickname} inhaled 🌭 ${amount} hotdog${amount !== 1 ? "s" : ""}. Respect the glizzy.`,
+        `🌭 ${nickname} munched 🌭 ${amount} hotdog${amount !== 1 ? "s" : ""}. Street food supremacy.`,
+        `🌭 ${nickname} ate 🌭 ${amount} hotdog${amount !== 1 ? "s" : ""} like a backyard BBQ boss.`,
+    ];
+
+    const response = `${messages[Math.floor(Math.random() * messages.length)]}\nYou have 🌭 ${remaining} hotdog${remaining !== 1 ? "s" : ""} left.`;
+
+    setTimeout(() => {
+        respondWithMessage.call(this, response);
+    }, 1000);
+}
+
+// Shrimps ---------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍤 Global Shrimp Storage (Per-user)
+let userShrimpStashes = JSON.parse(localStorage.getItem("userShrimpStashes")) || {};
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍤 `.buyshrimp` - Purchase shrimp(s) for 💵 4,000 GBX each
+if (wsmsg["text"].toLowerCase().startsWith(".buyshrimp")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const costPer = 4000;
+
+    const args = wsmsg["text"].trim().split(/\s+/);
+    const rawAmount = args[1] || "1";
+
+    const userBalance = userBalances[username]?.balance || 0;
+    const maxAffordable = Math.floor(userBalance / costPer);
+    let amount = rawAmount.toLowerCase() === "all" || rawAmount.toLowerCase() === "max"
+        ? maxAffordable
+        : parseInt(rawAmount, 10);
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+        respondWithMessage.call(this, `🤖 Invalid amount. You can afford up to 🍤 ${maxAffordable} shrimp.`);
+        return;
+    }
+
+    const totalCost = costPer * amount;
+    if (userBalance < totalCost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 ${totalCost.toLocaleString()} GBX for 🍤 ${amount} shrimp.`);
+        return;
+    }
+
+    userBalances[username].balance -= totalCost;
+    lghBank += totalCost;
+    userShrimpStashes[username] = (userShrimpStashes[username] || 0) + amount;
+
+    saveBalances();
+    localStorage.setItem("lghBank", lghBank);
+    localStorage.setItem("userShrimpStashes", JSON.stringify(userShrimpStashes));
+
+    respondWithMessage.call(this, `🍤➕ ${nickname} bought 🍤 ${amount} shrimp for 💵 ${totalCost.toLocaleString()} GBX. Fried sea boi secured.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍤🎒 `.myshrimp` - Display user's shrimp stash
+if (wsmsg["text"].toLowerCase() === ".myshrimp") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const stash = userShrimpStashes[username] || 0;
+
+    respondWithMessage.call(this, `🍤🎒 ${nickname}, you have 🍤 ${stash} shrimp${stash !== 1 ? "s" : ""}. Crunchy and divine.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍤🎁 `.giveshrimp [username] [amount|max|all]` - Send shrimp to another user
+const giveshrimpTriggers = [".giveshrimp"]; // add aliases here like ".sendshrimp"
+if (giveshrimpTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const args = wsmsg["text"].trim().split(/\s+/);
+    if (args.length < 3) {
+        respondWithMessage.call(this, "🤖 Usage: .giveshrimp [username] [amount|max|all]");
+        return;
+    }
+
+    const handle = wsmsg["handle"];
+    const sender = userHandles[handle];
+    const senderNickname = userNicknames[sender]?.nickname || sender || "you";
+    const recipientUsername = args[1];
+    const amountArg = args[2]?.toLowerCase();
+    const senderStash = userShrimpStashes[sender] || 0;
+
+    if (!sender || !userNicknames[recipientUsername]) {
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        return;
+    }
+
+    let amount;
+    if (amountArg === "max" || amountArg === "all") {
+        amount = senderStash;
+        if (amount <= 0) {
+            respondWithMessage.call(this, "🤖 You don't have any 🍤 shrimp to give.");
+            return;
+        }
+    } else {
+        amount = parseInt(amountArg, 10);
+        if (isNaN(amount) || amount <= 0 || senderStash < amount) {
+            respondWithMessage.call(this, "🤖 Invalid amount or insufficient stash.");
+            return;
+        }
+    }
+
+    userShrimpStashes[sender] -= amount;
+    userShrimpStashes[recipientUsername] = (userShrimpStashes[recipientUsername] || 0) + amount;
+    localStorage.setItem("userShrimpStashes", JSON.stringify(userShrimpStashes));
+
+    const recipientNickname = userNicknames[recipientUsername]?.nickname || recipientUsername;
+    respondWithMessage.call(this, `🍤🎁 ${senderNickname} gave 🍤 ${amount} shrimp to ${recipientNickname}. Sizzle approved.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍤😋 `.eatshrimp [amount|max|all]` - Eat some shrimp from your stash
+const eatshrimpTriggers = [".eatshrimp"]; // add aliases here like ".nomshrimp"
+if (eatshrimpTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].trim().split(/\s+/);
+
+    if (!username || args.length < 2) {
+        setTimeout(() => {
+            respondWithMessage.call(this, "🤖 Usage: .eatshrimp [amount|max|all]");
+        }, 1000);
+        return;
+    }
+
+    const stash = userShrimpStashes[username] || 0;
+    const arg = args[1].toLowerCase();
+    let amount;
+
+    if (arg === "max" || arg === "all") {
+        amount = stash;
+    } else {
+        amount = parseInt(arg, 10);
+        if (isNaN(amount) || amount <= 0) {
+            setTimeout(() => {
+                respondWithMessage.call(this, "🤖 Invalid amount. Try .eatshrimp [amount|max|all]");
+            }, 1000);
+            return;
+        }
+    }
+
+    if (amount > stash) {
+        setTimeout(() => {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough 🍤 shrimp to eat!`);
+        }, 1000);
+        return;
+    }
+
+    userShrimpStashes[username] -= amount;
+    localStorage.setItem("userShrimpStashes", JSON.stringify(userShrimpStashes));
+
+    const remaining = userShrimpStashes[username];
+
+    const messages = [
+        `🦐 ${nickname} devoured 🍤 ${amount} shrimp${amount !== 1 ? "s" : ""}. Tails and all.`,
+        `🍤 ${nickname} fried up 🍤 ${amount} shrimp. Crispy satisfaction.`,
+        `🍤 ${nickname} chomped 🍤 ${amount} shrimp like Poseidon’s snacktime.`,
+        `🍤 ${nickname} inhaled 🍤 ${amount} shrimp. Ocean energy unleashed.`,
+    ];
+
+    const response = `${messages[Math.floor(Math.random() * messages.length)]}\nYou have 🍤 ${remaining} shrimp${remaining !== 1 ? "s" : ""} left.`;
+
+    setTimeout(() => {
+        respondWithMessage.call(this, response);
+    }, 1000);
+}
+
+// Tacozone --------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🌮 Global Taco Storage (Per-user)
+let userTacoStashes = JSON.parse(localStorage.getItem("userTacoStashes")) || {};
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🌮 `.buytaco` - Purchase tacos for 💵 4,200 GBX each
+if (wsmsg["text"].toLowerCase().startsWith(".buytaco")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const costPer = 4200;
+
+    const args = wsmsg["text"].trim().split(/\s+/);
+    const rawAmount = args[1] || "1";
+
+    const userBalance = userBalances[username]?.balance || 0;
+    const maxAffordable = Math.floor(userBalance / costPer);
+    let amount = rawAmount.toLowerCase() === "all" || rawAmount.toLowerCase() === "max"
+        ? maxAffordable
+        : parseInt(rawAmount, 10);
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+        respondWithMessage.call(this, `🤖 Invalid amount. You can afford up to 🌮 ${maxAffordable} taco${maxAffordable !== 1 ? "s" : ""}.`);
+        return;
+    }
+
+    const totalCost = costPer * amount;
+    if (userBalance < totalCost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 ${totalCost.toLocaleString()} GBX for 🌮 ${amount} taco${amount !== 1 ? "s" : ""}.`);
+        return;
+    }
+
+    userBalances[username].balance -= totalCost;
+    lghBank += totalCost;
+    userTacoStashes[username] = (userTacoStashes[username] || 0) + amount;
+
+    saveBalances();
+    localStorage.setItem("lghBank", lghBank);
+    localStorage.setItem("userTacoStashes", JSON.stringify(userTacoStashes));
+
+    respondWithMessage.call(this, `🌮➕ ${nickname} bought 🌮 ${amount} taco${amount !== 1 ? "s" : ""} for 💵 ${totalCost.toLocaleString()} GBX. Crunchwrap vibes.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🌮🎒 `.mytaco` - Display user's taco stash
+if (wsmsg["text"].toLowerCase() === ".mytaco") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const stash = userTacoStashes[username] || 0;
+
+    respondWithMessage.call(this, `🌮🎒 ${nickname}, you have 🌮 ${stash} taco${stash !== 1 ? "s" : ""}. Spicy and supreme.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🌮🎁 `.givetaco [username] [amount|max|all]` - Send tacos to another user
+const givetacoTriggers = [".givetaco"]; // add aliases like ".sendtaco"
+if (givetacoTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const args = wsmsg["text"].trim().split(/\s+/);
+    if (args.length < 3) {
+        respondWithMessage.call(this, "🤖 Usage: .givetaco [username] [amount|max|all]");
+        return;
+    }
+
+    const handle = wsmsg["handle"];
+    const sender = userHandles[handle];
+    const senderNickname = userNicknames[sender]?.nickname || sender || "you";
+    const recipientUsername = args[1];
+    const amountArg = args[2]?.toLowerCase();
+    const senderStash = userTacoStashes[sender] || 0;
+
+    if (!sender || !userNicknames[recipientUsername]) {
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        return;
+    }
+
+    let amount;
+    if (amountArg === "max" || amountArg === "all") {
+        amount = senderStash;
+        if (amount <= 0) {
+            respondWithMessage.call(this, "🤖 You don't have any 🌮 tacos to give.");
+            return;
+        }
+    } else {
+        amount = parseInt(amountArg, 10);
+        if (isNaN(amount) || amount <= 0 || senderStash < amount) {
+            respondWithMessage.call(this, "🤖 Invalid amount or insufficient stash.");
+            return;
+        }
+    }
+
+    userTacoStashes[sender] -= amount;
+    userTacoStashes[recipientUsername] = (userTacoStashes[recipientUsername] || 0) + amount;
+    localStorage.setItem("userTacoStashes", JSON.stringify(userTacoStashes));
+
+    const recipientNickname = userNicknames[recipientUsername]?.nickname || recipientUsername;
+    respondWithMessage.call(this, `🌮🎁 ${senderNickname} gave 🌮 ${amount} taco${amount !== 1 ? "s" : ""} to ${recipientNickname}. ¡Fiesta time!`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🌮😋 `.eattaco [amount|max|all]` - Eat some tacos from your stash
+const eattacoTriggers = [".eattaco"]; // add aliases like ".nomtaco"
+if (eattacoTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].trim().split(/\s+/);
+
+    if (!username || args.length < 2) {
+        setTimeout(() => {
+            respondWithMessage.call(this, "🤖 Usage: .eattaco [amount|max|all]");
+        }, 1000);
+        return;
+    }
+
+    const stash = userTacoStashes[username] || 0;
+    const arg = args[1].toLowerCase();
+    let amount;
+
+    if (arg === "max" || arg === "all") {
+        amount = stash;
+    } else {
+        amount = parseInt(arg, 10);
+        if (isNaN(amount) || amount <= 0) {
+            setTimeout(() => {
+                respondWithMessage.call(this, "🤖 Invalid amount. Try .eattaco [amount|max|all]");
+            }, 1000);
+            return;
+        }
+    }
+
+    if (amount > stash) {
+        setTimeout(() => {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough 🌮 tacos to eat!`);
+        }, 1000);
+        return;
+    }
+
+    userTacoStashes[username] -= amount;
+    localStorage.setItem("userTacoStashes", JSON.stringify(userTacoStashes));
+
+    const remaining = userTacoStashes[username];
+
+    const messages = [
+        `🌮 ${nickname} demolished 🌮 ${amount} taco${amount !== 1 ? "s" : ""}. Crunched to perfection.`,
+        `🌮 ${nickname} inhaled 🌮 ${amount} taco${amount !== 1 ? "s" : ""}. Salsa drippin’.`,
+        `🌮 ${nickname} devoured 🌮 ${amount} taco${amount !== 1 ? "s" : ""}. ¡Muy delicioso!`,
+        `🌮 ${nickname} munched 🌮 ${amount} taco${amount !== 1 ? "s" : ""}. Taco Tuesday champion.`,
+    ];
+
+    const response = `${messages[Math.floor(Math.random() * messages.length)]}\nYou have 🌮 ${remaining} taco${remaining !== 1 ? "s" : ""} left.`;
+
+    setTimeout(() => {
+        respondWithMessage.call(this, response);
+    }, 1000);
+}
+
+// Cakeywakey ------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍰 Global Cake Storage (Per-user)
+let userCakeStashes = JSON.parse(localStorage.getItem("userCakeStashes")) || {};
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍰 `.buycake` - Purchase cake for 💵 6,000 GBX each
+if (wsmsg["text"].toLowerCase().startsWith(".buycake")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const costPer = 6000;
+
+    const args = wsmsg["text"].trim().split(/\s+/);
+    const rawAmount = args[1] || "1";
+
+    const userBalance = userBalances[username]?.balance || 0;
+    const maxAffordable = Math.floor(userBalance / costPer);
+    let amount = rawAmount.toLowerCase() === "all" || rawAmount.toLowerCase() === "max"
+        ? maxAffordable
+        : parseInt(rawAmount, 10);
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+        respondWithMessage.call(this, `🤖 Invalid amount. You can afford up to 🍰 ${maxAffordable} cake${maxAffordable !== 1 ? "s" : ""}.`);
+        return;
+    }
+
+    const totalCost = costPer * amount;
+    if (userBalance < totalCost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 ${totalCost.toLocaleString()} GBX for 🍰 ${amount} cake.`);
+        return;
+    }
+
+    userBalances[username].balance -= totalCost;
+    lghBank += totalCost;
+    userCakeStashes[username] = (userCakeStashes[username] || 0) + amount;
+
+    saveBalances();
+    localStorage.setItem("lghBank", lghBank);
+    localStorage.setItem("userCakeStashes", JSON.stringify(userCakeStashes));
+
+    respondWithMessage.call(this, `🍰➕ ${nickname} bought 🍰 ${amount} cake${amount !== 1 ? "s" : ""} for 💵 ${totalCost.toLocaleString()} GBX. Let them eat it.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍰🎒 `.mycake` - Display user's cake stash
+if (wsmsg["text"].toLowerCase() === ".mycake") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const stash = userCakeStashes[username] || 0;
+
+    respondWithMessage.call(this, `🍰🎒 ${nickname}, you have 🍰 ${stash} cake${stash !== 1 ? "s" : ""}. Royal frosting detected.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍰🎁 `.givecake [username] [amount|max|all]` - Send cake to another user
+const givecakeTriggers = [".givecake"];
+if (givecakeTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const args = wsmsg["text"].trim().split(/\s+/);
+    if (args.length < 3) {
+        respondWithMessage.call(this, "🤖 Usage: .givecake [username] [amount|max|all]");
+        return;
+    }
+
+    const handle = wsmsg["handle"];
+    const sender = userHandles[handle];
+    const senderNickname = userNicknames[sender]?.nickname || sender || "you";
+    const recipientUsername = args[1];
+    const amountArg = args[2]?.toLowerCase();
+    const senderStash = userCakeStashes[sender] || 0;
+
+    if (!sender || !userNicknames[recipientUsername]) {
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        return;
+    }
+
+    let amount;
+    if (amountArg === "max" || amountArg === "all") {
+        amount = senderStash;
+        if (amount <= 0) {
+            respondWithMessage.call(this, "🤖 You don't have any 🍰 cake to give.");
+            return;
+        }
+    } else {
+        amount = parseInt(amountArg, 10);
+        if (isNaN(amount) || amount <= 0 || senderStash < amount) {
+            respondWithMessage.call(this, "🤖 Invalid amount or insufficient stash.");
+            return;
+        }
+    }
+
+    userCakeStashes[sender] -= amount;
+    userCakeStashes[recipientUsername] = (userCakeStashes[recipientUsername] || 0) + amount;
+    localStorage.setItem("userCakeStashes", JSON.stringify(userCakeStashes));
+
+    const recipientNickname = userNicknames[recipientUsername]?.nickname || recipientUsername;
+    respondWithMessage.call(this, `🍰🎁 ${senderNickname} gave 🍰 ${amount} cake${amount !== 1 ? "s" : ""} to ${recipientNickname}. Sweet royalty vibes.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍰💨 `.eatcake [amount|max|all]` - Eat some cake from your stash
+const eatcakeTriggers = [".eatcake"]; // alt: ".nomcake"
+if (eatcakeTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].trim().split(/\s+/);
+
+    if (!username || args.length < 2) {
+        setTimeout(() => {
+            respondWithMessage.call(this, "🤖 Usage: .eatcake [amount|max|all]");
+        }, 1000);
+        return;
+    }
+
+    const stash = userCakeStashes[username] || 0;
+    const arg = args[1].toLowerCase();
+    let amount;
+
+    if (arg === "max" || arg === "all") {
+        amount = stash;
+    } else {
+        amount = parseInt(arg, 10);
+        if (isNaN(amount) || amount <= 0) {
+            setTimeout(() => {
+                respondWithMessage.call(this, "🤖 Invalid amount. Try .eatcake [amount|max|all]");
+            }, 1000);
+            return;
+        }
+    }
+
+    if (amount > stash) {
+        setTimeout(() => {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough 🍰 cake to eat!`);
+        }, 1000);
+        return;
+    }
+
+    userCakeStashes[username] -= amount;
+    localStorage.setItem("userCakeStashes", JSON.stringify(userCakeStashes));
+
+    const remaining = userCakeStashes[username];
+
+    const messages = [
+        `👑 ${nickname} devoured 🍰 ${amount} cake${amount !== 1 ? "s" : ""}. Royal cheeks now frosted.`,
+        `🍰 ${nickname} slammed 🍰 ${amount} cake${amount !== 1 ? "s" : ""}. No candles survived.`,
+        `💨 ${nickname} ate 🍰 ${amount} cake and let out a majestic cake fart. Respect.`,
+        `🍰 ${nickname} inhaled 🍰 ${amount} cake${amount !== 1 ? "s" : ""}. The frosting has spoken.`,
+    ];
+
+    const response = `${messages[Math.floor(Math.random() * messages.length)]}\nYou have 🍰 ${remaining} cake${remaining !== 1 ? "s" : ""} left.`;
+
+    setTimeout(() => {
+        respondWithMessage.call(this, response);
+    }, 1000);
+}
+
+// Burgerzone ------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍔 Global Burger Storage (Per-user)
+let userBurgerStashes = JSON.parse(localStorage.getItem("userBurgerStashes")) || {};
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍔 `.buyburger` - Purchase burgers for 💵 7,000 GBX each
+if (wsmsg["text"].toLowerCase().startsWith(".buyburger")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const costPer = 7000;
+
+    const args = wsmsg["text"].trim().split(/\s+/);
+    const rawAmount = args[1] || "1";
+
+    const userBalance = userBalances[username]?.balance || 0;
+    const maxAffordable = Math.floor(userBalance / costPer);
+    let amount = rawAmount.toLowerCase() === "all" || rawAmount.toLowerCase() === "max"
+        ? maxAffordable
+        : parseInt(rawAmount, 10);
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+        respondWithMessage.call(this, `🤖 Invalid amount. You can afford up to 🍔 ${maxAffordable} burger${maxAffordable !== 1 ? "s" : ""}.`);
+        return;
+    }
+
+    const totalCost = costPer * amount;
+    if (userBalance < totalCost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 ${totalCost.toLocaleString()} GBX for 🍔 ${amount} burger.`);
+        return;
+    }
+
+    userBalances[username].balance -= totalCost;
+    lghBank += totalCost;
+    userBurgerStashes[username] = (userBurgerStashes[username] || 0) + amount;
+
+    saveBalances();
+    localStorage.setItem("lghBank", lghBank);
+    localStorage.setItem("userBurgerStashes", JSON.stringify(userBurgerStashes));
+
+    respondWithMessage.call(this, `🍔➕ ${nickname} bought 🍔 ${amount} burger${amount !== 1 ? "s" : ""} for 💵 ${totalCost.toLocaleString()} GBX. Beefy. Cheesy. Classic.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍔🎒 `.myburger` - Display user's burger stash
+if (wsmsg["text"].toLowerCase() === ".myburger") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const stash = userBurgerStashes[username] || 0;
+
+    respondWithMessage.call(this, `🍔🎒 ${nickname}, you have 🍔 ${stash} burger${stash !== 1 ? "s" : ""}. Double stacked.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍔🎁 `.giveburger [username] [amount|max|all]` - Send burgers to another user
+const giveburgerTriggers = [".giveburger"];
+if (giveburgerTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const args = wsmsg["text"].trim().split(/\s+/);
+    if (args.length < 3) {
+        respondWithMessage.call(this, "🤖 Usage: .giveburger [username] [amount|max|all]");
+        return;
+    }
+
+    const handle = wsmsg["handle"];
+    const sender = userHandles[handle];
+    const senderNickname = userNicknames[sender]?.nickname || sender || "you";
+    const recipientUsername = args[1];
+    const amountArg = args[2]?.toLowerCase();
+    const senderStash = userBurgerStashes[sender] || 0;
+
+    if (!sender || !userNicknames[recipientUsername]) {
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        return;
+    }
+
+    let amount;
+    if (amountArg === "max" || amountArg === "all") {
+        amount = senderStash;
+        if (amount <= 0) {
+            respondWithMessage.call(this, "🤖 You don't have any 🍔 burgers to give.");
+            return;
+        }
+    } else {
+        amount = parseInt(amountArg, 10);
+        if (isNaN(amount) || amount <= 0 || senderStash < amount) {
+            respondWithMessage.call(this, "🤖 Invalid amount or insufficient stash.");
+            return;
+        }
+    }
+
+    userBurgerStashes[sender] -= amount;
+    userBurgerStashes[recipientUsername] = (userBurgerStashes[recipientUsername] || 0) + amount;
+    localStorage.setItem("userBurgerStashes", JSON.stringify(userBurgerStashes));
+
+    const recipientNickname = userNicknames[recipientUsername]?.nickname || recipientUsername;
+    respondWithMessage.call(this, `🍔🎁 ${senderNickname} gave 🍔 ${amount} burger${amount !== 1 ? "s" : ""} to ${recipientNickname}. Flame-grilled generosity.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍔😋 `.eatburger [amount|max|all]` - Eat some burgers from your stash
+const eatburgerTriggers = [".eatburger"];
+if (eatburgerTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].trim().split(/\s+/);
+
+    if (!username || args.length < 2) {
+        setTimeout(() => {
+            respondWithMessage.call(this, "🤖 Usage: .eatburger [amount|max|all]");
+        }, 1000);
+        return;
+    }
+
+    const stash = userBurgerStashes[username] || 0;
+    const arg = args[1].toLowerCase();
+    let amount;
+
+    if (arg === "max" || arg === "all") {
+        amount = stash;
+    } else {
+        amount = parseInt(arg, 10);
+        if (isNaN(amount) || amount <= 0) {
+            setTimeout(() => {
+                respondWithMessage.call(this, "🤖 Invalid amount. Try .eatburger [amount|max|all]");
+            }, 1000);
+            return;
+        }
+    }
+
+    if (amount > stash) {
+        setTimeout(() => {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough 🍔 burgers to eat!`);
+        }, 1000);
+        return;
+    }
+
+    userBurgerStashes[username] -= amount;
+    localStorage.setItem("userBurgerStashes", JSON.stringify(userBurgerStashes));
+
+    const remaining = userBurgerStashes[username];
+
+    const messages = [
+        `🍔 ${nickname} chomped 🍔 ${amount} burger${amount !== 1 ? "s" : ""}. That grill line hit.`,
+        `🍔 ${nickname} devoured 🍔 ${amount} burger${amount !== 1 ? "s" : ""}. Extra cheese, no regrets.`,
+        `🍔 ${nickname} inhaled 🍔 ${amount} burger${amount !== 1 ? "s" : ""}. Beef mode: activated.`,
+        `🍔 ${nickname} just burger-blasted 🍔 ${amount} burger${amount !== 1 ? "s" : ""}. Absolute unit.`,
+    ];
+
+    const response = `${messages[Math.floor(Math.random() * messages.length)]}\nYou have 🍔 ${remaining} burger${remaining !== 1 ? "s" : ""} left.`;
+
+    setTimeout(() => {
+        respondWithMessage.call(this, response);
+    }, 1000);
+}
+
+// Sushizone -------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍣 Global Sushi Storage (Per-user)
+let userSushiStashes = JSON.parse(localStorage.getItem("userSushiStashes")) || {};
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍣 `.buysushi` - Purchase sushi for 💵 8,888 GBX each
+if (wsmsg["text"].toLowerCase().startsWith(".buysushi")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const costPer = 8888;
+
+    const args = wsmsg["text"].trim().split(/\s+/);
+    const rawAmount = args[1] || "1";
+
+    const userBalance = userBalances[username]?.balance || 0;
+    const maxAffordable = Math.floor(userBalance / costPer);
+    let amount = rawAmount.toLowerCase() === "all" || rawAmount.toLowerCase() === "max"
+        ? maxAffordable
+        : parseInt(rawAmount, 10);
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+        respondWithMessage.call(this, `🤖 Invalid amount. You can afford up to 🍣 ${maxAffordable} sushi.`);
+        return;
+    }
+
+    const totalCost = costPer * amount;
+    if (userBalance < totalCost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 ${totalCost.toLocaleString()} GBX for 🍣 ${amount} sushi.`);
+        return;
+    }
+
+    userBalances[username].balance -= totalCost;
+    lghBank += totalCost;
+    userSushiStashes[username] = (userSushiStashes[username] || 0) + amount;
+
+    saveBalances();
+    localStorage.setItem("lghBank", lghBank);
+    localStorage.setItem("userSushiStashes", JSON.stringify(userSushiStashes));
+
+    respondWithMessage.call(this, `🍣➕ ${nickname} bought 🍣 ${amount} sushi for 💵 ${totalCost.toLocaleString()} GBX. Raw elegance served.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍣🎒 `.mysushi` - Display user's sushi stash
+if (wsmsg["text"].toLowerCase() === ".mysushi") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const stash = userSushiStashes[username] || 0;
+
+    respondWithMessage.call(this, `🍣🎒 ${nickname}, you have 🍣 ${stash} sushi${stash !== 1 ? "s" : ""}. Delicate and deadly.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍣🎁 `.givesushi [username] [amount|max|all]` - Send sushi to another user
+const givesushiTriggers = [".givesushi"];
+if (givesushiTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const args = wsmsg["text"].trim().split(/\s+/);
+    if (args.length < 3) {
+        respondWithMessage.call(this, "🤖 Usage: .givesushi [username] [amount|max|all]");
+        return;
+    }
+
+    const handle = wsmsg["handle"];
+    const sender = userHandles[handle];
+    const senderNickname = userNicknames[sender]?.nickname || sender || "you";
+    const recipientUsername = args[1];
+    const amountArg = args[2]?.toLowerCase();
+    const senderStash = userSushiStashes[sender] || 0;
+
+    if (!sender || !userNicknames[recipientUsername]) {
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        return;
+    }
+
+    let amount;
+    if (amountArg === "max" || amountArg === "all") {
+        amount = senderStash;
+        if (amount <= 0) {
+            respondWithMessage.call(this, "🤖 You don't have any 🍣 sushi to give.");
+            return;
+        }
+    } else {
+        amount = parseInt(amountArg, 10);
+        if (isNaN(amount) || amount <= 0 || senderStash < amount) {
+            respondWithMessage.call(this, "🤖 Invalid amount or insufficient stash.");
+            return;
+        }
+    }
+
+    userSushiStashes[sender] -= amount;
+    userSushiStashes[recipientUsername] = (userSushiStashes[recipientUsername] || 0) + amount;
+    localStorage.setItem("userSushiStashes", JSON.stringify(userSushiStashes));
+
+    const recipientNickname = userNicknames[recipientUsername]?.nickname || recipientUsername;
+    respondWithMessage.call(this, `🍣🎁 ${senderNickname} gave 🍣 ${amount} sushi to ${recipientNickname}. Now that’s high-tier sharing.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍣😋 `.eatsushi [amount|max|all]` - Eat some sushi from your stash
+const eatsushiTriggers = [".eatsushi"];
+if (eatsushiTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].trim().split(/\s+/);
+
+    if (!username || args.length < 2) {
+        setTimeout(() => {
+            respondWithMessage.call(this, "🤖 Usage: .eatsushi [amount|max|all]");
+        }, 1000);
+        return;
+    }
+
+    const stash = userSushiStashes[username] || 0;
+    const arg = args[1].toLowerCase();
+    let amount;
+
+    if (arg === "max" || arg === "all") {
+        amount = stash;
+    } else {
+        amount = parseInt(arg, 10);
+        if (isNaN(amount) || amount <= 0) {
+            setTimeout(() => {
+                respondWithMessage.call(this, "🤖 Invalid amount. Try .eatsushi [amount|max|all]");
+            }, 1000);
+            return;
+        }
+    }
+
+    if (amount > stash) {
+        setTimeout(() => {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough 🍣 sushi to eat!`);
+        }, 1000);
+        return;
+    }
+
+    userSushiStashes[username] -= amount;
+    localStorage.setItem("userSushiStashes", JSON.stringify(userSushiStashes));
+
+    const remaining = userSushiStashes[username];
+
+    const messages = [
+        `🧊 ${nickname} consumed 🍣 ${amount} sushi with calm precision. Zen level rising.`,
+        `🍣 ${nickname} devoured 🍣 ${amount} sushi like a sashimi sensei.`,
+        `🍣 ${nickname} nibbled 🍣 ${amount} sushi. Chopsticks optional.`,
+        `🍣 ${nickname} swallowed 🍣 ${amount} sushi whole. A true raw talent.`,
+    ];
+
+    const response = `${messages[Math.floor(Math.random() * messages.length)]}\nYou have 🍣 ${remaining} sushi${remaining !== 1 ? "s" : ""} left.`;
+
+    setTimeout(() => {
+        respondWithMessage.call(this, response);
+    }, 1000);
+}
+
+// Steakhouse ------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥩 Global Steak Storage (Per-user)
+let userSteakStashes = JSON.parse(localStorage.getItem("userSteakStashes")) || {};
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥩 `.buysteak` - Purchase steaks for 💵 15,000 GBX each
+if (wsmsg["text"].toLowerCase().startsWith(".buysteak")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const costPer = 15000;
+
+    const args = wsmsg["text"].trim().split(/\s+/);
+    const rawAmount = args[1] || "1";
+
+    const userBalance = userBalances[username]?.balance || 0;
+    const maxAffordable = Math.floor(userBalance / costPer);
+    let amount = rawAmount.toLowerCase() === "all" || rawAmount.toLowerCase() === "max"
+        ? maxAffordable
+        : parseInt(rawAmount, 10);
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+        respondWithMessage.call(this, `🤖 Invalid amount. You can afford up to 🥩 ${maxAffordable} steak${maxAffordable !== 1 ? "s" : ""}.`);
+        return;
+    }
+
+    const totalCost = costPer * amount;
+    if (userBalance < totalCost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 ${totalCost.toLocaleString()} GBX for 🥩 ${amount} steak.`);
+        return;
+    }
+
+    userBalances[username].balance -= totalCost;
+    lghBank += totalCost;
+    userSteakStashes[username] = (userSteakStashes[username] || 0) + amount;
+
+    saveBalances();
+    localStorage.setItem("lghBank", lghBank);
+    localStorage.setItem("userSteakStashes", JSON.stringify(userSteakStashes));
+
+    respondWithMessage.call(this, `🥩➕ ${nickname} bought 🥩 ${amount} steak${amount !== 1 ? "s" : ""} for 💵 ${totalCost.toLocaleString()} GBX. Cooked rare. Or else.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥩🎒 `.mysteak` - Display user's steak stash
+if (wsmsg["text"].toLowerCase() === ".mysteak") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const stash = userSteakStashes[username] || 0;
+
+    respondWithMessage.call(this, `🥩🎒 ${nickname}, you have 🥩 ${stash} steak${stash !== 1 ? "s" : ""}. Bloody good.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥩🎁 `.givesteak [username] [amount|max|all]` - Send steak to another user
+const givesteakTriggers = [".givesteak"];
+if (givesteakTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const args = wsmsg["text"].trim().split(/\s+/);
+    if (args.length < 3) {
+        respondWithMessage.call(this, "🤖 Usage: .givesteak [username] [amount|max|all]");
+        return;
+    }
+
+    const handle = wsmsg["handle"];
+    const sender = userHandles[handle];
+    const senderNickname = userNicknames[sender]?.nickname || sender || "you";
+    const recipientUsername = args[1];
+    const amountArg = args[2]?.toLowerCase();
+    const senderStash = userSteakStashes[sender] || 0;
+
+    if (!sender || !userNicknames[recipientUsername]) {
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        return;
+    }
+
+    let amount;
+    if (amountArg === "max" || amountArg === "all") {
+        amount = senderStash;
+        if (amount <= 0) {
+            respondWithMessage.call(this, "🤖 You don't have any 🥩 steak to give.");
+            return;
+        }
+    } else {
+        amount = parseInt(amountArg, 10);
+        if (isNaN(amount) || amount <= 0 || senderStash < amount) {
+            respondWithMessage.call(this, "🤖 Invalid amount or insufficient stash.");
+            return;
+        }
+    }
+
+    userSteakStashes[sender] -= amount;
+    userSteakStashes[recipientUsername] = (userSteakStashes[recipientUsername] || 0) + amount;
+    localStorage.setItem("userSteakStashes", JSON.stringify(userSteakStashes));
+
+    const recipientNickname = userNicknames[recipientUsername]?.nickname || recipientUsername;
+    respondWithMessage.call(this, `🥩🎁 ${senderNickname} gave 🥩 ${amount} steak${amount !== 1 ? "s" : ""} to ${recipientNickname}. Medium rare friendship.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥩😋 `.eatsteak [amount|max|all]` - Eat some steak from your stash
+const eatsteakTriggers = [".eatsteak"];
+if (eatsteakTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].trim().split(/\s+/);
+
+    if (!username || args.length < 2) {
+        setTimeout(() => {
+            respondWithMessage.call(this, "🤖 Usage: .eatsteak [amount|max|all]");
+        }, 1000);
+        return;
+    }
+
+    const stash = userSteakStashes[username] || 0;
+    const arg = args[1].toLowerCase();
+    let amount;
+
+    if (arg === "max" || arg === "all") {
+        amount = stash;
+    } else {
+        amount = parseInt(arg, 10);
+        if (isNaN(amount) || amount <= 0) {
+            setTimeout(() => {
+                respondWithMessage.call(this, "🤖 Invalid amount. Try .eatsteak [amount|max|all]");
+            }, 1000);
+            return;
+        }
+    }
+
+    if (amount > stash) {
+        setTimeout(() => {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough 🥩 steak to eat!`);
+        }, 1000);
+        return;
+    }
+
+    userSteakStashes[username] -= amount;
+    localStorage.setItem("userSteakStashes", JSON.stringify(userSteakStashes));
+
+    const remaining = userSteakStashes[username];
+
+    const messages = [
+        `🔪 ${nickname} just sliced through 🥩 ${amount} steak${amount !== 1 ? "s" : ""}. Rare and ruthless.`,
+        `🥩 ${nickname} devoured 🥩 ${amount} steak${amount !== 1 ? "s" : ""}. No sauce, all power.`,
+        `🥩 ${nickname} ate 🥩 ${amount} steak${amount !== 1 ? "s" : ""}. Grill marks of the gods.`,
+        `🥩 ${nickname} went full carnivore on 🥩 ${amount} steak${amount !== 1 ? "s" : ""}. Respect.`,
+    ];
+
+    const response = `${messages[Math.floor(Math.random() * messages.length)]}\nYou have 🥩 ${remaining} steak${remaining !== 1 ? "s" : ""} left.`;
+
+    setTimeout(() => {
+        respondWithMessage.call(this, response);
+    }, 1000);
+}
+
+// Dildopolis ------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍆 Global Dildo Storage (Per-user)
+let userDildoStashes = JSON.parse(localStorage.getItem("userDildoStashes")) || {};
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍆 `.buydildo` - Buy a giant purple dildo for 💵 50,000 GBX
+if (wsmsg["text"].toLowerCase().startsWith(".buydildo")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const costPer = 50000;
+
+    const args = wsmsg["text"].trim().split(/\s+/);
+    const rawAmount = args[1] || "1";
+
+    const userBalance = userBalances[username]?.balance || 0;
+    const maxAffordable = Math.floor(userBalance / costPer);
+    let amount = rawAmount.toLowerCase() === "all" || rawAmount.toLowerCase() === "max"
+        ? maxAffordable
+        : parseInt(rawAmount, 10);
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+        respondWithMessage.call(this, `🤖 Invalid amount. You can afford up to 🍆 ${maxAffordable} dildo${maxAffordable !== 1 ? "s" : ""}.`);
+        return;
+    }
+
+    const totalCost = costPer * amount;
+    if (userBalance < totalCost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 ${totalCost.toLocaleString()} GBX for 🍆 ${amount} dildo.`);
+        return;
+    }
+
+    userBalances[username].balance -= totalCost;
+    lghBank += totalCost;
+    userDildoStashes[username] = (userDildoStashes[username] || 0) + amount;
+
+    saveBalances();
+    localStorage.setItem("lghBank", lghBank);
+    localStorage.setItem("userDildoStashes", JSON.stringify(userDildoStashes));
+
+    respondWithMessage.call(this, `🍆➕ ${nickname} bought 🍆 ${amount} dildo${amount !== 1 ? "s" : ""} for 💵 ${totalCost.toLocaleString()} GBX. Wobbly. Proud. Majestic.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍆🎒 `.mydildo` - Check dildo stash
+if (wsmsg["text"].toLowerCase() === ".mydildo") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const stash = userDildoStashes[username] || 0;
+
+    respondWithMessage.call(this, `🍆🎒 ${nickname}, you have 🍆 ${stash} dildo${stash !== 1 ? "s" : ""}. And yes, they're **giant**.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍆🎁 `.givedildo [username] [amount|max|all]`
+const givedildoTriggers = [".givedildo"];
+if (givedildoTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const args = wsmsg["text"].trim().split(/\s+/);
+    if (args.length < 3) {
+        respondWithMessage.call(this, "🤖 Usage: .givedildo [username] [amount|max|all]");
+        return;
+    }
+
+    const handle = wsmsg["handle"];
+    const sender = userHandles[handle];
+    const senderNickname = userNicknames[sender]?.nickname || sender || "you";
+    const recipientUsername = args[1];
+    const amountArg = args[2]?.toLowerCase();
+    const senderStash = userDildoStashes[sender] || 0;
+
+    if (!sender || !userNicknames[recipientUsername]) {
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        return;
+    }
+
+    let amount;
+    if (amountArg === "max" || amountArg === "all") {
+        amount = senderStash;
+        if (amount <= 0) {
+            respondWithMessage.call(this, "🤖 You don't have any 🍆 dildos to give.");
+            return;
+        }
+    } else {
+        amount = parseInt(amountArg, 10);
+        if (isNaN(amount) || amount <= 0 || senderStash < amount) {
+            respondWithMessage.call(this, "🤖 Invalid amount or insufficient stash.");
+            return;
+        }
+    }
+
+    userDildoStashes[sender] -= amount;
+    userDildoStashes[recipientUsername] = (userDildoStashes[recipientUsername] || 0) + amount;
+    localStorage.setItem("userDildoStashes", JSON.stringify(userDildoStashes));
+
+    const recipientNickname = userNicknames[recipientUsername]?.nickname || recipientUsername;
+    respondWithMessage.call(this, `🍆🎁 ${senderNickname} gave 🍆 ${amount} dildo${amount !== 1 ? "s" : ""} to ${recipientNickname}. Now THAT’S a power move.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🍆😳 `.eatdildo [amount|max|all]` - (You monsters...)
+const eatdildoTriggers = [".eatdildo"];
+if (eatdildoTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].trim().split(/\s+/);
+
+    if (!username || args.length < 2) {
+        setTimeout(() => {
+            respondWithMessage.call(this, "🤖 Usage: .eatdildo [amount|max|all] (why?)");
+        }, 1000);
+        return;
+    }
+
+    const stash = userDildoStashes[username] || 0;
+    const arg = args[1].toLowerCase();
+    let amount;
+
+    if (arg === "max" || arg === "all") {
+        amount = stash;
+    } else {
+        amount = parseInt(arg, 10);
+        if (isNaN(amount) || amount <= 0) {
+            setTimeout(() => {
+                respondWithMessage.call(this, "🤖 Invalid amount. Try .eatdildo [amount|max|all]");
+            }, 1000);
+            return;
+        }
+    }
+
+    if (amount > stash) {
+        setTimeout(() => {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough 🍆 dildos to... uh... eat.`);
+        }, 1000);
+        return;
+    }
+
+    userDildoStashes[username] -= amount;
+    localStorage.setItem("userDildoStashes", JSON.stringify(userDildoStashes));
+
+    const messages = [
+        `🍆 ${nickname} unhinged their jaw and devoured 🍆 ${amount}. Respectfully concerning.`,
+        `🍆 ${nickname} consumed 🍆 ${amount} with confidence. Zero regrets.`,
+        `🍆 ${nickname} just deep-thought 🍆 ${amount} dildo${amount !== 1 ? "s" : ""}. Brain expanded.`,
+    ];
+
+    const response = `${messages[Math.floor(Math.random() * messages.length)]}\nYou have 🍆 ${userDildoStashes[username]} left. That’s... something.`;
 
     setTimeout(() => {
         respondWithMessage.call(this, response);
@@ -3544,7 +6801,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".buypotato")) {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
-    const costPer = 1;
+    const costPer = 10;
     const args = wsmsg["text"].trim().split(/\s+/);
     const rawAmount = args[1] || "1";
 
@@ -4771,6 +8028,138 @@ if (wsmsg['text'].toLowerCase() === ".treat") {
     // 📢 Send the CashApp message + Transfer Result
     respondWithMessage.call(this, cashAppMessage);
     respondWithMessage.call(this, response);
+}
+
+// 📦 `.myitems [page]` - Display paginated + price-sorted inventory
+if (wsmsg["text"].toLowerCase().startsWith(".myitems")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    const page = parseInt(wsmsg["text"].split(/\s+/)[1]) || 1;
+    const itemsPerPage = 5;
+
+    const allItems = [
+        { emoji: "💎", name: "GojiCoins", value: gojiCoinBalances[username] || 0, price: 1_000_000_000 },
+        { emoji: "🐸", name: "Frogs", value: userFrogCounts[username] || 0, price: 1_000_000 },
+        { emoji: "🥩", name: "Steak", value: userSteakStashes?.[username] || 0, price: 15_000 },
+        { emoji: "🍝", name: "Spaget", value: userSpaghettiStashes[username] || 0, price: 10_000 },
+        { emoji: "🍣", name: "Sushi", value: userSushiStashes?.[username] || 0, price: 8_888 },
+        { emoji: "🍔", name: "Burgers", value: userBurgerStashes?.[username] || 0, price: 7_000 },
+        { emoji: "🍰", name: "Cake", value: userCakeStashes?.[username] || 0, price: 6_000 },
+        { emoji: "🍕", name: "Pizza", value: userPizzaStashes[username] || 0, price: 5_000 },
+        { emoji: "🌮", name: "Tacos", value: userTacoStashes?.[username] || 0, price: 4_200 },
+        { emoji: "🍤", name: "Shrimp", value: userShrimpStashes?.[username] || 0, price: 4_000 },
+        { emoji: "🌭", name: "Hotdogs", value: userHotdogStashes?.[username] || 0, price: 3_500 },
+        { emoji: "🥪", name: "Sammich", value: userSammichStashes?.[username] || 0, price: 3_500 },
+        { emoji: "🍜", name: "Ramen", value: userRamenStashes?.[username] || 0, price: 3_000 },
+        { emoji: "🥞", name: "Pancakes", value: userPancakeStashes?.[username] || 0, price: 2_222 },
+        { emoji: "🧇", name: "Waffles", value: userWaffleStashes?.[username] || 0, price: 2_000 },
+        { emoji: "🧀", name: "Cheese", value: userCheeseStashes?.[username] || 0, price: 1_111 },
+        { emoji: "🍩", name: "Donuts", value: userDonutStashes?.[username] || 0, price: 999 },
+        { emoji: "🍞", name: "Bread", value: userBreadStashes?.[username] || 0, price: 666 },
+        { emoji: "🍬", name: "Candy", value: userCandyStashes?.[username] || 0, price: 500 },
+        { emoji: "🍦", name: "Icecream", value: userIcecreamStashes?.[username] || 0, price: 420 },
+        { emoji: "🍎", name: "Apples", value: userAppleStashes?.[username] || 0, price: 420 },
+        { emoji: "🍌", name: "Bananas", value: userBananaStashes?.[username] || 0, price: 333 },
+        { emoji: "🥚", name: "Eggs", value: userEggStashes?.[username] || 0, price: 100 },
+        { emoji: "🥔", name: "Potatoes", value: userPotatoCounts[username] || 0, price: 100 },
+        { emoji: "🍪", name: "Cookies", value: userCookieStashes[username] || 0, price: 0 },
+    ];
+
+    const sorted = allItems.sort((a, b) => b.price - a.price);
+    const totalPages = Math.ceil(sorted.length / itemsPerPage);
+    const start = (page - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const itemsToShow = sorted.slice(start, end);
+
+    if (page < 1 || page > totalPages) {
+        respondWithMessage.call(this, `📦 Invalid page. Use \`.myitems [1-${totalPages}]\``);
+        return;
+    }
+
+    let message = `🎒 ${nickname}'s Inventory — Page ${page}/${totalPages}:\n`;
+    for (const item of itemsToShow) {
+        message += `${item.emoji} ${item.name}: ${item.value.toLocaleString()} (💵 ${item.price.toLocaleString()} GBX)\n`;
+    }
+
+    if (page < totalPages) {
+        message += `👉 Type \`.myitems ${page + 1}\` to see more.`;
+    }
+
+    respondWithMessage.call(this, message.trim());
+}
+
+if (wsmsg["text"].toLowerCase() === ".admin clearitems") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+
+    // Optional: restrict to trusted admin users
+    const allowedAdmins = ["Goji"];
+    if (!allowedAdmins.includes(username)) {
+        respondWithMessage.call(this, "⛔ You do not have permission to use this command.");
+        return;
+    }
+
+    // Clear all known item storage
+    userCookieStashes = {};
+    userPizzaStashes = {};
+    userSpaghettiStashes = {};
+    userPotatoCounts = {};
+    userFrogCounts = {};
+    gojiCoinBalances = {};
+
+    userEggStashes = {};
+    userBananaStashes = {};
+    userAppleStashes = {};
+    userIcecreamStashes = {};
+    userCandyStashes = {};
+    userBreadStashes = {};
+    userDonutStashes = {};
+    userCheeseStashes = {};
+    userWaffleStashes = {};
+    userPancakeStashes = {};
+    userRamenStashes = {};
+    userSammichStashes = {};
+    userHotdogStashes = {};
+    userShrimpStashes = {};
+    userTacoStashes = {};
+    userCakeStashes = {};
+    userBurgerStashes = {};
+    userSushiStashes = {};
+    userSteakStashes = {};
+    userDildoStashes = {};
+
+    // Save cleared states
+    localStorage.setItem("userCookieStashes", JSON.stringify(userCookieStashes));
+    localStorage.setItem("userPizzaStashes", JSON.stringify(userPizzaStashes));
+    localStorage.setItem("userSpaghettiStashes", JSON.stringify(userSpaghettiStashes));
+    localStorage.setItem("userPotatoCounts", JSON.stringify(userPotatoCounts));
+    localStorage.setItem("userFrogCounts", JSON.stringify(userFrogCounts));
+    localStorage.setItem("gojiCoinBalances", JSON.stringify(gojiCoinBalances));
+
+    localStorage.setItem("userEggStashes", JSON.stringify(userEggStashes));
+    localStorage.setItem("userBananaStashes", JSON.stringify(userBananaStashes));
+    localStorage.setItem("userAppleStashes", JSON.stringify(userAppleStashes));
+    localStorage.setItem("userIcecreamStashes", JSON.stringify(userIcecreamStashes));
+    localStorage.setItem("userCandyStashes", JSON.stringify(userCandyStashes));
+    localStorage.setItem("userBreadStashes", JSON.stringify(userBreadStashes));
+    localStorage.setItem("userDonutStashes", JSON.stringify(userDonutStashes));
+    localStorage.setItem("userCheeseStashes", JSON.stringify(userCheeseStashes));
+    localStorage.setItem("userWaffleStashes", JSON.stringify(userWaffleStashes));
+    localStorage.setItem("userPancakeStashes", JSON.stringify(userPancakeStashes));
+    localStorage.setItem("userRamenStashes", JSON.stringify(userRamenStashes));
+    localStorage.setItem("userSammichStashes", JSON.stringify(userSammichStashes));
+    localStorage.setItem("userHotdogStashes", JSON.stringify(userHotdogStashes));
+    localStorage.setItem("userShrimpStashes", JSON.stringify(userShrimpStashes));
+    localStorage.setItem("userTacoStashes", JSON.stringify(userTacoStashes));
+    localStorage.setItem("userCakeStashes", JSON.stringify(userCakeStashes));
+    localStorage.setItem("userBurgerStashes", JSON.stringify(userBurgerStashes));
+    localStorage.setItem("userSushiStashes", JSON.stringify(userSushiStashes));
+    localStorage.setItem("userSteakStashes", JSON.stringify(userSteakStashes));
+    localStorage.setItem("userDildoStashes", JSON.stringify(userDildoStashes));
+
+    respondWithMessage.call(this, "🧹 All user item inventories have been wiped.");
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -6612,33 +10001,32 @@ if (wsmsg["text"].toLowerCase().startsWith(".balance") || wsmsg["text"].toLowerC
     respondWithMessage.call(this, menuText.trim());
 }*/
 
-if (wsmsg["text"].toLowerCase().startsWith(".menu")) {
+if (wsmsg["text"].toLowerCase().startsWith(".shop")) {
     const shopItems = [
         { name: "Cookie", emoji: "🍪", price: 0, desc: "FREE COOKIE!!!" },
-        { name: "Potato", emoji: "🥔", price: 1, desc: "Literally just a potato." },
-        //{ name: "Egg 🔜", emoji: "🥚", price: 100, desc: "Mystery inside." },
-        //{ name: "Banana 🔜", emoji: "🍌", price: 333, desc: "Insert slippery joke here." },
-        //{ name: "Apple 🔜", emoji: "🍎", price: 420, desc: "Tempting and crunchy." },
-        //{ name: "Icecream 🔜", emoji: "🍦", price: 420, desc: "Cold treat, warm heart." },
-        //{ name: "Candy 🔜", emoji: "🍬", price: 500, desc: "Sugar rush unlocked." },
-        //{ name: "Bread 🔜", emoji: "🍞", price: 666, desc: "Holy carb." },
-        //{ name: "Donut 🔜", emoji: "🍩", price: 999, desc: "Frosted, fried, and fabulous." },
-        //{ name: "Cheese 🔜", emoji: "🧀", price: 1111, desc: "Smells stronger than your will." },
-        //{ name: "Waffle 🔜", emoji: "🧇", price: 2000, desc: "Grid of deliciousness." },
-        //{ name: "Pancake 🔜", emoji: "🥞", price: 2222, desc: "Stacks on stacks." },
-        //{ name: "Ramen 🔜", emoji: "🍜", price: 3000, desc: "Hot noodle soup for the soul." },
-        //{ name: "Sammich 🔜", emoji: "🥪", price: 3500, desc: "Two breads. Infinite possibilities." },
-        //{ name: "Hotdog 🔜", emoji: "🌭", price: 3500, desc: "The forbidden sandwich." },
-        //{ name: "Shrimp 🔜", emoji: "🍤", price: 4000, desc: "Fried sea boi." },
-        //{ name: "Taco 🔜", emoji: "🌮", price: 4200, desc: "Crunchwrap vibes." },
-        //{ name: "Pizza 💱", emoji: "🍕", price: 5000, desc: "Fresh! Hot! Cheesy!" },
-        { name: "Pizza", emoji: "🍕", price: 10, desc: "Fresh! Hot! Cheesy!" },
-        //{ name: "Cake 🔜", emoji: "🍰", price: 6000, desc: "Let them eat it." },
-        //{ name: "Burger 🔜", emoji: "🍔", price: 7000, desc: "Beefy. Cheesy. Classic." },
-        //{ name: "Sushi 🔜", emoji: "🍣", price: 8888, desc: "Raw elegance." },
-        //{ name: "Spaget 💱", emoji: "🍝", price: 10000, desc: "Garlicy noodle delight." },
-        { name: "Spaget", emoji: "🍝", price: 20, desc: "Garlicy noodle delight." },
-        //{ name: "Steak 🔜", emoji: "🥩", price: 15000, desc: "Cooked rare. Or else." },
+        { name: "Potato", emoji: "🥔", price: 10, desc: "Literally just a potato." },
+        { name: "Egg", emoji: "🥚", price: 100, desc: "Mystery inside." },
+        { name: "Banana", emoji: "🍌", price: 333, desc: "Insert slippery joke here." },
+        { name: "Apple", emoji: "🍎", price: 420, desc: "Tempting and crunchy." },
+        { name: "Icecream", emoji: "🍦", price: 450, desc: "Cold treat, warm heart." },
+        { name: "Candy", emoji: "🍬", price: 500, desc: "Sugar rush unlocked." },
+        { name: "Bread", emoji: "🍞", price: 666, desc: "Holy carb." },
+        { name: "Donut", emoji: "🍩", price: 999, desc: "Frosted, fried, and fabulous." },
+        { name: "Cheese", emoji: "🧀", price: 1111, desc: "Smells stronger than your will." },
+        { name: "Waffle", emoji: "🧇", price: 2000, desc: "Grid of deliciousness." },
+        { name: "Pancake", emoji: "🥞", price: 2222, desc: "Stacks on stacks." },
+        { name: "Ramen", emoji: "🍜", price: 3000, desc: "Hot noodle soup for the soul." },
+        { name: "Sammich", emoji: "🥪", price: 3500, desc: "Two breads. Infinite possibilities." },
+        { name: "Hotdog", emoji: "🌭", price: 3750, desc: "The forbidden sandwich." },
+        { name: "Shrimp", emoji: "🍤", price: 4000, desc: "Fried sea boi." },
+        { name: "Taco", emoji: "🌮", price: 4200, desc: "Crunchwrap vibes." },
+        { name: "Pizza", emoji: "🍕", price: 5000, desc: "Fresh! Hot! Cheesy!" },
+        { name: "Cake", emoji: "🍰", price: 6000, desc: "Let them eat it." },
+        { name: "Burger", emoji: "🍔", price: 7000, desc: "Beefy. Cheesy. Classic." },
+        { name: "Sushi", emoji: "🍣", price: 8888, desc: "Raw elegance." },
+        { name: "Spaget", emoji: "🍝", price: 10000, desc: "Garlicy noodle delight." },
+        { name: "Steak", emoji: "🥩", price: 15000, desc: "Cooked rare. Or else." },
+        { name: "Dildo", emoji: "🍆", price: 50000, desc: "A *giant* purple monstrosity." },
         { name: "Frog", emoji: "🐸", price: 1000000, desc: "A frog coin! Ribbit." },
         { name: "Coin", emoji: "💎", price: 1000000000, desc: "A shiny Goji coin!" }
     ];
@@ -6668,6 +10056,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".menu")) {
         if (name.includes("sushi")) return "🧊";
         if (name.includes("spaget")) return "🧄";
         if (name.includes("steak")) return "🔪";
+        if (name.includes("dildo")) return "💜";
         if (name.includes("frog")) return "🐸";
         if (name.includes("coin")) return "💠";
         return "✨";
@@ -6679,7 +10068,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".menu")) {
     const totalPages = Math.ceil(shopItems.length / itemsPerPage);
 
     if (page < 1 || page > totalPages) {
-        respondWithMessage.call(this, `⚠️ Invalid page number. Use \`.menu [1-${totalPages}]\` to browse pages.`);
+        respondWithMessage.call(this, `⚠️ Invalid page number. Use \`.shop [1-${totalPages}]\` to browse pages.`);
         return;
     }
 
@@ -6687,14 +10076,14 @@ if (wsmsg["text"].toLowerCase().startsWith(".menu")) {
     const end = start + itemsPerPage;
     const itemsToShow = shopItems.slice(start, end);
 
-    let menuText = `🏪 GojiShop Menu — Page ${page}/${totalPages} — Use \`.buy[item] [amount]\`\n`;
+    let menuText = `🏪 Snarf Shop Menu — Page ${page}/${totalPages} — Use \`.buy[item] [amount]\`\n`;
     for (const item of itemsToShow) {
         const flavor = getFlavorEmoji(item);
         menuText += `${item.emoji} ${item.name} 💵 ${item.price.toLocaleString()} GBX ${flavor} ${item.desc}\n`;
     }
 
     if (page < totalPages) {
-        menuText += `👉 Type \`.menu ${page + 1}\` for the next page!\n`;
+        menuText += `👉 Type \`.shop ${page + 1}\` for the next page!\n`;
     }
 
     respondWithMessage.call(this, menuText.trim());
