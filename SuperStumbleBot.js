@@ -270,6 +270,12 @@ function handleMessage(msg) {
                 welcomeMessage = `🤖 I know a ${nickname || username} or seven! ⚔`;
             } else if (username === "jstme") {
                 welcomeMessage = `🤖 Is it us? No, it's ${nickname || username}! 🧔`;
+            } else if (username === "HereMeowish") {
+                welcomeMessage = `🤖 ${nickname || username} that's right! 💲🐱`;
+            } else if (username === "DragonDoll") {
+                welcomeMessage = `🤖 ${nickname || username} just slid in — hotter than dragonfire and twice as tempting. 💋🐉`;
+            } else if (username === "slpx3") {
+                welcomeMessage = `🤖 ${nickname || username} slithered in like trouble with a grin. Watch your back — or don’t. 👀🐍`;
             } else if (userNicknames[username]) {
                 welcomeMessage = `🤖 Welcome back to Let's Get High, ${nickname || username}! 🎉`;
             } else {
@@ -8616,7 +8622,7 @@ if ([".pot", ".lottery"].includes(wsmsg["text"].toLowerCase())) {
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 💸 `.givepot [amount|max|all]` - Contribute GBX to the pot
-const givepotTriggers = [".givepot", ".givelottery"];
+/*const givepotTriggers = [".givepot", ".givelottery"];
 if (givepotTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const args = wsmsg["text"].trim().split(/\s+/);
     const handle = wsmsg["handle"];
@@ -8662,12 +8668,67 @@ if (givepotTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
         `🎫🎁 ${nickname} added 💵 ${amount.toLocaleString()} GBX to the pot!\n` +
         `Current pot (user-funded only): 💵 ${gojiPot.toLocaleString()} GBX`
     );
+}*/
+
+const givepotTriggers = [".givepot", ".givelottery"];
+if (givepotTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const args = wsmsg["text"].trim().split(/\s+/);
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    if (!username || args.length < 2) {
+        respondWithMessage.call(this, "🤖 Usage: `.givepot [amount|max|all]`");
+        return;
+    }
+
+    let amount = args[1].toLowerCase();
+    const userBalance = userBalances[username]?.balance || 0;
+
+    if (amount === "max" || amount === "all") {
+        amount = userBalance;
+    } else {
+        amount = parseInt(amount, 10);
+        if (isNaN(amount) || amount <= 0) {
+            respondWithMessage.call(this, "❌ Enter a valid amount greater than zero.");
+            return;
+        }
+    }
+
+    if (amount > userBalance) {
+        respondWithMessage.call(this, "🤖 You don't have enough GojiBux to contribute.");
+        return;
+    }
+
+    if (amount < 10) {
+        respondWithMessage.call(this, "🤖 Minimum contribution to the pot is 💵 10 GBX.");
+        return;
+    }
+
+    userBalances[username].balance -= amount;
+    gojiPot += amount;
+
+    // 🧾 Track pot contribution
+    if (!userBalances[username].contributedToPot) {
+        userBalances[username].contributedToPot = 0;
+    }
+    userBalances[username].contributedToPot += amount;
+
+    eligibleUserSet.add(username);
+    saveGojiPot();
+    saveBalances();
+    saveEligibleUsers();
+
+    respondWithMessage.call(this,
+        `🎫🎁 ${nickname} added 💵 ${amount.toLocaleString()} GBX to the pot!\n` +
+        `Current pot (user-funded only): 💵 ${gojiPot.toLocaleString()} GBX`
+    );
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 🎰 `.getpot` or `.getlottery` - Claim the pot (1 hour cooldown)
-if ([".getpot", ".getlottery"].includes(wsmsg["text"].toLowerCase())) {
+/*if ([".getpot", ".getlottery"].includes(wsmsg["text"].toLowerCase())) {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
@@ -8746,8 +8807,165 @@ if ([".getpot", ".getlottery"].includes(wsmsg["text"].toLowerCase())) {
             `💰 Millionaire Contribution Activated!\n🤑 ${contributingMillionaires.length} rich user(s) funded the pot with 💵 ${millionaireContribution.toLocaleString()} GBX from their excess wealth.`
         );
     }
+}*/
+
+if ([".getpot", ".getlottery"].includes(wsmsg["text"].toLowerCase())) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    const currentTime = Date.now();
+    const cooldown = 1 * 60 * 60 * 1000; // 1 hour
+
+    if (currentTime - lastPotClaimTime < cooldown) {
+        const remainingTime = Math.ceil((cooldown - (currentTime - lastPotClaimTime)) / 60000);
+        respondWithMessage.call(this, `⏳ The pot can be claimed in ${remainingTime} minute(s).`);
+        return;
+    }
+
+    // 💸 Actual millionaire contributions (10% max, >1M only)
+    let millionaireContribution = 0;
+    const contributingMillionaires = [];
+
+    for (const [user, data] of Object.entries(userBalances)) {
+        const bal = data?.balance || 0;
+        if (bal > 1_000_000) {
+            const skim = Math.floor(bal * 0.10);
+            userBalances[user].balance -= skim;
+            millionaireContribution += skim;
+            contributingMillionaires.push({ user, amount: skim });
+        }
+    }
+
+    gojiPot += millionaireContribution;
+    saveBalances();
+    saveGojiPot();
+
+    const eligibleUsers = [...eligibleUserSet].filter(u => userBalances[u]);
+    if (eligibleUsers.length === 0) {
+        respondWithMessage.call(this, "🤖 No eligible users to receive the pot. Contribute or gamble to enter!");
+        return;
+    }
+
+    const winner = eligibleUsers[Math.floor(Math.random() * eligibleUsers.length)];
+    const winnerNickname = userNicknames[winner]?.nickname || winner;
+
+    // 💰 Calculate LGH Bank 10% cut
+    const totalPot = gojiPot;
+    const userOnlyPot = totalPot - millionaireContribution;
+    const lghCut = Math.floor(totalPot * 0.10);
+    const winnerAmount = totalPot - lghCut;
+
+    // 💸 Pay winner + bank
+    if (!userBalances[winner]) {
+        userBalances[winner] = { balance: 0 };
+    }
+    userBalances[winner].balance += winnerAmount;
+    lghBank += lghCut;
+
+    // 🧹 Reset
+    gojiPot = 0;
+    lastPotClaimTime = currentTime;
+    lastPotMilestone = 0;
+
+    // 💾 Reset each user's contribution for this pot
+    for (const username of eligibleUserSet) {
+        if (userBalances[username]) {
+            userBalances[username].contributedToPot = 0;
+        }
+    }
+
+    eligibleUserSet.clear();
+
+    saveGojiPot();
+    saveLghBank();
+    saveBalances();
+    saveEligibleUsers();
+    localStorage.setItem("lastPotMilestone", "0");
+
+    // 🎉 Announce
+    respondWithMessage.call(this,
+        `🎫🎊 ${winnerNickname} won the pot of 💵 ${totalPot.toLocaleString()} GBX!\n` +
+        `├ 💵 ${winnerAmount.toLocaleString()} GBX received (after 10% LGH cut)\n` +
+        `├ 💵 ${userOnlyPot.toLocaleString()} GBX from users\n` +
+        `└ 💵 ${millionaireContribution.toLocaleString()} GBX from Goji Millionaires 💸\n` +
+        `🏦 LGH Bank takes 💵 ${lghCut.toLocaleString()} GBX (10% house cut)\nCongratulations!`
+    );
+
+    if (contributingMillionaires.length > 0) {
+        respondWithMessage.call(this,
+            `💰 Millionaire Contribution Activated!\n🤑 ${contributingMillionaires.length} rich user(s) funded the pot with 💵 ${millionaireContribution.toLocaleString()} GBX from their excess wealth.`
+        );
+    }
 }
 
+// 🎫 `.whopot [page]` - Show users entered in the lottery pot sorted by contribution with pagination
+if (wsmsg["text"].toLowerCase().startsWith(".whopot")) {
+    const args = wsmsg["text"].trim().split(/\s+/);
+    const page = parseInt(args[1], 10) || 1;
+    const entriesPerPage = 5;
+
+    const eligibleUsersArray = Array.from(eligibleUserSet);
+
+    if (eligibleUsersArray.length === 0) {
+        respondWithMessage.call(this, "🤖 No users have entered the lottery yet. Use `.givepot` to contribute!");
+        return;
+    }
+
+    // Sort users by contributed amount
+    const sortedContributors = eligibleUsersArray.map(username => ({
+        username,
+        contributed: userBalances[username]?.contributedToPot || 0,
+        balance: userBalances[username]?.balance || 0
+    })).sort((a, b) => b.contributed - a.contributed);
+
+    const totalPages = Math.ceil(sortedContributors.length / entriesPerPage);
+
+    if (page < 1 || page > totalPages) {
+        respondWithMessage.call(this, `🤖 Invalid page number. Please use a number from 1 to ${totalPages}.`);
+        return;
+    }
+
+    const medals = ["🥇", "🥈", "🥉"];
+
+    const startIdx = (page - 1) * entriesPerPage;
+    const paginatedUsers = sortedContributors.slice(startIdx, startIdx + entriesPerPage);
+
+    const userList = paginatedUsers.map((user, idx) => {
+        const nickname = userNicknames[user.username]?.nickname || user.username;
+        const millionaireIcon = user.balance >= 1_000_000 ? "💎" : "";
+        const medalIcon = medals[startIdx + idx] || "";
+        return `• ${nickname} ${medalIcon}${millionaireIcon} - 🎫 ${user.contributed.toLocaleString()} GBX`;
+    }).join("\n");
+
+    respondWithMessage.call(this,
+        `🎫 Lottery Entrants (Page ${page}/${totalPages}):\n${userList}\nUse '.whopot [page]' to view other pages.`
+    );
+}
+
+// 📘 `.howpot` - Explain how to participate in the SnarfPot lottery
+if (wsmsg["text"].toLowerCase() === ".howpot") {
+    let millionairePot = 0;
+    for (const [user, data] of Object.entries(userBalances)) {
+        const bal = data?.balance || 0;
+        if (bal > 1_000_000) {
+            millionairePot += Math.floor(bal * 0.10);
+        }
+    }
+
+    const totalPot = gojiPot + millionairePot;
+    const potBar = generatePotBar(totalPot);
+
+    respondWithMessage.call(this,
+        "💰 SnarfPot Lottery — Here's how to play:\n" +
+        "🎟️ Step 1: Use .givepot AMOUNT to donate GBX into the pot. Donating makes you eligible.\n" +
+        "🎲 Step 2: Use .gamble to place a bet. Gambling also counts as an entry!\n" +
+        "🤑 Step 3: Once you're eligible, use .getpot to try and claim the SnarfPot. Cooldown applies.\n" +
+        "\nOnly users who have contributed or gambled can win. One shot per cooldown.\n" +
+        "\n🎯 Current SnarfPot: 💵 " + totalPot.toLocaleString() + " GBX\n" +
+        "📊 Pot Level: " + potBar
+    );
+}
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -9044,7 +9262,7 @@ if ([".getpot", ".getlottery"].includes(wsmsg["text"].toLowerCase())) {
 }*/
 
 // 🎰 `.gamble AMOUNT` or `.bet AMOUNT` - Bet GojiBux for a chance to win!
-if (
+/*if (
     wsmsg["text"].toLowerCase().startsWith(".gamble ") ||
     wsmsg["text"].toLowerCase().startsWith(".bet ")
 ) {
@@ -9206,6 +9424,148 @@ if (
     saveGojiPot();
     saveUserStats();
     localStorage.setItem("lghBank", lghBank.toString());
+
+    respondWithMessage.call(this, resultMessage);
+}*/
+
+if (
+    wsmsg["text"].toLowerCase().startsWith(".gamble ") ||
+    wsmsg["text"].toLowerCase().startsWith(".bet ")
+) {
+    const args = wsmsg["text"].split(" ");
+    const betInput = args[1]?.toLowerCase();
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    if (!username) {
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        return;
+    }
+
+    if (!userStats[username]) userStats[username] = {};
+    if (userStats[username].luckyCoins === undefined) userStats[username].luckyCoins = 0;
+
+    const lastGambleTime = userStats[username].lastGamble || 0;
+    const now = Date.now();
+    const cooldown = 30 * 1000;
+
+    if (now - lastGambleTime < cooldown) {
+        const remaining = Math.ceil((cooldown - (now - lastGambleTime)) / 1000);
+        respondWithMessage.call(this, `⏳ You need to wait ${remaining} more second(s) before gambling again.`);
+        return;
+    }
+
+    let betAmount;
+    const balance = userBalances[username].balance;
+
+    if (["max", "all", "yolo", "degenerate"].includes(betInput)) {
+        betAmount = balance;
+    } else if (betInput === "half") {
+        betAmount = Math.floor(balance / 2);
+    } else if (betInput === "quarter") {
+        betAmount = Math.floor(balance / 4);
+    } else if (betInput === "random") {
+        betAmount = Math.floor(Math.random() * balance) + 1;
+    } else if (/^\\d+(\\.\\d+)?%$/.test(betInput)) {
+        const percent = parseFloat(betInput.replace("%", ""));
+        betAmount = Math.floor((percent / 100) * balance);
+    } else if (/^\\d+(\\.\\d+)?[kmb]$/i.test(betInput)) {
+        const num = parseFloat(betInput);
+        const suffix = betInput.slice(-1).toLowerCase();
+        const multiplier = suffix === "k" ? 1e3 : suffix === "m" ? 1e6 : 1e9;
+        betAmount = Math.floor(num * multiplier);
+    } else {
+        betAmount = parseInt(betInput);
+    }
+
+    if (isNaN(betAmount) || betAmount <= 0) {
+        respondWithMessage.call(this, "❌ Invalid amount! Try `.bet 500`, `.bet max`, etc.");
+        return;
+    }
+
+    if (balance < betAmount) {
+        respondWithMessage.call(this, `🤖 Not enough GojiBux! You only have ${balance.toLocaleString()} GBX.`);
+        return;
+    }
+
+    const roll = Math.random();
+    let winnings = 0;
+    let resultMessage = "";
+    let usedLuckyCoin = false;
+
+    let previewWinnings = 0;
+    if (roll < 0.03) previewWinnings = betAmount * 4;
+    else if (roll < 0.15) previewWinnings = betAmount * 2;
+    else if (roll < 0.55) previewWinnings = betAmount;
+    else if (roll < 0.80) previewWinnings = Math.floor(betAmount * 0.25);
+
+    if (previewWinnings > 0) {
+        const potTax = Math.floor(previewWinnings * 0.10);
+        const totalCost = previewWinnings + potTax;
+
+        if (lghBank < totalCost) {
+            if (userStats[username].luckyCoins > 0) {
+                userStats[username].luckyCoins--;
+                usedLuckyCoin = true;
+            } else {
+                respondWithMessage.call(this, `🚫 LGH Bank is broke! Try again later.`);
+                return;
+            }
+        }
+    }
+
+    if (roll < 0.03) {
+        winnings = betAmount * 4;
+        resultMessage = `🎰 JACKPOT!!! ${nickname} won 💵➕ ${winnings.toLocaleString()} GBX!`;
+    } else if (roll < 0.15) {
+        winnings = betAmount * 2;
+        resultMessage = `🔥 HOT STREAK! ${nickname} won 💵➕ ${winnings.toLocaleString()} GBX!`;
+    } else if (roll < 0.55) {
+        winnings = betAmount;
+        resultMessage = `✅ Win! ${nickname} gained 💵➕ ${winnings.toLocaleString()} GBX!`;
+    } else if (roll < 0.80) {
+        winnings = Math.floor(betAmount * 0.25);
+        resultMessage = `🍬 Small win! ${nickname} got 💵➕ ${winnings.toLocaleString()} GBX.`;
+    } else if (roll < 0.99) {
+        winnings = -Math.floor(betAmount / 2);
+        resultMessage = `😬 Oof. ${nickname} lost 💵➖ ${Math.abs(winnings).toLocaleString()} GBX.`;
+    } else {
+        winnings = -betAmount;
+        resultMessage = `💸 Rekt! ${nickname} lost it all: 💵➖ ${Math.abs(winnings).toLocaleString()} GBX.`;
+    }
+
+    if (winnings > 0) {
+        const potTax = Math.floor(winnings * 0.10);
+        const netWinnings = winnings - potTax;
+
+        userBalances[username].balance += netWinnings;
+        if (!usedLuckyCoin) lghBank -= (winnings + potTax);
+        gojiPot += potTax;
+
+        // 🧾 Track contribution
+        userBalances[username].contributedToPot = (userBalances[username].contributedToPot || 0) + potTax;
+
+        resultMessage += ` 🎟️ ${potTax.toLocaleString()} GBX added to the lottery pot.`;
+        if (usedLuckyCoin) resultMessage += ` 🍀 Lucky Coin used!`;
+    } else {
+        const loss = Math.abs(winnings);
+        userBalances[username].balance -= loss;
+        gojiPot += loss;
+
+        // 🧾 Track contribution
+        userBalances[username].contributedToPot = (userBalances[username].contributedToPot || 0) + loss;
+
+        resultMessage += ` 🎟️ ${loss.toLocaleString()} GBX added to the lottery pot.`;
+    }
+
+    userStats[username].lastGamble = now;
+    eligibleUserSet.add(username);
+
+    saveUserStats();
+    saveBalances();
+    saveGojiPot();
+    saveEligibleUsers();
 
     respondWithMessage.call(this, resultMessage);
 }
@@ -10310,6 +10670,20 @@ if (wsmsg["text"].startsWith(".admin deleteuser ")) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+// 🌍 `.mc` - Info about the LGH Minecraft Server
+if (wsmsg["text"].toLowerCase() === ".mc" || wsmsg["text"].toLowerCase() === ".minecraft") {
+    respondWithMessage.call(this,
+        "🌍 LGH Minecraft Server Info:\n" +
+        "🛠️ Server Type: Java Edition (PaperMC)\n" +
+        "🕹️ Game Version: 1.21.4\n" +
+        "🔁 Crossplay: Java + Bedrock supported\n" +
+        "⚙️ Version Compat: 1.21.x clients can join\n" +
+        "\n❓ Ask Goji how to join! IP & ports available on request (don't share) 💚"
+    );
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
 // Command: "bran" or "goji" (Transfers 10 GBX & 3.5g weed to Goji)
 if (wsmsg['text'].toLowerCase() === "bran" || wsmsg['text'].toLowerCase() === "goji") {
     const handle = wsmsg['handle']; // Get the handle
@@ -10569,7 +10943,7 @@ if ([".g", ".grind", ".grindin", ".grinding"].includes(wsmsg['text'].toLowerCase
 //-----------------------------------------------------------------------------------------------------------------------------------
 
     // Command: .heating (case insensitive)
-    if ([".h", ".heat", ".heatin", ".heating"].includes(wsmsg['text'].toLowerCase())) {
+    /*if ([".h", ".heat", ".heatin", ".heating"].includes(wsmsg['text'].toLowerCase())) {
         const handle = wsmsg['handle'];
         const username = userHandles[handle];
         const nickname = userNicknames[username]?.nickname || "Someone";
@@ -10578,7 +10952,56 @@ if ([".g", ".grind", ".grindin", ".grinding"].includes(wsmsg['text'].toLowerCase
             stumble: "msg",
             text: `🤖 ${nickname} is heatin! 🔥`
         }));
+    }*/
+
+// Command: .heating [optional time] — Dab Rig Edition
+//if ([".h", ".heat", ".heatin", ".heating"].some(cmd => wsmsg['text'].toLowerCase().startsWith(cmd))) {
+    const text = wsmsg['text'].toLowerCase().trim();
+    const cmd = text.split(" ")[0];
+
+    if ([".h", ".heat", ".heatin", ".heating"].includes(cmd)) {
+    const handle = wsmsg['handle'];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || "Someone";
+
+    let args = wsmsg['text'].split(" ").slice(1).join(" ").trim();
+
+    // 🧠 If it's just a number (e.g., ".h 10"), assume seconds
+    if (/^\d+(\.\d+)?$/.test(args)) {
+        args += "s";
     }
+
+    const delay = parseFlexibleTime(args);
+
+    // 🕐 Build heating message
+    let heatingMsg = `🤖 ${nickname} is heatin the rig! 🔥`;
+    if (delay && delay >= 3000 && delay <= 300000) {
+        const seconds = Math.round(delay / 1000);
+        heatingMsg += ` (${seconds}s)`;
+    }
+
+    // 📢 Immediate message
+    this._send(JSON.stringify({
+        stumble: "msg",
+        text: heatingMsg
+    }));
+
+    // ⏳ Timed "ready" message
+    if (delay && delay >= 3000 && delay <= 300000) {
+        setTimeout(() => {
+            if (typeof window.stumbleBotSend === "function") {
+                const readyLines = [
+                    `💨 Yo ${nickname}, your dab rig is ready! Torch off!`,
+                    `🔥 ${nickname}, it's time to drop that glob!`,
+                    `🚀 ${nickname}, your rig’s hot — blast off!`,
+                    `⚠️ ${nickname}, temp's perfect! Go in now!`
+                ];
+                const msg = readyLines[Math.floor(Math.random() * readyLines.length)];
+                window.stumbleBotSend(msg);
+            }
+        }, delay);
+    }
+}
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
