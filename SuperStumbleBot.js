@@ -326,136 +326,6 @@ function handleMessage(msg) {
 // YouTube --------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-    // Define an array of keywords to check for YouTube-related commands (case insensitive)
-    /*var keywords = ['.youtube', '.video', '.play', '.yt'];
-
-    // Function to convert various YouTube URL formats to a standard format
-    function convertToRegularYouTubeLink(url) {
-        // Improved regex to extract video ID from multiple YouTube URL formats
-        var videoIdRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/|.*[?&]v=))([\w-]+)/;
-        var match = url.match(videoIdRegex);
-        if (match && match[1]) {
-            return 'https://www.youtube.com/watch?v=' + match[1];
-        }
-        return null; // Return null if the URL doesn't match
-    }
-
-    // Loop through each keyword in the keywords array
-    for (var i = 0; i < keywords.length; i++) {
-        // Check if the "text" property in wsmsg starts with the current keyword (case insensitive)
-        if (wsmsg['text'].toLowerCase().startsWith(keywords[i])) {
-            // Extract the query part of the message after the keyword
-            var query = wsmsg['text'].substring(wsmsg['text'].indexOf(" ") + 1).trim();
-
-            // Check if the query is not empty
-            if (query && query !== keywords[i]) {
-                // Check if the query is a YouTube URL and convert it
-                var regularLink = convertToRegularYouTubeLink(query);
-                if (regularLink) {
-                    // Send a formatted message with the converted YouTube link
-                    this._send('{"stumble": "youtube","type": "add","id": "' + regularLink + '","time": 0}');
-                } else {
-                    // Handle non-URL queries as is (e.g., search terms)
-                    this._send('{"stumble": "youtube","type": "add","id": "' + query + '","time": 0}');
-                }
-            }
-
-            // Exit the loop as the query has been processed
-            break;
-        }
-    }*/
-
-// Define an array of keywords to check for YouTube-related commands (case insensitive)
-/*var keywords = ['.youtube', '.video', '.play', '.yt'];
-
-// Universal YouTube History Storage (ensure backward compatibility)
-let youtubeHistory = JSON.parse(localStorage.getItem("youtubeHistory")) || [];
-
-// Function to convert various YouTube URL formats to a standard format
-function convertToRegularYouTubeLink(url) {
-    var videoIdRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/|.*[?&]v=))([\w-]+)/;
-    var match = url.match(videoIdRegex);
-    return match && match[1] ? 'https://www.youtube.com/watch?v=' + match[1] : null;
-}
-
-// Function to save the last 10 played tracks
-function saveToHistory(requester, trackName) {
-    if (!trackName) return;  // Prevent saving if track is missing
-
-    youtubeHistory.push({
-        requester: requester || null,  // Store username or null if bot
-        track: trackName
-    });
-
-    // Keep only the last 10 entries
-    if (youtubeHistory.length > 10) {
-        youtubeHistory.shift();
-    }
-
-    // Save to localStorage
-    localStorage.setItem("youtubeHistory", JSON.stringify(youtubeHistory));
-}
-
-// Detect user invoking a YouTube command
-for (var i = 0; i < keywords.length; i++) {
-    if (wsmsg['text'].toLowerCase().startsWith(keywords[i])) {
-        var query = wsmsg['text'].substring(wsmsg['text'].indexOf(" ") + 1).trim();
-        if (query && query !== keywords[i]) {
-            var finalLink = convertToRegularYouTubeLink(query) || query;
-
-            // Send the YouTube link
-            this._send('{"stumble": "youtube","type": "add","id": "' + finalLink + '","time": 0}');
-        }
-        break;
-    }
-}
-
-// Detect system message confirming YouTube track added
-if (wsmsg['stumble'] === "sysmsg" && wsmsg['text'].includes("has added YouTube track:")) {
-    let lines = wsmsg['text'].split("\n");
-    let trackName = lines.pop().trim();  // Extract track name
-
-    if (!trackName) return;
-
-    let firstLine = lines[0];  // Extract first line for requester info
-    let requester = null;
-
-    let match = firstLine.match(/^(.*?) \((.*?)\) has added YouTube track:/);
-    if (match) {
-        requester = match[2];  // Extract username if available
-    }
-
-    // Save to history
-    saveToHistory(requester, trackName);
-}
-
-    // Handle .history command to display the last 10 played tracks
-    if (wsmsg['text'].trim().toLowerCase() === ".history") {
-        if (youtubeHistory.length === 0) {
-            respondWithMessage.call(this, "🤖 No recent YouTube tracks played.");
-        } else {
-            respondWithMessage.call(this, "🤖 Retrieving last 10 played tracks...");
-
-            youtubeHistory.forEach((entry, index) => {
-                setTimeout(() => {
-                    let nickname = userNicknames[entry.requester]?.nickname || entry.requester;
-                    if (entry.requester) {
-                        respondWithMessage.call(this, `${index + 1}. ${nickname} played: ${entry.track}`);
-                    } else {
-                        respondWithMessage.call(this, `${index + 1}. ${entry.track}`);
-                    }
-                }, index * 1000);
-            });
-        }
-    }
-
-// Handle .clearHistory command to wipe all history
-if (wsmsg['text'].toLowerCase() === ".clearHistory") {
-    youtubeHistory = [];
-    localStorage.setItem("youtubeHistory", JSON.stringify(youtubeHistory));
-    respondWithMessage.call(this, "🤖 YouTube history cleared.");
-}*/
-
 // Define an array of keywords to check for YouTube-related commands (case insensitive)
 var keywords = ['.youtube', '.video', '.play', '.yt'];
 
@@ -798,194 +668,6 @@ if (wsmsg['text'].toLowerCase() === ".bothistory") {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-    // Universal Notes Storage (ensure backward compatibility)
-    /*let universalNotes = JSON.parse(localStorage.getItem("universalNotes")) || [];
-
-    // Handle .note command to add a new note
-    if (wsmsg['text'] && wsmsg['text'].startsWith(".note ")) {
-        const noteText = wsmsg['text'].slice(6).trim(); // Extract the note text
-        const handle = wsmsg['handle']; // Get session handle
-        const username = userHandles[handle]; // Get persistent username
-        const user = userNicknames[username]; // Get user data
-
-        if (!user || !user.username) {
-            respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
-            return;
-        }
-
-        if (noteText.length === 0) {
-            respondWithMessage.call(this, "🤖 Usage: .note [your note]");
-        } else {
-            // Limit notes to 26; remove the oldest if full
-            if (universalNotes.length >= 26) {
-                universalNotes.shift(); // Remove the first (oldest) note
-            }
-
-            // Store note with persistent username
-            universalNotes.push({ username: user.username, note: noteText });
-            localStorage.setItem("universalNotes", JSON.stringify(universalNotes));
-
-            respondWithMessage.call(this, "🤖 Note added!");
-        }
-    }*/
-
-    // Handle .notes command to display all notes with delay
-    /*if (wsmsg['text'].toLowerCase() === ".notes") {
-        if (universalNotes.length === 0) {
-            respondWithMessage.call(this, "🤖 No notes available.");
-        } else {
-            respondWithMessage.call(this, "🤖 Retrieving notes...");
-
-            universalNotes.forEach((entry, index) => {
-                setTimeout(() => {
-                    // Output without username for now
-                    if (typeof entry === "string") {
-                        respondWithMessage.call(this, `${index + 1}. ${entry}`);
-                    } else {
-                        respondWithMessage.call(this, `${index + 1}. ${entry.note}`);
-                    }
-                }, index * 1000); // 1-second delay per note
-            });
-        }
-    }*/
-
-// Handle .notes [page] command to display all notes in pages with delay
-/*if (wsmsg['text'].toLowerCase().startsWith(".notes")) {
-    const args = wsmsg['text'].split(" ");
-    const page = parseInt(args[1]) || 1;
-    const itemsPerPage = 5;
-    const totalPages = Math.ceil(universalNotes.length / itemsPerPage);
-
-    if (universalNotes.length === 0) {
-        respondWithMessage.call(this, "🤖 No notes available.");
-        return;
-    }
-
-    if (page < 1 || page > totalPages) {
-        respondWithMessage.call(this, `⚠️ Invalid page. Use \`.notes [1-${totalPages}]\`.`);
-        return;
-    }
-
-    const start = (page - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    const notesToShow = universalNotes.slice(start, end);
-
-    respondWithMessage.call(this, `📓 Notes — Page ${page}/${totalPages}`);
-
-    notesToShow.forEach((entry, index) => {
-        setTimeout(() => {
-            const noteText = typeof entry === "string" ? entry : entry.note;
-            respondWithMessage.call(this, `${start + index + 1}. ${noteText}`);
-        }, index * 1000); // 1-second delay per note
-    });
-}*/
-
-    // Handle .mynotes command to display only the user's notes with delay
-    /*if (wsmsg['text'].toLowerCase() === ".mynotes") {
-        const handle = wsmsg['handle']; // Get session handle
-        const username = userHandles[handle]; // Get persistent username
-        const user = userNicknames[username]; // Get user data
-
-        if (!user || !user.username) {
-            respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
-            return;
-        }
-
-        const userNotes = universalNotes.filter(entry => typeof entry !== "string" && entry.username === user.username);
-
-        if (userNotes.length === 0) {
-            respondWithMessage.call(this, "🤖 You have no saved notes.");
-        } else {
-            respondWithMessage.call(this, "🤖 Retrieving your notes...");
-
-            userNotes.forEach((entry, index) => {
-                setTimeout(() => {
-                    respondWithMessage.call(this, `${index + 1}. ${entry.note}`);
-                }, index * 1000); // 1-second delay per note
-            });
-        }
-    }*/
-
-// Handle .mynotes [page] command to display only the user's notes in pages with delay
-/*if (wsmsg['text'].toLowerCase().startsWith(".mynotes")) {
-    const handle = wsmsg['handle']; // Get session handle
-    const username = userHandles[handle]; // Get persistent username
-    const user = userNicknames[username]; // Get user data
-
-    if (!user || !user.username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
-        return;
-    }
-
-    const allUserNotes = universalNotes.filter(entry =>
-        typeof entry !== "string" && entry.username === user.username
-    );
-
-    if (allUserNotes.length === 0) {
-        respondWithMessage.call(this, "🤖 You have no saved notes.");
-        return;
-    }
-
-    const args = wsmsg['text'].split(" ");
-    const page = parseInt(args[1]) || 1;
-    const itemsPerPage = 5;
-    const totalPages = Math.ceil(allUserNotes.length / itemsPerPage);
-
-    if (page < 1 || page > totalPages) {
-        respondWithMessage.call(this, `⚠️ Invalid page. Use \`.mynotes [1-${totalPages}]\`.`);
-        return;
-    }
-
-    const start = (page - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    const notesToShow = allUserNotes.slice(start, end);
-
-    respondWithMessage.call(this, `📓 Your Notes — Page ${page}/${totalPages}`);
-
-    notesToShow.forEach((entry, index) => {
-        setTimeout(() => {
-            respondWithMessage.call(this, `${start + index + 1}. ${entry.note}`);
-        }, index * 1000); // 1-second delay per note
-    });
-}
-
-// Handle .clearMyNotes to delete only the user's notes
-if (wsmsg['text'].toLowerCase() === ".clearmynotes") {
-    const handle = wsmsg['handle'];
-    const username = userHandles[handle];
-    const user = userNicknames[username];
-
-    if (!user || !user.username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
-        return;
-    }
-
-    const beforeCount = universalNotes.length;
-
-    // Filter out only this user's notes
-    universalNotes = universalNotes.filter(entry =>
-        typeof entry === "string" || entry.username !== user.username
-    );
-
-    const afterCount = universalNotes.length;
-    const removed = beforeCount - afterCount;
-
-    localStorage.setItem("universalNotes", JSON.stringify(universalNotes));
-
-    if (removed > 0) {
-        respondWithMessage.call(this, `🧹 You cleared ${removed} of your notes.`);
-    } else {
-        respondWithMessage.call(this, "🤖 You had no notes to clear.");
-    }
-}
-
-    // Handle .clearNotes command to wipe all notes
-    if (wsmsg['text'] === ".clearNotes") {
-        universalNotes = [];
-        localStorage.removeItem("universalNotes");
-        respondWithMessage.call(this, "🤖 All notes cleared.");
-    }*/
-
 // Universal Notes Storage (ensure backward compatibility)
 let universalNotes = JSON.parse(localStorage.getItem("universalNotes")) || [];
 
@@ -1056,49 +738,6 @@ if (wsmsg['text'].toLowerCase().startsWith(".notes")) {
         }, index * 1000);
     });
 }
-
-// Handle .mynotes [page] to display only the user's notes paginated
-/*if (wsmsg['text'].toLowerCase().startsWith(".mynotes")) {
-    const handle = wsmsg['handle'];
-    const username = userHandles[handle];
-    const user = userNicknames[username];
-
-    if (!user || !user.username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
-        return;
-    }
-
-    const allUserNotes = universalNotes.filter(entry =>
-        typeof entry !== "string" && entry.username === user.username
-    );
-
-    if (allUserNotes.length === 0) {
-        respondWithMessage.call(this, "🤖 You have no saved notes.");
-        return;
-    }
-
-    const args = wsmsg['text'].split(" ");
-    const page = parseInt(args[1]) || 1;
-    const itemsPerPage = 5;
-    const totalPages = Math.ceil(allUserNotes.length / itemsPerPage);
-
-    if (page < 1 || page > totalPages) {
-        respondWithMessage.call(this, `⚠️ Invalid page. Use \`.mynotes [1-${totalPages}]\`.`);
-        return;
-    }
-
-    const start = (page - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    const notesToShow = allUserNotes.slice(start, end);
-
-    respondWithMessage.call(this, `📓 Your Notes — Page ${page}/${totalPages}`);
-
-    notesToShow.forEach((entry, index) => {
-        setTimeout(() => {
-            respondWithMessage.call(this, `${start + index + 1}. ${entry.note}`);
-        }, index * 1000);
-    });
-}*/
 
 // Handle .mynotes [page] to display only the user's notes paginated (newest first)
 if (wsmsg['text'].toLowerCase().startsWith(".mynotes")) {
@@ -1213,13 +852,6 @@ if (wsmsg['text'] === ".clearNotes") {
     localStorage.removeItem("universalNotes");
     respondWithMessage.call(this, "🧨 All notes have been cleared by Goji.");
 }
-
-// Handle .clearNotes to wipe ALL notes (admin/global nuke)
-/*if (wsmsg['text'] === ".clearNotes") {
-    universalNotes = [];
-    localStorage.removeItem("universalNotes");
-    respondWithMessage.call(this, "🤖 All notes cleared.");
-}*/
 
 // Reminders ------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -1398,9 +1030,6 @@ if ([".gojibux", ".gbx", ".getbux"].includes(wsmsg["text"].toLowerCase())) {
         return;
     }
 
-    /*if (!userBalances[username]) {
-        userBalances[username] = { balance: 1 }; // Ensure all users start with 1 GBX
-    }*/
     if (userBalances[username] == null || userBalances[username].balance == null) {
         userBalances[username] = { balance: 0 }; // Ensure all users start at 0 if not defined
     }
@@ -1983,64 +1612,6 @@ function saveJointStashes() {
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
-
-// 🥦➕ `.buyweed [amount|max|all]` - Buy weed using GBX, with price markup and market cap
-/*const buyweedTriggers = [".buyweed"]; // add aliases here like ".getweed"
-if (buyweedTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
-    const handle = wsmsg["handle"];
-    const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || username || "you";
-    const args = wsmsg["text"].trim().split(" ");
-
-    if (!username || args.length < 2) {
-        respondWithMessage.call(this, "🤖 Usage: .buyweed [amount|max|all]");
-        return;
-    }
-
-    const userBalance = userBalances[username]?.balance || 0;
-    const maxAllowed = Math.floor(wghBank / 2);
-    const maxAffordable = Math.floor(userBalance / (weedBuyPrice * 1.02));
-    let amountArg = args[1].toLowerCase();
-    let amount;
-
-    if (amountArg === "max" || amountArg === "all") {
-        amount = Math.min(maxAffordable, maxAllowed);
-        if (amount <= 0) {
-            respondWithMessage.call(this, `🤖 ${nickname}, you can't afford any weed right now or the market supply is too limited.`);
-            return;
-        }
-    } else {
-        amount = parseInt(amountArg, 10);
-        if (isNaN(amount) || amount <= 0) {
-            respondWithMessage.call(this, "🤖 Usage: .buyweed [amount|max|all]");
-            return;
-        }
-
-        if (amount > maxAllowed) {
-            respondWithMessage.call(this, `🤖 You can only buy up to half the available weed 🏬 (${maxAllowed}g).`);
-            return;
-        }
-
-        const requiredFunds = Math.ceil(amount * weedBuyPrice * 1.02);
-        if (userBalance < requiredFunds) {
-            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough GBX. Weed is 💵 ${weedBuyPrice} GBX/g.`);
-            return;
-        }
-    }
-
-    const cost = Math.ceil(amount * weedBuyPrice * 1.02);
-    userBalances[username].balance -= cost;
-    userWeedStashes[username] = (userWeedStashes[username] || 0) + amount;
-    wghBank -= amount;
-    lghBank += cost;
-
-    saveBalances();
-    saveWeedStashes();
-    saveWGHBank();
-    localStorage.setItem("lghBank", lghBank);
-
-    respondWithMessage.call(this, `🥦➕ ${nickname} bought 🥦 ${amount}g of weed for 💵 ${cost.toLocaleString()} GBX.`);
-}*/
 
 // 🥦➕ `.buyweed [amount|max|all]` - Buy weed using GBX, with price markup and market cap
 if (wsmsg["text"].toLowerCase().startsWith(".buyweed ")) {
@@ -2888,78 +2459,6 @@ if (wsmsg["text"].toLowerCase() === ".economy" || wsmsg["text"].toLowerCase() ==
         );
     }, 2000);
 }
-
-
-
-// 🎰 `.gamble AMOUNT` or `.bet AMOUNT` - Bet GojiBux for a chance to win!
-/*if (wsmsg["text"].toLowerCase().startsWith(".gamble ") || wsmsg["text"].toLowerCase().startsWith(".bet ")) {
-    const args = wsmsg["text"].split(" ");
-    const betInput = args[1]?.toLowerCase();
-    const handle = wsmsg["handle"];
-    const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || username || "you";
-
-    if (!username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
-        return;
-    }
-
-    let betAmount;
-    if (betInput === "max" || betInput === "all") {
-        betAmount = userBalances[username].balance; // Bet entire balance
-    } else {
-        betAmount = parseInt(betInput);
-    }
-
-    if (isNaN(betAmount) || betAmount <= 0) {
-        respondWithMessage.call(this, "❌ Invalid amount! Example: `.bet 500` or `.bet max` to go all in.");
-        return;
-    }
-
-    if (userBalances[username].balance < betAmount) {
-        respondWithMessage.call(this, `🤖 Not enough GojiBux! You only have ${userBalances[username].balance.toLocaleString()} GBX.`);
-        return;
-    }
-
-    // 🎲 Adjusted gambling probabilities (Higher Wins!)
-    const roll = Math.random();
-    let winnings = 0;
-    let lostToBank = 0;
-    let resultMessage = "";
-
-    if (roll < 0.02) { // 2% chance - JACKPOT (5x payout)
-        winnings = betAmount * 4;
-        resultMessage = `🎉 JACKPOT! ${nickname} turned 💵 ${betAmount.toLocaleString()} GBX into 💵➕ ${(winnings + betAmount).toLocaleString()} GBX! 🎰💰`;
-    } else if (roll < 0.15) { // 13% chance - BIG WIN (3x payout)
-        winnings = betAmount * 2;
-        resultMessage = `🔥 BIG WIN! ${nickname} turned 💵 ${betAmount.toLocaleString()} GBX into 💵➕ ${(winnings + betAmount).toLocaleString()} GBX! 🤑`;
-    } else if (roll < 0.35) { // 20% chance - Standard win (2x payout)
-        winnings = betAmount;
-        resultMessage = `✅ Nice win! ${nickname} doubled their bet and now has 💵➕ ${(winnings + betAmount).toLocaleString()} GBX! 💰`;
-    } else if (roll < 0.50) { // 15% chance - Lose 50%
-        winnings = -Math.floor(betAmount / 2);
-        lostToBank = Math.abs(winnings);
-        resultMessage = `😬 Small loss! ${nickname} lost half their bet. 💵➖ -${lostToBank.toLocaleString()} GBX.`;
-    } else { // 50% chance - Lose everything
-        winnings = -betAmount;
-        lostToBank = Math.abs(winnings);
-        resultMessage = `💸 Tough luck! ${nickname} lost their entire bet of 💵➖ ${betAmount.toLocaleString()} GBX. 😭`;
-    }
-
-    // Update player balance
-    userBalances[username].balance += winnings;
-
-    // Add lost money to LGH Bank
-    if (lostToBank > 0) {
-        lghBank += lostToBank;
-        localStorage.setItem("lghBank", lghBank.toString());
-    }
-
-    saveBalances();
-
-    // Send result message
-    respondWithMessage.call(this, resultMessage);
-}*/
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -7430,76 +6929,6 @@ if (wsmsg["text"].toLowerCase().startsWith(".extract")) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-// 🥖💸 .selljoint - Sell joints to an offshore buyer for GojiBux (weed is burned, funds are untraceable)
-/*if (wsmsg["text"].toLowerCase().startsWith(".selljoint")) {
-    const handle = wsmsg["handle"];
-    const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || username || "you";
-    const args = wsmsg["text"].split(" ")[1];
-
-    if (!username || !args) {
-        respondWithMessage.call(this, "🤖 Usage: .selljoint [amount|max|all]");
-        return;
-    }
-
-    let amount;
-    const jointsAvailable = userJointStashes[username] || 0;
-
-    if (typeof weedBuyPrice !== "number" || weedBuyPrice <= 0) {
-        respondWithMessage.call(this, "🤖 Error: Offshore market price is unavailable. Try again later!");
-        return;
-    }
-
-    if (args.toLowerCase() === "max" || args.toLowerCase() === "all") {
-        amount = jointsAvailable;
-        if (amount <= 0) {
-            respondWithMessage.call(this, `🤖 ${nickname}, you don't have any joints to sell.`);
-            return;
-        }
-    } else {
-        amount = parseInt(args, 10);
-        if (isNaN(amount) || amount <= 0) {
-            respondWithMessage.call(this, "🤖 Usage: .selljoint [amount|max|all]");
-            return;
-        }
-
-        if (amount > jointsAvailable) {
-            respondWithMessage.call(this, `🤖 ${nickname}, you don't have that many joints to sell. (🥖 ${amount} requested, 🥖 ${jointsAvailable} available)`);
-            return;
-        }
-    }
-
-    const avgWeedPerJoint = 2.25;
-    const totalWeedUsed = amount * avgWeedPerJoint;
-
-    const minMarkup = 1.5;
-    const maxMarkup = 2.0;
-    const markupPercentage = Math.random() * (maxMarkup - minMarkup) + minMarkup;
-
-    const jointSellPrice = Math.ceil((weedBuyPrice * avgWeedPerJoint) * markupPercentage);
-    const totalEarnings = amount * jointSellPrice;
-
-    // 🚫 No taxes, no bank pull — this money is created offshore
-    userJointStashes[username] -= amount;
-
-    if (!userBalances[username]) {
-        userBalances[username] = { balance: 0 };
-    }
-
-    userBalances[username].balance += totalEarnings;
-
-    saveJointStashes();
-    saveBalances();
-
-    respondWithMessage.call(this,
-        `🥖💸 ${nickname} smuggled 🥖 ${amount} joint${amount > 1 ? 's' : ''} to an offshore buyer for 💵 ${totalEarnings.toLocaleString()} GBX! 🛥️\n` +
-        `🔥 No taxes, no bank records. Just pure, shady profit.\n` +
-        `🤑 Each joint sold for 💵 ${jointSellPrice.toLocaleString()} GBX!`
-    );
-}*/
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
 // 🕒 Cooldown storage for `.selljoint`
 let lastSellJointTime = JSON.parse(localStorage.getItem("lastSellJointTime")) || {};
 
@@ -7587,6 +7016,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".selljoint")) {
         `🤑 Each joint sold for 💵 ${jointSellPrice.toLocaleString()} GBX!`
     );
 }
+
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -7824,71 +7254,6 @@ if (wsmsg["text"].toLowerCase() === ".mystashweed") {
 function saveHiddenWeed() {
     localStorage.setItem("userHiddenWeed", JSON.stringify(userHiddenWeed));
 }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-// 💸 `.give bux user amount` - Send GojiBux to another user [find out why this is here]
-/*if (wsmsg["text"].toLowerCase().startsWith(".give bux")) {
-    const args = wsmsg["text"].split(/\s+/);
-    const handle = wsmsg["handle"];
-    const senderUsername = userHandles[handle];
-    const senderNickname = userNicknames[senderUsername]?.nickname || senderUsername || "you";
-
-    if (!senderUsername) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
-        return;
-    }
-
-    if (args.length !== 3) {
-        respondWithMessage.call(this, "🤖 Usage: .sendbux @user amount");
-        return;
-    }
-
-    let recipientUsername = args[1].replace(/^@/, ""); // Remove '@' if used
-    let amount = parseInt(args[2], 10);
-
-    if (!recipientUsername || isNaN(amount) || amount <= 0) {
-        respondWithMessage.call(this, "🤖 Error: Invalid recipient or amount specified.");
-        return;
-    }
-
-    if (recipientUsername === senderUsername) {
-        respondWithMessage.call(this, "🤖 You can't send GojiBux to yourself.");
-        return;
-    }
-
-    if (!userBalances[recipientUsername]) {
-        respondWithMessage.call(this, `🤖 Error: Could not find user "${recipientUsername}".`);
-        return;
-    }
-
-    if (!userBalances[senderUsername] || userBalances[senderUsername].balance < amount) {
-        respondWithMessage.call(this, `💸 ${senderNickname}, you don't have enough GojiBux to send!`);
-        return;
-    }
-
-    // Get recipient's nickname (or default to username if not set)
-    const recipientNickname = userNicknames[recipientUsername]?.nickname || recipientUsername;
-
-    // Process the transaction
-    userBalances[senderUsername].balance -= amount;
-    userBalances[recipientUsername].balance += amount;
-    saveBalances();
-
-    // 📝 Randomized success messages using nickname
-    const messages = [
-        `💸 ${senderNickname} generously sent 💵 ${amount.toLocaleString()} GBX to ${recipientNickname}!`,
-        `🤑 ${senderNickname} made it rain on ${recipientNickname} with 💵 ${amount.toLocaleString()} GBX!`,
-        `💰 ${recipientNickname} just got a surprise deposit of 💵 ${amount.toLocaleString()} GBX from ${senderNickname}!`,
-        `🤝 ${senderNickname} shared some wealth, sending 💵 ${amount.toLocaleString()} GBX to ${recipientNickname}!`,
-        `🚀 ${recipientNickname} just got a financial boost! +${amount.toLocaleString()} GBX from ${senderNickname}!`
-    ];
-
-    // Select a random message
-    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-
-    respondWithMessage.call(this, randomMessage);
-}*/
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -8220,325 +7585,6 @@ if (wsmsg["text"].toLowerCase() === ".burn") {
     }
 }
 
-/*
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-// 💰 GojiBux Pot System
-let gojiPot = localStorage.getItem("gojiPot") ? parseInt(localStorage.getItem("gojiPot")) : 0;
-let lastPotClaimTime = localStorage.getItem("lastPotClaimTime") ? parseInt(localStorage.getItem("lastPotClaimTime")) : 0;
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-// Function to save the pot
-function saveGojiPot() {
-    localStorage.setItem("gojiPot", gojiPot);
-    localStorage.setItem("lastPotClaimTime", lastPotClaimTime);
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-// 💰 .pot - Display the current pot balance including LGH contribution
-//if (wsmsg["text"].toLowerCase() === ".pot") {
-if ([".pot", ".lottery"].includes(wsmsg["text"].toLowerCase())) {
-    const lghContribution = Math.floor(lghBank * 0.5);
-    const totalPot = gojiPot + lghContribution;
-
-    if (totalPot <= 0) {
-        respondWithMessage.call(this, "🤖 The lottery is empty. Use .givepot to contribute!");
-    } else {
-        respondWithMessage.call(this, `🎫 The current pot contains 💵 ${totalPot.toLocaleString()} GBX! (💵 ${gojiPot.toLocaleString()} GBX + 💵 ${lghContribution.toLocaleString()} GBX from 🏦 LGH Bank). Use .givepot to contribute or .getpot to claim it.`);
-    }
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-// 💸 `.givepot [amount|max|all]` - Contribute GojiBux to the communal lottery pot
-const givepotTriggers = [".givepot", ".givelottery"]; // add more aliases here
-if (givepotTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
-    const args = wsmsg["text"].trim().split(/\s+/);
-    const handle = wsmsg["handle"];
-    const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || username || "you";
-
-    if (!username || args.length < 2) {
-        respondWithMessage.call(this, "🤖 Usage: .givepot [amount|max|all]");
-        return;
-    }
-
-    let amount = args[1].toLowerCase();
-    const userBalance = userBalances[username]?.balance || 0;
-
-    if (amount === "max" || amount === "all") {
-        amount = userBalance;
-    } else {
-        amount = parseInt(amount, 10);
-        if (isNaN(amount) || amount <= 0) {
-            respondWithMessage.call(this, "🤖 Enter a valid amount greater than zero.");
-            return;
-        }
-    }
-
-    if (amount > userBalance) {
-        respondWithMessage.call(this, "🤖 You don't have enough 💵 GojiBux to contribute.");
-        return;
-    }
-
-    if (amount < 10) {
-        respondWithMessage.call(this, "🤖 Minimum contribution to the pot is 💵 10 GBX.");
-        return;
-    }
-
-    userBalances[username].balance -= amount;
-    gojiPot += amount;
-    saveGojiPot();
-    saveBalances();
-
-    respondWithMessage.call(this, `🎫🎁 ${nickname} added 💵 ${amount.toLocaleString()} GBX to the pot! Current pot: 💵 ${gojiPot.toLocaleString()} GBX`);
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-// 🎰 .getpot - Claim the pot (Random winner, 1-hour cooldown, includes 50% of LGH Bank)
-//if (wsmsg["text"].toLowerCase() === ".getpot") {
-if ([".getpot", ".getlottery"].includes(wsmsg["text"].toLowerCase())) {
-    const handle = wsmsg["handle"];
-    const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || username || "you";
-
-    const currentTime = Date.now();
-    const cooldown = 20 * 60 * 1000; // 1-hour cooldown
-
-    if (currentTime - lastPotClaimTime < cooldown) {
-        const remainingTime = Math.ceil((cooldown - (currentTime - lastPotClaimTime)) / 60000);
-        respondWithMessage.call(this, `⏳ The pot can be claimed in ${remainingTime} minutes.`);
-        return;
-    }
-
-    if (gojiPot <= 0 && lghBank <= 0) {
-        respondWithMessage.call(this, "🤖 The pot is empty. Use .givepot to contribute!");
-        return;
-    }
-
-    // Calculate total pot (GojiPot + 50% of LGH Bank)
-    const lghContribution = Math.floor(lghBank * 0.5);
-    lghBank -= lghContribution; // Deduct LGH contribution before selecting winner
-    const totalPot = gojiPot + lghContribution;
-
-    // Choose a random winner from all users
-    const eligibleUsers = Object.keys(userBalances);
-    if (eligibleUsers.length === 0) {
-        respondWithMessage.call(this, "🤖 No eligible users to receive the pot.");
-        return;
-    }
-
-    const winner = eligibleUsers[Math.floor(Math.random() * eligibleUsers.length)];
-    const winnerNickname = userNicknames[winner]?.nickname || winner;
-
-    // Ensure the winner has a balance entry
-    if (!userBalances[winner]) {
-        userBalances[winner] = { balance: 0 };
-    }
-
-    // Give the total pot to the winner
-    userBalances[winner].balance += totalPot;
-    saveBalances();
-    saveLghBank();
-
-    respondWithMessage.call(this, `🎫🎊 ${winnerNickname} won the pot of 💵 ${totalPot.toLocaleString()} GBX! (💵 ${gojiPot.toLocaleString()} GBX + 💵 ${lghContribution.toLocaleString()} GBX from 🏦 LGH Bank) Congratulations!`);
-    //respondWithMessage.call(this, `.yt jackpot kompany`);
-    //setTimeout(() => {
-        //respondWithMessage.call(this, `🎉 ${winnerNickname} won the pot of 💰 ${totalPot.toLocaleString()} GBX! (${gojiPot.toLocaleString()} GBX + ${lghContribution.toLocaleString()} GBX from LGH Bank) Congratulations!`);
-    //}, 1000);
-
-    // Reset the pot and cooldown
-    gojiPot = 0;
-    lastPotClaimTime = currentTime;
-    saveGojiPot();
-}
-*/
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-// 💰 GojiBux Pot System
-/*let gojiPot = localStorage.getItem("gojiPot") ? parseInt(localStorage.getItem("gojiPot")) : 0;
-let lastPotClaimTime = localStorage.getItem("lastPotClaimTime") ? parseInt(localStorage.getItem("lastPotClaimTime")) : 0;
-let lastPotMilestone = parseFloat(localStorage.getItem("lastPotMilestone") || "0");
-let potEligibleUsers = JSON.parse(localStorage.getItem("potEligibleUsers") || "[]");
-let eligibleUserSet = new Set(potEligibleUsers);
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-// 💾 Save Pot & Milestone
-function saveGojiPot() {
-    localStorage.setItem("gojiPot", gojiPot);
-    localStorage.setItem("lastPotClaimTime", lastPotClaimTime);
-}
-function savePotMilestone(value) {
-    lastPotMilestone = value;
-    localStorage.setItem("lastPotMilestone", value.toString());
-}
-
-function saveEligibleUsers() {
-    localStorage.setItem("potEligibleUsers", JSON.stringify([...eligibleUserSet]));
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-// 📊 Pot Bar Generator (1B goal)
-function generatePotBar(total, max = 1_000_000_000, width = 12) {
-    const percent = Math.min(total / max, 1);
-    const filled = Math.floor(percent * width);
-    const empty = width - filled;
-    const bar = "█".repeat(filled) + "░".repeat(empty);
-    return `[${bar}] ${(percent * 100).toFixed(1)}%`;
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-// 📊 `.pot` or `.lottery` - Show current pot and progress bar
-if ([".pot", ".lottery"].includes(wsmsg["text"].toLowerCase())) {
-    const lghContribution = Math.floor(lghBank * 0.10); // 🔁 10% preview from LGH
-    const totalPot = gojiPot + lghContribution;
-    const potBar = generatePotBar(totalPot);
-    const potPercent = totalPot / 1_000_000_000;
-
-    if (totalPot <= 0) {
-        respondWithMessage.call(this, "🤖 The lottery is empty. Use `.givepot` to contribute!");
-    } else {
-        respondWithMessage.call(this,
-            `🎫 The current pot contains 💵 ${totalPot.toLocaleString()} GBX!\n` +
-            `📊 Pot Level: ${potBar}\n` +
-            `├ 💵 ${gojiPot.toLocaleString()} GBX from users\n` +
-            `└ 💵 ${lghContribution.toLocaleString()} GBX from 🏦 LGH Bank\n` +
-            `Use .givepot to contribute or .getpot to claim it.`
-        );
-    }
-
-    // 🎯 Milestone Alerts
-    if (potPercent >= 1.00 && lastPotMilestone < 1.00) {
-        respondWithMessage.call(this, `💎💥 THE POT HAS HIT 1 BILLION GBX!!! LEGENDARY JACKPOT UNLOCKED!`);
-        savePotMilestone(1.00);
-    } else if (potPercent >= 0.75 && lastPotMilestone < 0.75) {
-        respondWithMessage.call(this, `🥇 The pot has reached GOLD TIER (75%)! The stakes are 🔥`);
-        savePotMilestone(0.75);
-    } else if (potPercent >= 0.5 && lastPotMilestone < 0.5) {
-        respondWithMessage.call(this, `🥈 SILVER TIER UNLOCKED (50%)! Keep it growing 💰`);
-        savePotMilestone(0.5);
-    } else if (potPercent >= 0.25 && lastPotMilestone < 0.25) {
-        respondWithMessage.call(this, `🥉 The pot has reached BRONZE Tier (25%)! Let’s gooo 🚀`);
-        savePotMilestone(0.25);
-    }
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-// 💸 `.givepot [amount|max|all]` - Contribute GBX to the pot
-const givepotTriggers = [".givepot", ".givelottery"];
-if (givepotTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
-    const args = wsmsg["text"].trim().split(/\s+/);
-    const handle = wsmsg["handle"];
-    const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || username || "you";
-
-    if (!username || args.length < 2) {
-        respondWithMessage.call(this, "🤖 Usage: `.givepot [amount|max|all]`");
-        return;
-    }
-
-    let amount = args[1].toLowerCase();
-    const userBalance = userBalances[username]?.balance || 0;
-
-    if (amount === "max" || amount === "all") {
-        amount = userBalance;
-    } else {
-        amount = parseInt(amount, 10);
-        if (isNaN(amount) || amount <= 0) {
-            respondWithMessage.call(this, "❌ Enter a valid amount greater than zero.");
-            return;
-        }
-    }
-
-    if (amount > userBalance) {
-        respondWithMessage.call(this, "🤖 You don't have enough GojiBux to contribute.");
-        return;
-    }
-
-    if (amount < 10) {
-        respondWithMessage.call(this, "🤖 Minimum contribution to the pot is 💵 10 GBX.");
-        return;
-    }
-
-    userBalances[username].balance -= amount;
-    gojiPot += amount;
-    eligibleUserSet.add(username);
-    saveGojiPot();
-    saveBalances();
-    saveEligibleUsers();
-
-    respondWithMessage.call(this,
-        `🎫🎁 ${nickname} added 💵 ${amount.toLocaleString()} GBX to the pot!\n` +
-        `Current pot (user-funded only): 💵 ${gojiPot.toLocaleString()} GBX`
-    );
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-// 🎰 `.getpot` or `.getlottery` - Claim the pot (1 hour cooldown)
-if ([".getpot", ".getlottery"].includes(wsmsg["text"].toLowerCase())) {
-    const handle = wsmsg["handle"];
-    const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || username || "you";
-
-    const currentTime = Date.now();
-    const cooldown = 1 * 60 * 60 * 1000; // 1 hour1
-
-    if (currentTime - lastPotClaimTime < cooldown) {
-        const remainingTime = Math.ceil((cooldown - (currentTime - lastPotClaimTime)) / 60000);
-        respondWithMessage.call(this, `⏳ The pot can be claimed in ${remainingTime} minute(s).`);
-        return;
-    }
-
-    if (gojiPot <= 0 && lghBank <= 0) {
-        respondWithMessage.call(this, "🤖 The pot is empty. Use `.givepot` to contribute!");
-        return;
-    }
-
-    const lghContribution = Math.floor(lghBank * 0.10);
-    lghBank -= lghContribution;
-    const totalPot = gojiPot + lghContribution;
-
-    const eligibleUsers = [...eligibleUserSet].filter(u => userBalances[u]);
-    if (eligibleUsers.length === 0) {
-        respondWithMessage.call(this, "🤖 No eligible users to receive the pot. Contribute or gamble to enter!");
-        return;
-    }
-
-    const winner = eligibleUsers[Math.floor(Math.random() * eligibleUsers.length)];
-    const winnerNickname = userNicknames[winner]?.nickname || winner;
-
-    if (!userBalances[winner]) {
-        userBalances[winner] = { balance: 0 };
-    }
-
-    userBalances[winner].balance += totalPot;
-
-    gojiPot = 0;
-    lastPotClaimTime = currentTime;
-    lastPotMilestone = 0;
-    eligibleUserSet.clear();
-    saveGojiPot();
-    saveLghBank();
-    saveBalances();
-    saveEligibleUsers();
-    localStorage.setItem("lastPotMilestone", "0");
-
-    respondWithMessage.call(this,
-        `🎫🎊 ${winnerNickname} won the pot of 💵 ${totalPot.toLocaleString()} GBX!\n` +
-        `├ 💵 ${totalPot - lghContribution} GBX from users\n` +
-        `└ 💵 ${lghContribution.toLocaleString()} GBX from 🏦 LGH Bank\nCongratulations!`
-    );
-}*/
-
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 💰 GojiBux Pot System
@@ -8622,54 +7668,6 @@ if ([".pot", ".lottery"].includes(wsmsg["text"].toLowerCase())) {
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 💸 `.givepot [amount|max|all]` - Contribute GBX to the pot
-/*const givepotTriggers = [".givepot", ".givelottery"];
-if (givepotTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
-    const args = wsmsg["text"].trim().split(/\s+/);
-    const handle = wsmsg["handle"];
-    const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || username || "you";
-
-    if (!username || args.length < 2) {
-        respondWithMessage.call(this, "🤖 Usage: `.givepot [amount|max|all]`");
-        return;
-    }
-
-    let amount = args[1].toLowerCase();
-    const userBalance = userBalances[username]?.balance || 0;
-
-    if (amount === "max" || amount === "all") {
-        amount = userBalance;
-    } else {
-        amount = parseInt(amount, 10);
-        if (isNaN(amount) || amount <= 0) {
-            respondWithMessage.call(this, "❌ Enter a valid amount greater than zero.");
-            return;
-        }
-    }
-
-    if (amount > userBalance) {
-        respondWithMessage.call(this, "🤖 You don't have enough GojiBux to contribute.");
-        return;
-    }
-
-    if (amount < 10) {
-        respondWithMessage.call(this, "🤖 Minimum contribution to the pot is 💵 10 GBX.");
-        return;
-    }
-
-    userBalances[username].balance -= amount;
-    gojiPot += amount;
-    eligibleUserSet.add(username);
-    saveGojiPot();
-    saveBalances();
-    saveEligibleUsers();
-
-    respondWithMessage.call(this,
-        `🎫🎁 ${nickname} added 💵 ${amount.toLocaleString()} GBX to the pot!\n` +
-        `Current pot (user-funded only): 💵 ${gojiPot.toLocaleString()} GBX`
-    );
-}*/
-
 const givepotTriggers = [".givepot", ".givelottery"];
 if (givepotTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const args = wsmsg["text"].trim().split(/\s+/);
@@ -8728,87 +7726,6 @@ if (givepotTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 🎰 `.getpot` or `.getlottery` - Claim the pot (1 hour cooldown)
-/*if ([".getpot", ".getlottery"].includes(wsmsg["text"].toLowerCase())) {
-    const handle = wsmsg["handle"];
-    const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || username || "you";
-
-    const currentTime = Date.now();
-    const cooldown = 1 * 60 * 60 * 1000; // 1 hour
-
-    if (currentTime - lastPotClaimTime < cooldown) {
-        const remainingTime = Math.ceil((cooldown - (currentTime - lastPotClaimTime)) / 60000);
-        respondWithMessage.call(this, `⏳ The pot can be claimed in ${remainingTime} minute(s).`);
-        return;
-    }
-
-    // 💸 Actual millionaire contributions (10% max, >1M only)
-    let millionaireContribution = 0;
-    const contributingMillionaires = [];
-
-    for (const [user, data] of Object.entries(userBalances)) {
-        const bal = data?.balance || 0;
-        if (bal > 1_000_000) {
-            const skim = Math.floor(bal * 0.10);
-            userBalances[user].balance -= skim;
-            millionaireContribution += skim;
-            contributingMillionaires.push({ user, amount: skim });
-        }
-    }
-
-    gojiPot += millionaireContribution;
-    saveBalances();
-    saveGojiPot();
-
-    const eligibleUsers = [...eligibleUserSet].filter(u => userBalances[u]);
-    if (eligibleUsers.length === 0) {
-        respondWithMessage.call(this, "🤖 No eligible users to receive the pot. Contribute or gamble to enter!");
-        return;
-    }
-
-    const winner = eligibleUsers[Math.floor(Math.random() * eligibleUsers.length)];
-    const winnerNickname = userNicknames[winner]?.nickname || winner;
-
-    // 💰 Calculate LGH Bank 10% cut
-    const totalPot = gojiPot;
-    const userOnlyPot = totalPot - millionaireContribution;
-    const lghCut = Math.floor(totalPot * 0.10);
-    const winnerAmount = totalPot - lghCut;
-
-    // 💸 Pay winner + bank
-    if (!userBalances[winner]) {
-        userBalances[winner] = { balance: 0 };
-    }
-    userBalances[winner].balance += winnerAmount;
-    lghBank += lghCut;
-
-    // 🧹 Reset
-    gojiPot = 0;
-    lastPotClaimTime = currentTime;
-    lastPotMilestone = 0;
-    eligibleUserSet.clear();
-
-    saveGojiPot();
-    saveLghBank();
-    saveBalances();
-    saveEligibleUsers();
-    localStorage.setItem("lastPotMilestone", "0");
-
-    respondWithMessage.call(this,
-        `🎫🎊 ${winnerNickname} won the pot of 💵 ${totalPot.toLocaleString()} GBX!\n` +
-        `├ 💵 ${winnerAmount.toLocaleString()} GBX received (after 10% LGH cut)\n` +
-        `├ 💵 ${userOnlyPot.toLocaleString()} GBX from users\n` +
-        `└ 💵 ${millionaireContribution.toLocaleString()} GBX from Goji Millionaires 💸\n` +
-        `🏦 LGH Bank takes 💵 ${lghCut.toLocaleString()} GBX (10% house cut)\nCongratulations!`
-    );
-
-    if (contributingMillionaires.length > 0) {
-        respondWithMessage.call(this,
-            `💰 Millionaire Contribution Activated!\n🤑 ${contributingMillionaires.length} rich user(s) funded the pot with 💵 ${millionaireContribution.toLocaleString()} GBX from their excess wealth.`
-        );
-    }
-}*/
-
 if ([".getpot", ".getlottery"].includes(wsmsg["text"].toLowerCase())) {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
@@ -8968,149 +7885,6 @@ if (wsmsg["text"].toLowerCase() === ".howpot") {
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
-
-// 🎰 `.gamble AMOUNT` or `.bet AMOUNT` - Bet GojiBux for a chance to win!
-/*if (
-    wsmsg["text"].toLowerCase().startsWith(".gamble ") ||
-    wsmsg["text"].toLowerCase().startsWith(".bet ")
-) {
-    const args = wsmsg["text"].split(" ");
-    const betInput = args[1]?.toLowerCase();
-    const handle = wsmsg["handle"];
-    const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || username || "you";
-
-    if (!username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
-        return;
-    }
-
-    if (!userStats[username]) userStats[username] = {};
-    if (userStats[username].luckyCoins === undefined) userStats[username].luckyCoins = 0;
-
-    const lastGambleTime = userStats[username].lastGamble || 0;
-    const now = Date.now();
-    const cooldown = 30 * 1000;
-
-    if (now - lastGambleTime < cooldown) {
-        const remaining = Math.ceil((cooldown - (now - lastGambleTime)) / 1000);
-        respondWithMessage.call(this, `⏳ You need to wait ${remaining} more second(s) before gambling again.`);
-        return;
-    }
-
-    let betAmount;
-    const balance = userBalances[username].balance;
-
-    if (["max", "all", "yolo", "degenerate"].includes(betInput)) {
-        betAmount = balance;
-    } else if (betInput === "half") {
-        betAmount = Math.floor(balance / 2);
-    } else if (betInput === "quarter") {
-        betAmount = Math.floor(balance / 4);
-    } else if (betInput === "random") {
-        betAmount = Math.floor(Math.random() * balance) + 1;
-    } else if (/^\\d+(\\.\\d+)?%$/.test(betInput)) {
-        const percent = parseFloat(betInput.replace("%", ""));
-        betAmount = Math.floor((percent / 100) * balance);
-    } else if (/^\\d+(\\.\\d+)?[kmb]$/i.test(betInput)) {
-        const num = parseFloat(betInput);
-        const suffix = betInput.slice(-1).toLowerCase();
-        const multiplier = suffix === "k" ? 1e3 : suffix === "m" ? 1e6 : 1e9;
-        betAmount = Math.floor(num * multiplier);
-    } else {
-        betAmount = parseInt(betInput);
-    }
-
-    if (isNaN(betAmount) || betAmount <= 0) {
-        respondWithMessage.call(this, "❌ Invalid amount! Try `.bet 500`, `.bet max`, etc.");
-        return;
-    }
-
-    if (balance < betAmount) {
-        respondWithMessage.call(this, `🤖 Not enough GojiBux! You only have ${balance.toLocaleString()} GBX.`);
-        return;
-    }
-
-    const roll = Math.random();
-    let winnings = 0;
-    let resultMessage = "";
-    let usedLuckyCoin = false;
-
-    let previewWinnings = 0;
-    if (roll < 0.03) previewWinnings = betAmount * 4;
-    else if (roll < 0.15) previewWinnings = betAmount * 2;
-    else if (roll < 0.55) previewWinnings = betAmount;
-    else if (roll < 0.80) previewWinnings = Math.floor(betAmount * 0.25);
-
-    if (previewWinnings > 0) {
-        const potTax = Math.floor(previewWinnings * 0.10);
-        const totalCost = previewWinnings + potTax;
-
-        if (lghBank < totalCost) {
-            if (userStats[username].luckyCoins > 0) {
-                userStats[username].luckyCoins--;
-                usedLuckyCoin = true;
-            } else {
-                respondWithMessage.call(this, `🚫 LGH Bank is broke! Try again later.`);
-                return;
-            }
-        }
-    }
-
-    if (roll < 0.03) {
-        winnings = betAmount * 4;
-        resultMessage = `🎰 JACKPOT!!! ${nickname} won 💵➕ ${winnings.toLocaleString()} GBX!`;
-    } else if (roll < 0.15) {
-        winnings = betAmount * 2;
-        resultMessage = `🔥 HOT STREAK! ${nickname} won 💵➕ ${winnings.toLocaleString()} GBX!`;
-    } else if (roll < 0.55) {
-        winnings = betAmount;
-        resultMessage = `✅ Win! ${nickname} gained 💵➕ ${winnings.toLocaleString()} GBX!`;
-    } else if (roll < 0.80) {
-        winnings = Math.floor(betAmount * 0.25);
-        resultMessage = `🍬 Small win! ${nickname} got 💵➕ ${winnings.toLocaleString()} GBX.`;
-    } else if (roll < 0.99) {
-        winnings = -Math.floor(betAmount / 2);
-        resultMessage = `😬 Oof. ${nickname} lost 💵➖ ${Math.abs(winnings).toLocaleString()} GBX.`;
-    } else {
-        winnings = -betAmount;
-        resultMessage = `💸 Rekt! ${nickname} lost it all: 💵➖ ${Math.abs(winnings).toLocaleString()} GBX.`;
-    }
-
-    if (winnings > 0) {
-        const potTax = Math.floor(winnings * 0.10);
-        const netWinnings = winnings - potTax;
-
-        userBalances[username].balance += netWinnings;
-        if (!usedLuckyCoin) lghBank -= (winnings + potTax);
-        gojiPot += potTax;
-
-        // 🧾 Track contribution
-        userBalances[username].contributedToPot = (userBalances[username].contributedToPot || 0) + potTax;
-
-        resultMessage += ` 🎟️ ${potTax.toLocaleString()} GBX added to the lottery pot.`;
-        if (usedLuckyCoin) resultMessage += ` 🍀 Lucky Coin used!`;
-    } else {
-        const loss = Math.abs(winnings);
-        userBalances[username].balance -= loss;
-        gojiPot += loss;
-
-        // 🧾 Track contribution
-        userBalances[username].contributedToPot = (userBalances[username].contributedToPot || 0) + loss;
-
-        resultMessage += ` 🎟️ ${loss.toLocaleString()} GBX added to the lottery pot.`;
-    }
-
-    userStats[username].lastGamble = now;
-    eligibleUserSet.add(username);
-
-    saveUserStats();
-    saveBalances();
-    saveGojiPot();
-    saveEligibleUsers();
-
-    respondWithMessage.call(this, resultMessage);
-}*/
 
 // 🎰 `.gamble AMOUNT` or `.bet AMOUNT` - Bet GojiBux for a chance to win!
 if (
@@ -9303,102 +8077,298 @@ if (wsmsg["text"].toLowerCase().startsWith(".giftluckycoin ")) {
     return;
 }
 
+// work in progress selljoint
+/*
+// 🕒 Cooldown storage for `.selljoint`
+let lastSellJointTime = JSON.parse(localStorage.getItem("lastSellJointTime")) || {};
+
+// 💹 Market markup storage
+let jointMarkupMin = parseFloat(localStorage.getItem("jointMarkupMin")) || 1.5;
+let jointMarkupMax = parseFloat(localStorage.getItem("jointMarkupMax")) || 2.0;
+let userJointSales = JSON.parse(localStorage.getItem("userJointSales") || "{}");
+
+
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-// 💵🤏 .stealbux [username] - Attempt to steal GojiBux from a specific user or a random one
-/*if (wsmsg["text"].toLowerCase().startsWith(".stealbux")) {
-    const args = wsmsg["text"].split(" ");
+if (wsmsg["text"].toLowerCase().startsWith(".selljoint")) {
     const handle = wsmsg["handle"];
-    const thiefUsername = userHandles[handle];
-    const thiefNickname = userNicknames[thiefUsername]?.nickname || thiefUsername || "you";
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].split(" ")[1];
 
-    if (!thiefUsername) {
-        respondWithMessage.call(this, "🤖 Something went wrong. Try again.");
+    if (!username || !args) {
+        respondWithMessage.call(this, "🤖 Usage: .selljoint [amount|max|all]");
         return;
     }
 
-    let victimUsername;
+    const now = Date.now();
+    const lastSell = lastSellJointTime[username] || 0;
+    const cooldown = 30 * 60 * 1000; // 30 minutes
 
-    if (args.length > 1) {
-        victimUsername = args[1];
-        if (victimUsername === thiefUsername) {
-            respondWithMessage.call(this, "🤖 You can't steal from yourself, nice try.");
-            return;
-        }
-
-        if (!userBalances[victimUsername] || (userBalances[victimUsername].balance || 0) < 1000) {
-            respondWithMessage.call(this, `🤖 ${victimUsername} doesn't have enough 💵 GojiBux to steal from.`);
-            return;
-        }
-    } else {
-        const potentialVictims = Object.keys(userBalances).filter(
-            (username) => username !== thiefUsername && (userBalances[username].balance || 0) >= 1000
-        );
-
-        if (potentialVictims.length === 0) {
-            respondWithMessage.call(this, "🤖 Nobody has enough 💵 GojiBux to steal from.");
-            return;
-        }
-
-        victimUsername = potentialVictims[Math.floor(Math.random() * potentialVictims.length)];
-    }
-
-    const victimNickname = userNicknames[victimUsername]?.nickname || victimUsername;
-
-    let victimBalance = userBalances[victimUsername].balance || 0;
-    let thiefBalance = userBalances[thiefUsername].balance || 0;
-    let thiefStash = userStashes[thiefUsername] || 0;
-
-    let victimTotal = victimBalance;
-    let thiefTotal = thiefBalance + thiefStash;
-
-    if (victimTotal < 1000) {
-        respondWithMessage.call(this, `🤖 ${victimNickname} doesn't have enough 💵 GojiBux to steal from.`);
+    if (now - lastSell < cooldown) {
+        const timeLeft = Math.ceil((cooldown - (now - lastSell)) / 1000);
+        const mins = Math.floor(timeLeft / 60);
+        const secs = timeLeft % 60;
+        respondWithMessage.call(this, `⏳ ${nickname}, you must wait ${mins}m ${secs}s before you can sell joints again.`);
         return;
     }
 
-    let stealAmount = Math.max(1, Math.floor(victimTotal * (Math.random() * 0.1 + 0.05)));
-    stealAmount = Math.min(stealAmount, Math.floor(victimTotal * 0.5));
+    let amount;
+    const jointsAvailable = userJointStashes[username] || 0;
 
-    let caught = Math.random() < 0.5;
-
-    if (caught) {
-        // Penalty = same as attempted steal, capped at 50% of thief's total
-        let penalty = Math.min(stealAmount, Math.floor(thiefTotal * 0.5));
-        let amountPaid = 0;
-
-        if (thiefBalance + thiefStash >= penalty) {
-            let fromBalance = Math.min(thiefBalance, penalty);
-            let fromStash = penalty - fromBalance;
-
-            userBalances[thiefUsername].balance -= fromBalance;
-            userStashes[thiefUsername] -= fromStash;
-            amountPaid = penalty;
-        } else {
-            amountPaid = thiefBalance + thiefStash;
-            userBalances[thiefUsername].balance = 0;
-            userStashes[thiefUsername] = 0;
-        }
-
-        userBalances[victimUsername].balance += amountPaid;
-        saveBalances();
-        saveUserStashes();
-
-        respondWithMessage.call(this, `🚨 ${thiefNickname} got CAUGHT trying to steal 💵 ${stealAmount.toLocaleString()} GBX from ${victimNickname} and had to pay 💵➖ ${amountPaid.toLocaleString()} GBX as a penalty!`);
-    } else {
-        if (victimBalance >= stealAmount) {
-            userBalances[victimUsername].balance -= stealAmount;
-        } else {
-            stealAmount = victimBalance;
-            userBalances[victimUsername].balance = 0;
-        }
-
-        userBalances[thiefUsername].balance = (userBalances[thiefUsername].balance || 0) + stealAmount;
-        saveBalances();
-
-        respondWithMessage.call(this, `💵🤏 ${thiefNickname} successfully stole 💵 ${stealAmount.toLocaleString()} GBX from ${victimNickname}!`);
+    if (typeof weedBuyPrice !== "number" || weedBuyPrice <= 0) {
+        respondWithMessage.call(this, "🤖 Error: Offshore market price is unavailable. Try again later!");
+        return;
     }
+
+    if (args.toLowerCase() === "max" || args.toLowerCase() === "all") {
+        amount = jointsAvailable;
+        if (amount <= 0) {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have any joints to sell.`);
+            return;
+        }
+    } else {
+        amount = parseInt(args, 10);
+        if (isNaN(amount) || amount <= 0) {
+            respondWithMessage.call(this, "🤖 Usage: .selljoint [amount|max|all]");
+            return;
+        }
+
+        if (amount > jointsAvailable) {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have that many joints to sell. (🥖 ${amount} requested, 🥖 ${jointsAvailable} available)`);
+            return;
+        }
+    }
+
+    const avgWeedPerJoint = 2.25;
+    const markupPercentage = Math.random() * (jointMarkupMax - jointMarkupMin) + jointMarkupMin;
+    const jointSellPrice = Math.ceil((weedBuyPrice * avgWeedPerJoint) * markupPercentage);
+    const totalEarnings = amount * jointSellPrice;
+    const baseBankCut = Math.floor(totalEarnings * 0.10);
+    let totalBankCut = baseBankCut;
+    let busted = false;
+
+    if (Math.random() < 0.05) {
+        const extraCut = Math.floor(totalEarnings * 0.05);
+        totalBankCut += extraCut;
+        busted = true;
+    }
+
+    const userProfit = totalEarnings - totalBankCut;
+
+    userJointStashes[username] -= amount;
+    if (!userBalances[username]) userBalances[username] = { balance: 0 };
+    userBalances[username].balance += userProfit;
+    lghBank += totalBankCut;
+
+    if (!userLuckyCoins[username]) userLuckyCoins[username] = 0;
+    let luckyCoinMessage = "";
+    if (!busted && Math.random() < 0.03) {
+        userLuckyCoins[username]++;
+        luckyCoinMessage = ` 🍀 You also found a Lucky Coin!`;
+    }
+
+    if (!userJointSales[username]) userJointSales[username] = 0;
+    userJointSales[username] += amount;
+
+    // Refresh markup for next seller
+    jointMarkupMin = parseFloat((Math.random() * 0.4 + 1.3).toFixed(2)); // 1.3 – 1.7
+    jointMarkupMax = parseFloat((jointMarkupMin + 0.4).toFixed(2));     // up to 2.1
+    localStorage.setItem("jointMarkupMin", jointMarkupMin);
+    localStorage.setItem("jointMarkupMax", jointMarkupMax);
+
+    // Save all
+    lastSellJointTime[username] = now;
+    saveJointStashes();
+    saveBalances();
+    saveLuckyCoins();
+    localStorage.setItem("lastSellJointTime", JSON.stringify(lastSellJointTime));
+    localStorage.setItem("lghBank", lghBank.toString());
+    localStorage.setItem("userJointSales", JSON.stringify(userJointSales));
+
+    respondWithMessage.call(this,
+        `🥖💸 ${nickname} smuggled 🥖 ${amount} joint${amount > 1 ? 's' : ''} to an offshore buyer for 💵 ${totalEarnings.toLocaleString()} GBX! 🛥️\n` +
+        `🏦 ${busted ? "You were partially busted! An extra 5% was seized!" : "A 10% cut was taken by the offshore bankers."} Total cut: 💰 ${totalBankCut.toLocaleString()} GBX\n` +
+        `💰 You received 💵 ${userProfit.toLocaleString()} GBX in clean profit.` +
+        `\n🤑 Each joint sold for 💵 ${jointSellPrice.toLocaleString()} GBX.${luckyCoinMessage}`
+    );
+}
+
+if (wsmsg["text"].toLowerCase() === ".pricejoint") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    if (typeof weedBuyPrice !== "number" || weedBuyPrice <= 0) {
+        respondWithMessage.call(this, "🤖 Error: Weed market price unavailable. Try again later!");
+        return;
+    }
+
+    const avgWeedPerJoint = 2.25;
+    const minPrice = Math.floor(weedBuyPrice * avgWeedPerJoint * jointMarkupMin);
+    const maxPrice = Math.ceil(weedBuyPrice * avgWeedPerJoint * jointMarkupMax);
+
+    respondWithMessage.call(this,
+        `🥖 Current Joint Market Prices:\n` +
+        `- Weed Buy Price: 💵 ${weedBuyPrice.toLocaleString()} GBX/g\n` +
+        `- Average Weed per Joint: ${avgWeedPerJoint}g\n` +
+        `- Markup Range: ${jointMarkupMin.toFixed(2)}x – ${jointMarkupMax.toFixed(2)}x\n` +
+        `- Joint Sale Price Range: 💵 ${minPrice.toLocaleString()} – ${maxPrice.toLocaleString()} GBX per joint`
+    );
 }*/
+
+// WORK IN PROGRESS ADVENTURE
+/*
+// 🕒 Cooldown storage for `.adventure`
+let lastAdventureTime = JSON.parse(localStorage.getItem("lastAdventureTime")) || {};
+
+// 💰 `.adventure` - Engage in a high-risk, high-reward scenario (5-minute cooldown)
+if (wsmsg["text"].toLowerCase() === ".adventure") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    if (!username) {
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        return;
+    }
+
+    const now = Date.now();
+    const lastAdventure = lastAdventureTime[username] || 0;
+    const cooldown = 5 * 60 * 1000; // ✅ 5-minute cooldown
+
+    if (now - lastAdventure < cooldown) {
+        const timeLeft = Math.ceil((cooldown - (now - lastAdventure)) / 1000);
+        respondWithMessage.call(this, `⏳ ${nickname}, you must wait ${timeLeft} seconds before embarking on another adventure.`);
+        return;
+    }
+
+    // Ensure economy variables exist
+    if (!userBalances[username]) userBalances[username] = { balance: 1 };
+    if (!userWeedStashes[username]) userWeedStashes[username] = 0;
+    if (!userLuckyCoins[username]) userLuckyCoins[username] = 0;
+
+    const scenarios = [
+        {
+            name: "🥦 Weed Smuggling",
+            description: "You're transporting a van full of premium weed across state lines. What's your plan?",
+            choices: [
+                { text: "Take the highway", reward: { gojiBux: 15000 } },
+                { text: "Use the backroads", reward: { gojiBux: 30000, bustChance: 0.3 } },
+                { text: "Bribe a cop", reward: { gojiBux: 50000, bustChance: 0.9 } }
+            ]
+        },
+        {
+            name: "🎰 Casino Hustle",
+            description: "You're managing an underground casino when a high roller arrives. How do you proceed?",
+            choices: [
+                { text: "Let them play", reward: { gojiBux: 20000 } },
+                { text: "Rig the games", reward: { gojiBux: 40000, bustChance: 0.4 } },
+                { text: "Close up shop", reward: { gojiBux: 10000 } }
+            ]
+        },
+        {
+            name: "🧪 Underground Lab Raid",
+            description: "A shady dealer says there’s unguarded synthweed at an abandoned lab.",
+            choices: [
+                { text: "Sneak in solo", reward: { gojiBux: 20000, weed: 3 } },
+                { text: "Bring backup", reward: { gojiBux: 40000, weed: 5, bustChance: 0.25 } },
+                { text: "Sell the tip", reward: { gojiBux: 12000 } }
+            ]
+        },
+        {
+            name: "🏴‍☠️ Black Market Deal",
+            description: "A dubious buyer wants to purchase your entire stash. Do you trust them?",
+            choices: [
+                { text: "Sell everything", reward: { gojiBux: 50000, weed: -10 } },
+                { text: "Test the waters", reward: { gojiBux: 30000, weed: -5, bustChance: 0.2 } },
+                { text: "Decline the offer", reward: { gojiBux: 12000 } }
+            ]
+        },
+        {
+            name: "🐸 Frog Race Hustle",
+            description: "You're running an underground frog race betting ring. High stakes, high hops.",
+            choices: [
+                { text: "Bet on the reigning champ", reward: { gojiBux: 18000 } },
+                { text: "Fix the race", reward: { gojiBux: 35000, bustChance: 0.35 } },
+                { text: "Cancel the race", reward: { gojiBux: 8000 } }
+            ]
+        },
+        {
+            name: "🚁 4:20 Air Drop",
+            description: "At exactly 4:20, a drone drops a mystery box in your backyard.",
+            choices: [
+                { text: "Open it carefully", reward: { weed: 7 } },
+                { text: "Sell it unopened", reward: { gojiBux: 25000 } },
+                { text: "Open it with a blowtorch", reward: { gojiBux: 50000, bustChance: 0.2 } }
+            ]
+        }
+    ];
+
+    const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+    const choice = scenario.choices[Math.floor(Math.random() * scenario.choices.length)];
+    let result = `${scenario.name}: ${scenario.description}\n\n👉 *${choice.text}*... `;
+
+    const currentBalance = userBalances[username].balance;
+    const weedChange = choice.reward.weed || 0;
+    let busted = false;
+    let gainedSomething = false;
+
+    // Handle bust logic
+    if (choice.reward.bustChance && Math.random() < choice.reward.bustChance) {
+        const lossAmount = Math.min(currentBalance, Math.abs(choice.reward.gojiBux || 0));
+        result += `🚨 Oh no! The authorities caught ${nickname}. BUSTED! Lost 💵 ${lossAmount.toLocaleString()} GBX.`;
+        userBalances[username].balance -= lossAmount;
+        lghBank += lossAmount;
+        busted = true;
+    } else {
+        const gainAmount = choice.reward.gojiBux || 0;
+        if (gainAmount < 0) {
+            // Manual forced loss
+            const lossAmount = Math.min(currentBalance, Math.abs(gainAmount));
+            result += `🚔 BUSTED! ${nickname} lost 💵 ${lossAmount.toLocaleString()} GBX.`;
+            userBalances[username].balance -= lossAmount;
+            lghBank += lossAmount;
+            busted = true;
+        } else {
+            result += `💵➕ Success! ${nickname} earned 💵 ${gainAmount.toLocaleString()} GBX.`;
+            userBalances[username].balance += gainAmount;
+            gainedSomething = true;
+        }
+
+        if (weedChange !== 0) {
+            const currentWeed = userWeedStashes[username];
+            const newWeed = Math.max(0, currentWeed + weedChange);
+            userWeedStashes[username] = newWeed;
+            if (weedChange > 0) {
+                result += ` 🌿 Gained ${weedChange} weed!`;
+                gainedSomething = true;
+            } else {
+                result += ` 🌿 Lost ${Math.abs(weedChange)} weed.`;
+            }
+        }
+
+        // 🍀 Lucky Coin chance (only if they gained something and weren't busted)
+        if (gainedSomething && Math.random() < 0.03) {
+            userLuckyCoins[username]++;
+            result += ` 🍀 You found a Lucky Coin!`;
+        }
+    }
+
+    // Apply cooldown
+    lastAdventureTime[username] = now;
+
+    // Save all changes
+    saveBalances();
+    saveWeedStashes();
+    saveLuckyCoins();
+    localStorage.setItem("lghBank", lghBank.toString());
+    localStorage.setItem("lastAdventureTime", JSON.stringify(lastAdventureTime));
+
+    respondWithMessage.call(this, result);
+}*/
+
+//-----------------------------------------------------------------------------------------------------------------------------------
 
 // 💵🤏 .stealbux [username] - Attempt to steal GojiBux from a specific user or a random one
 if (wsmsg["text"].toLowerCase().startsWith(".stealbux")) {
@@ -9626,27 +8596,6 @@ if (wsmsg["text"].toLowerCase() === ".topcoin") {
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
-
-/*if (wsmsg["text"].toLowerCase() === ".topbux") {
-    let sortedUsers = Object.entries(userBalances)
-        .sort((a, b) => (b[1]?.balance || 0) - (a[1]?.balance || 0))
-        .slice(0, 3);
-
-    if (sortedUsers.length === 0) {
-        respondWithMessage.call(this, "🤖 No GojiBux data available.");
-        return;
-    }
-
-    let leaderboard = "🏆 Top 3 GojiBux Holders 💵\n";
-    const medals = ["🥇", "🥈", "🥉"];
-
-    sortedUsers.forEach(([username, data], index) => {
-        const nickname = userNicknames[username]?.nickname || username;
-        leaderboard += `${medals[index]} ${nickname} - 💵 ${data.balance.toLocaleString()} GBX\n`;
-    });
-
-    respondWithMessage.call(this, leaderboard.trim());
-}*/
 
 if (wsmsg["text"].toLowerCase() === ".topbux") {
     let sortedUsers = Object.entries(userBalances)
@@ -9914,51 +8863,6 @@ if (wsmsg["text"].toLowerCase() === ".leastweed") {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-// 🏆 `.topall` / `.leaderboard` / `.top` - Show top users in each category (single message)
-/*const topallTriggers = [".topall", ".leaderboard", ".top"];
-const commandText = wsmsg["text"].toLowerCase().trim();
-
-if (topallTriggers.includes(commandText)) {
-    let categories = [
-        { name: "GojiBux", emoji: "💵", data: userBalances, key: "balance", unit: "GBX" },
-        { name: "Offshore", emoji: "💰", data: userStashes, key: null, unit: "GBX" },
-        { name: "Weed", emoji: "🥦", data: userWeedStashes, key: null, unit: "g" },
-        { name: "Hidden Weed", emoji: "🔒", data: userHiddenWeed, key: null, unit: "g" },
-        { name: "Joints", emoji: "🥖", data: userJointStashes, key: null, unit: "Joints" },
-        { name: "Spaget", emoji: "🍝", data: userSpaghettiStashes, key: null, unit: "SPG" },
-        { name: "Pizza", emoji: "🍕", data: userPizzaStashes, key: null, unit: "PZA" },
-        { name: "Cookies", emoji: "🍪", data: userCookieStashes, key: null, unit: "Cookies" },
-        { name: "Frogs", emoji: "🐸", data: userFrogCounts, key: null, unit: "Frogs" },
-        { name: "Potatoes", emoji: "🥔", data: userPotatoCounts, key: null, unit: "Potatoes" }
-    ];
-
-    let lines = ["🏆 Top Players 🏆"];
-
-    categories.forEach(({ name, emoji, data, key, unit }) => {
-        const sortedUsers = Object.entries(data || {})
-            .sort((a, b) => ((key ? (b[1]?.[key] || 0) : (b[1] || 0)) - (key ? (a[1]?.[key] || 0) : (a[1] || 0))));
-
-        if (sortedUsers.length > 0) {
-            const [username, stash] = sortedUsers[0];
-            const value = key ? stash[key] || 0 : stash || 0;
-
-            if (value > 0) {
-                const nickname = userNicknames[username]?.nickname || username;
-                lines.push(`${emoji} ${nickname} - ${value.toLocaleString()} ${unit}`);
-            } else {
-                lines.push(`${emoji} No ${name.toLowerCase()} data found.`);
-            }
-        } else {
-            lines.push(`${emoji} No ${name.toLowerCase()} data found.`);
-        }
-    });
-
-    const message = lines.join("\n");
-    respondWithMessage(message.length > 300 ? message.slice(0, 295) + "…" : message);
-}*/
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
 // 📊 `.balance` and `.wallet` - Show full economy details for the user
 if (wsmsg["text"].toLowerCase().startsWith(".balance") || wsmsg["text"].toLowerCase().startsWith(".wallet")) {
     const args = wsmsg["text"].split(" ");
@@ -10006,43 +8910,6 @@ if (wsmsg["text"].toLowerCase().startsWith(".balance") || wsmsg["text"].toLowerC
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
-
-/*if (wsmsg["text"].toLowerCase() === ".menu") {
-    const shopItems = [
-        { name: "cookie", emoji: "🍪", price: 0, desc: "FREE COOKIE!!!" },
-        { name: "potato", emoji: "🥔", price: 1, desc: "Literally just a potato." },
-        { name: "egg", emoji: "🥚", price: 100, desc: "Mystery inside." },
-        { name: "banana", emoji: "🍌", price: 333, desc: "Insert slippery joke here." },
-        { name: "apple", emoji: "🍎", price: 420, desc: "Tempting and crunchy." },
-        { name: "icecream", emoji: "🍦", price: 420, desc: "Cold treat, warm heart." },
-        { name: "candy", emoji: "🍬", price: 500, desc: "Sugar rush unlocked." },
-        { name: "bread", emoji: "🍞", price: 666, desc: "Holy carb." },
-        { name: "donut", emoji: "🍩", price: 999, desc: "Frosted, fried, and fabulous." },
-        { name: "cheese", emoji: "🧀", price: 1111, desc: "Smells stronger than your will." },
-        { name: "waffle", emoji: "🧇", price: 2000, desc: "Grid of deliciousness." },
-        { name: "pancake", emoji: "🥞", price: 2222, desc: "Stacks on stacks." },
-        { name: "ramen", emoji: "🍜", price: 3000, desc: "Hot noodle soup for the soul." },
-        { name: "sammich", emoji: "🥪", price: 3500, desc: "Two breads. Infinite possibilities." },
-        { name: "hotdog", emoji: "🌭", price: 3500, desc: "The forbidden sandwich." },
-        { name: "shrimp", emoji: "🍤", price: 4000, desc: "Fried sea boi." },
-        { name: "taco", emoji: "🌮", price: 4200, desc: "Crunchwrap vibes." },
-        { name: "pizza", emoji: "🍕", price: 5000, desc: "Fresh! Hot! Cheesy!" },
-        { name: "cake", emoji: "🍰", price: 6000, desc: "Let them eat it." },
-        { name: "burger", emoji: "🍔", price: 7000, desc: "Beefy. Cheesy. Classic." },
-        { name: "sushi", emoji: "🍣", price: 8888, desc: "Raw elegance." },
-        { name: "spaget", emoji: "🍝", price: 10000, desc: "Garlicy noodle delight." },
-        { name: "steak", emoji: "🥩", price: 15000, desc: "Cooked rare. Or else." },
-        { name: "frog", emoji: "🐸", price: 1000000, desc: "A frog! Ribbit." },
-        { name: "coin", emoji: "💎", price: 1000000000, desc: "Shiny GojiCoin!" }
-    ];
-
-    let menuText = "🛒 GojiShop Menu — Use `.buy[item] [amount]`\n";
-    for (const item of shopItems) {
-        menuText += `${item.emoji} \`${item.name}\` — 💵 ${item.price.toLocaleString()} GBX — 🏷 ${item.desc}\n`;
-    }
-
-    respondWithMessage.call(this, menuText.trim());
-}*/
 
 if (wsmsg["text"].toLowerCase().startsWith(".shop")) {
     const shopItems = [
@@ -10477,30 +9344,6 @@ if (
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-/*if ([".c", ".cheers"].includes(wsmsg['text'].toLowerCase())) { // Convert input to lowercase and check if it's in the list
-    const handle = wsmsg['handle']; // Get the user's handle from the message
-    const username = userHandles[handle]; // Look up the username using the handle
-    const nickname = userNicknames[username]?.nickname || "Someone"; // Get the stored nickname, or default to "Someone"
-
-    if (!username) return; // Ensure the user is valid
-
-    const weedAvailable = userWeedStashes[username] || 0;
-    const weedUsed = parseFloat((Math.random() * 0.9 + 0.1).toFixed(1)); // Random amount between 0.1-1.0g
-
-    let message = `🤖 ${nickname} is smokin! Cheers! 🍃💨`;
-
-    if (weedAvailable >= weedUsed) {
-        userWeedStashes[username] -= weedUsed;
-        saveWeedStashes();
-        message += ` (🥦➖ ${weedUsed}g)`;
-    }
-
-    this._send(JSON.stringify({
-        stumble: "msg",
-        text: message
-    }));
-}*/
-
 if ([".c", ".cheers"].includes(wsmsg['text'].toLowerCase())) {
     const handle = wsmsg['handle'];
     const username = userHandles[handle];
@@ -10623,18 +9466,6 @@ if ([".g", ".grind", ".grindin", ".grinding"].includes(wsmsg['text'].toLowerCase
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
-
-    // Command: .heating (case insensitive)
-    /*if ([".h", ".heat", ".heatin", ".heating"].includes(wsmsg['text'].toLowerCase())) {
-        const handle = wsmsg['handle'];
-        const username = userHandles[handle];
-        const nickname = userNicknames[username]?.nickname || "Someone";
-
-        this._send(JSON.stringify({
-            stumble: "msg",
-            text: `🤖 ${nickname} is heatin! 🔥`
-        }));
-    }*/
 
 // Command: .heating [optional time] — Dab Rig Edition
 //if ([".h", ".heat", ".heatin", ".heating"].some(cmd => wsmsg['text'].toLowerCase().startsWith(cmd))) {
@@ -12010,51 +10841,6 @@ if (triggerGrilfPilfCommands.includes(wsmsg['text'].toLowerCase())) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-// Start snarfdilf (Costs 10k GBX, random image output)
-/*if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
-    const handle = wsmsg['handle'];
-    const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || "Someone";
-    const recipient = "jedisnarf"; // User who receives the money
-
-    if (!username) return; // Ensure the user is valid
-
-    const cost = 10_000; // Cost: 10,000 GBX
-    const userBalance = userBalances[username]?.balance || 0;
-
-    if (userBalance < cost) {
-        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 10,000 GBX to access peak snarfdilf content. Get your GBX up!`);
-        return;
-    }
-
-    // Deduct 10,000 GBX from the user
-    userBalances[username].balance -= cost;
-
-    // Give 10,000 GBX to jedisnarf
-    if (!userBalances[recipient]) {
-        userBalances[recipient] = { balance: 0 }; // Ensure jedisnarf has an account
-    }
-    userBalances[recipient].balance += cost;
-
-    saveBalances();
-
-    // List of possible images
-    const snarfdilfImages = [
-        "https://i.imgur.com/RSZ7xzg.jpeg",
-        "https://i.imgur.com/5HSAo1l.jpeg",
-        "https://i.imgur.com/oLAqMHS.jpeg"
-    ];
-    const randomImage = snarfdilfImages[Math.floor(Math.random() * snarfdilfImages.length)];
-
-    // Send the image
-    this._send(`{"stumble":"msg","text": "${randomImage}"}`);
-
-    // Send payment confirmation after 1000ms
-    setTimeout(() => {
-        this._send(`{"stumble":"msg","text": "🤖 ${nickname} paid 💵 10,000 GBX for this snarfdilf masterpiece. ${recipient} received the payment."}`);
-    }, 1000);
-}*/
-
 // 🖼️ Snarfdilf Image Rotation System
 let snarfdilfIndex = localStorage.getItem("snarfdilfIndex") ? parseInt(localStorage.getItem("snarfdilfIndex")) : 0;
 
@@ -13256,44 +12042,6 @@ if (wsmsg['text'].startsWith(".dice") || wsmsg['text'].startsWith(".diceroll")) 
                 }));
             }
         }
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        // Initialize GojiBux value from localStorage or set to 1
-        /*let gojiBuxValue = parseInt(localStorage.getItem('gojiBuxValue')) || 1;
-
-        // .gojibux command: Increases GojiBux value
-        if (wsmsg['text'].toLowerCase() === ".gbx") {
-            const randomIncrease = Math.floor(Math.random() * (2000 - 20 + 1)) + 20;
-            gojiBuxValue += randomIncrease;
-
-            // Save the updated value in localStorage
-            localStorage.setItem('gojiBuxValue', gojiBuxValue);
-
-            // Send the message with the updated value
-            this._send(`{"stumble":"msg","text": "📈 GojiBux is now worth 💵 ${gojiBuxValue.toLocaleString()} USD per 1 GBX!"}`);
-        }*/
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        // .$NARF command: Displays the negative value of GojiBux
-        /*if (wsmsg['text'].toLowerCase() === "$NRF") {
-            const narfValue = -gojiBuxValue; // $NRF is the negative of GBX
-            this._send(`{"stumble":"msg","text": "📉 $NARF is now worth 💵 ${narfValue.toLocaleString()} USD per 1 $NRF!"}`);
-        }*/
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-        // Reset GojiBux command
-        /*if (wsmsg['text'] === ".resetGojiBux") {
-            gojiBuxValue = 1;
-
-            // Save the reset value in localStorage
-            localStorage.setItem('gojiBuxValue', gojiBuxValue);
-
-            // Send the message to confirm the reset
-            this._send(`{"stumble":"msg","text": "🤖 GojiBux has been reset to ${gojiBuxValue} USD per 1 GBX."}`);
-        }*/
 
 // Utility Commands -----------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
