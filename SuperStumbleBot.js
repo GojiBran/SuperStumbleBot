@@ -1528,7 +1528,7 @@ window.addEventListener("beforeunload", saveWGHBank);
 let userWeedStashes = JSON.parse(localStorage.getItem("userWeedStashes")) || {};
 
 //-----------------------------------------------------------------------------------------------------------------------------------
-
+/*
 // 🌿 Ensure weed prices are stored correctly
 let BASE_PRICE = Math.floor(20 / 3.5); // ~5 GBX per gram
 let weedBuyPrice = parseInt(localStorage.getItem("weedBuyPrice")) || BASE_PRICE;
@@ -1595,6 +1595,106 @@ if (!window._weedPriceIntervalSet) {
     window._weedPriceIntervalSet = true;
     console.log("🌿 Weed price updater initialized.");
 }
+*/
+
+let BASE_PRICE = Math.floor(80 / 3.5); // ~22 GBX per gram
+let weedBuyPrice = parseInt(localStorage.getItem("weedBuyPrice")) || BASE_PRICE;
+let weedSellPrice = parseInt(localStorage.getItem("weedSellPrice")) || Math.floor(BASE_PRICE * 0.8);
+let prevWeedBuyPrice = weedBuyPrice;
+let prevWeedSellPrice = weedSellPrice;
+
+function updateWeedPrices() {
+    const bank = wghBank || 0;
+    const gbxReserve = lghBank || 0;
+
+    const totalWeed = Object.values(userWeedStashes || {}).reduce((a, b) => a + (b || 0), 0);
+    const offshoreTotal = Object.values(userStashes || {}).reduce((a, b) => a + (b || 0), 0);
+    const hiddenTotal = Object.values(userHiddenWeed || {}).reduce((a, b) => a + (b || 0), 0);
+
+    let scarcityFactor = 1.0;
+    if (bank <= 5000) scarcityFactor = 1.6;
+    else if (bank <= 10000) scarcityFactor = 1.3;
+    else if (bank >= 50000) scarcityFactor = 0.85;
+    else if (bank >= 100000) scarcityFactor = 0.7;
+
+    let inflationFactor = 1.0;
+    if (gbxReserve >= 1000000) inflationFactor = 1.5;
+    else if (gbxReserve >= 500000) inflationFactor = 1.3;
+    else if (gbxReserve <= 100000) inflationFactor = 0.8;
+
+    let demandFactor = 1.0;
+    if (totalWeed > 200000) demandFactor = 1.2;
+    if (offshoreTotal > 500000) demandFactor += 0.2;
+    if (hiddenTotal > 50000) demandFactor -= 0.15;
+
+    let finalPriceFactor = scarcityFactor * inflationFactor * demandFactor;
+    const randomFactor = 1 + ((Math.random() * 0.5) - 0.25);
+
+    let newBuyPrice = Math.max(1, Math.round(BASE_PRICE * finalPriceFactor * randomFactor));
+    let diff = newBuyPrice - prevWeedBuyPrice;
+    let smoothingFactor = Math.min(1, Math.abs(diff) / 5);
+    let priceShift = Math.round(diff * smoothingFactor);
+    weedBuyPrice = Math.max(1, prevWeedBuyPrice + priceShift);
+
+    let sellMultiplier = 0.7;
+    if (totalWeed < 50000) sellMultiplier += 0.3;
+    else if (totalWeed < 100000) sellMultiplier += 0.2;
+    else if (totalWeed > 300000) sellMultiplier -= 0.1;
+    if (hiddenTotal < 10000) sellMultiplier += 0.1;
+    if (offshoreTotal > 300000) sellMultiplier -= 0.1;
+    if (gbxReserve > 1000000) sellMultiplier += 0.2;
+    else if (gbxReserve < 100000) sellMultiplier -= 0.1;
+    sellMultiplier *= (1 + ((Math.random() * 0.2) - 0.1));
+
+    let newSellPrice = Math.max(1, Math.round(newBuyPrice * sellMultiplier));
+    let sellDiff = newSellPrice - prevWeedSellPrice;
+    let sellShift = Math.round(sellDiff * smoothingFactor);
+    weedSellPrice = Math.max(1, prevWeedSellPrice + sellShift);
+
+    prevWeedBuyPrice = weedBuyPrice;
+    prevWeedSellPrice = weedSellPrice;
+
+    // 🌿 Store last 5 price updates
+    let weedPriceHistory = JSON.parse(localStorage.getItem("weedPriceHistory")) || [];
+    weedPriceHistory.push({ buy: weedBuyPrice, sell: weedSellPrice });
+    if (weedPriceHistory.length > 5) weedPriceHistory.shift();
+    localStorage.setItem("weedPriceHistory", JSON.stringify(weedPriceHistory));
+
+    localStorage.setItem("weedBuyPrice", weedBuyPrice);
+    localStorage.setItem("weedSellPrice", weedSellPrice);
+
+    console.log(`🌿 Weed Prices Updated: Buy ${weedBuyPrice} GBX/g | Sell ${weedSellPrice} GBX/g | WGH: ${bank} | LGH: ${gbxReserve}`);
+}
+
+if (!window._weedPriceIntervalSet) {
+    setInterval(updateWeedPrices, 30 * 1000);
+    window._weedPriceIntervalSet = true;
+    console.log("🌿 Weed price updater initialized.");
+}
+
+if (wsmsg["text"].toLowerCase() === ".weedgraph") {
+    const history = JSON.parse(localStorage.getItem("weedPriceHistory")) || [];
+
+    if (!history.length) {
+        respondWithMessage.call(this, "🌿 No weed price history available.");
+        return;
+    }
+
+    // Build graph
+    let output = "🌿 Weed Price History (latest first):\n";
+    const maxBuy = Math.max(...history.map(h => h.buy), 1);
+
+    history.slice().reverse().forEach((entry, index) => {
+        const barLength = Math.floor((entry.buy / maxBuy) * 20);
+        const bar = "█".repeat(barLength).padEnd(20, " ");
+        output += `[${history.length - index}] Buy: ${entry.buy.toLocaleString().padStart(3)} | Sell: ${entry.sell.toLocaleString().padStart(3)} | ${bar}\n`;
+    });
+
+    respondWithMessage.call(this, output.trim());
+    console.log("📊 .weedgraph command triggered");
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
 
 // Function to save user weed stashes
 function saveWeedStashes() {
@@ -6928,7 +7028,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".extract")) {
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
-
+/*
 // 🕒 Cooldown storage for `.selljoint`
 let lastSellJointTime = JSON.parse(localStorage.getItem("lastSellJointTime")) || {};
 
@@ -7016,10 +7116,10 @@ if (wsmsg["text"].toLowerCase().startsWith(".selljoint")) {
         `🤑 Each joint sold for 💵 ${jointSellPrice.toLocaleString()} GBX!`
     );
 }
-
+*/
 
 //-----------------------------------------------------------------------------------------------------------------------------------
-
+/*
 // 🕒 Cooldown storage for `.adventure`
 let lastAdventureTime = JSON.parse(localStorage.getItem("lastAdventureTime")) || {};
 
@@ -7112,7 +7212,7 @@ if (wsmsg["text"].toLowerCase() === ".adventure") {
 
     respondWithMessage.call(this, result);
 }
-
+*/
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 🥦🔒 `.stashweed` - Hide weed from police busts (60-second cooldown)
@@ -8217,157 +8317,6 @@ if (wsmsg["text"].toLowerCase() === ".pricejoint") {
     );
 }*/
 
-// WORK IN PROGRESS ADVENTURE
-/*
-// 🕒 Cooldown storage for `.adventure`
-let lastAdventureTime = JSON.parse(localStorage.getItem("lastAdventureTime")) || {};
-
-// 💰 `.adventure` - Engage in a high-risk, high-reward scenario (5-minute cooldown)
-if (wsmsg["text"].toLowerCase() === ".adventure") {
-    const handle = wsmsg["handle"];
-    const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || username || "you";
-
-    if (!username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
-        return;
-    }
-
-    const now = Date.now();
-    const lastAdventure = lastAdventureTime[username] || 0;
-    const cooldown = 5 * 60 * 1000; // ✅ 5-minute cooldown
-
-    if (now - lastAdventure < cooldown) {
-        const timeLeft = Math.ceil((cooldown - (now - lastAdventure)) / 1000);
-        respondWithMessage.call(this, `⏳ ${nickname}, you must wait ${timeLeft} seconds before embarking on another adventure.`);
-        return;
-    }
-
-    // Ensure economy variables exist
-    if (!userBalances[username]) userBalances[username] = { balance: 1 };
-    if (!userWeedStashes[username]) userWeedStashes[username] = 0;
-    if (!userLuckyCoins[username]) userLuckyCoins[username] = 0;
-
-    const scenarios = [
-        {
-            name: "🥦 Weed Smuggling",
-            description: "You're transporting a van full of premium weed across state lines. What's your plan?",
-            choices: [
-                { text: "Take the highway", reward: { gojiBux: 15000 } },
-                { text: "Use the backroads", reward: { gojiBux: 30000, bustChance: 0.3 } },
-                { text: "Bribe a cop", reward: { gojiBux: 50000, bustChance: 0.9 } }
-            ]
-        },
-        {
-            name: "🎰 Casino Hustle",
-            description: "You're managing an underground casino when a high roller arrives. How do you proceed?",
-            choices: [
-                { text: "Let them play", reward: { gojiBux: 20000 } },
-                { text: "Rig the games", reward: { gojiBux: 40000, bustChance: 0.4 } },
-                { text: "Close up shop", reward: { gojiBux: 10000 } }
-            ]
-        },
-        {
-            name: "🧪 Underground Lab Raid",
-            description: "A shady dealer says there’s unguarded synthweed at an abandoned lab.",
-            choices: [
-                { text: "Sneak in solo", reward: { gojiBux: 20000, weed: 3 } },
-                { text: "Bring backup", reward: { gojiBux: 40000, weed: 5, bustChance: 0.25 } },
-                { text: "Sell the tip", reward: { gojiBux: 12000 } }
-            ]
-        },
-        {
-            name: "🏴‍☠️ Black Market Deal",
-            description: "A dubious buyer wants to purchase your entire stash. Do you trust them?",
-            choices: [
-                { text: "Sell everything", reward: { gojiBux: 50000, weed: -10 } },
-                { text: "Test the waters", reward: { gojiBux: 30000, weed: -5, bustChance: 0.2 } },
-                { text: "Decline the offer", reward: { gojiBux: 12000 } }
-            ]
-        },
-        {
-            name: "🐸 Frog Race Hustle",
-            description: "You're running an underground frog race betting ring. High stakes, high hops.",
-            choices: [
-                { text: "Bet on the reigning champ", reward: { gojiBux: 18000 } },
-                { text: "Fix the race", reward: { gojiBux: 35000, bustChance: 0.35 } },
-                { text: "Cancel the race", reward: { gojiBux: 8000 } }
-            ]
-        },
-        {
-            name: "🚁 4:20 Air Drop",
-            description: "At exactly 4:20, a drone drops a mystery box in your backyard.",
-            choices: [
-                { text: "Open it carefully", reward: { weed: 7 } },
-                { text: "Sell it unopened", reward: { gojiBux: 25000 } },
-                { text: "Open it with a blowtorch", reward: { gojiBux: 50000, bustChance: 0.2 } }
-            ]
-        }
-    ];
-
-    const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
-    const choice = scenario.choices[Math.floor(Math.random() * scenario.choices.length)];
-    let result = `${scenario.name}: ${scenario.description}\n\n👉 *${choice.text}*... `;
-
-    const currentBalance = userBalances[username].balance;
-    const weedChange = choice.reward.weed || 0;
-    let busted = false;
-    let gainedSomething = false;
-
-    // Handle bust logic
-    if (choice.reward.bustChance && Math.random() < choice.reward.bustChance) {
-        const lossAmount = Math.min(currentBalance, Math.abs(choice.reward.gojiBux || 0));
-        result += `🚨 Oh no! The authorities caught ${nickname}. BUSTED! Lost 💵 ${lossAmount.toLocaleString()} GBX.`;
-        userBalances[username].balance -= lossAmount;
-        lghBank += lossAmount;
-        busted = true;
-    } else {
-        const gainAmount = choice.reward.gojiBux || 0;
-        if (gainAmount < 0) {
-            // Manual forced loss
-            const lossAmount = Math.min(currentBalance, Math.abs(gainAmount));
-            result += `🚔 BUSTED! ${nickname} lost 💵 ${lossAmount.toLocaleString()} GBX.`;
-            userBalances[username].balance -= lossAmount;
-            lghBank += lossAmount;
-            busted = true;
-        } else {
-            result += `💵➕ Success! ${nickname} earned 💵 ${gainAmount.toLocaleString()} GBX.`;
-            userBalances[username].balance += gainAmount;
-            gainedSomething = true;
-        }
-
-        if (weedChange !== 0) {
-            const currentWeed = userWeedStashes[username];
-            const newWeed = Math.max(0, currentWeed + weedChange);
-            userWeedStashes[username] = newWeed;
-            if (weedChange > 0) {
-                result += ` 🌿 Gained ${weedChange} weed!`;
-                gainedSomething = true;
-            } else {
-                result += ` 🌿 Lost ${Math.abs(weedChange)} weed.`;
-            }
-        }
-
-        // 🍀 Lucky Coin chance (only if they gained something and weren't busted)
-        if (gainedSomething && Math.random() < 0.03) {
-            userLuckyCoins[username]++;
-            result += ` 🍀 You found a Lucky Coin!`;
-        }
-    }
-
-    // Apply cooldown
-    lastAdventureTime[username] = now;
-
-    // Save all changes
-    saveBalances();
-    saveWeedStashes();
-    saveLuckyCoins();
-    localStorage.setItem("lghBank", lghBank.toString());
-    localStorage.setItem("lastAdventureTime", JSON.stringify(lastAdventureTime));
-
-    respondWithMessage.call(this, result);
-}*/
-
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 💵🤏 .stealbux [username] - Attempt to steal GojiBux from a specific user or a random one
@@ -9038,6 +8987,254 @@ if (wsmsg["text"].toLowerCase() === ".priceweed") {
     // Debugging log (check console)
     //console.log(`🥦💵 .weedprice command triggered:\n- Buy Price: ${weedBuyPrice} GBX/g\n- Sell Price: ${weedSellPrice} GBX/g\n- WGH: ${bank}\n- LGH: ${gbxReserve}\n- Total Weed: ${totalWeed}\n- Offshore Weed: ${offshoreTotal}\n- Hidden Weed: ${hiddenTotal}`);
     console.log(`🥦💵 .weedprice command triggered:\n- Buy Price: ${weedBuyPrice} GBX/g\n- Sell Price: ${weedSellPrice} GBX/g\n- WGH: ${bank}\n- LGH: ${gbxReserve}\n- Total Weed: ${totalWeed}\n- Hidden Weed: ${hiddenTotal}`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🕒 Cooldown storage for `.selljoint`
+let lastSellJointTime = JSON.parse(localStorage.getItem("lastSellJointTime") || "{}");
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🥖 `.selljoint [amount|max|all]` - Sell joints for GBX, taxed by LGH Bank
+if (wsmsg["text"].toLowerCase().startsWith(".selljoint")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].split(" ")[1];
+
+    if (!username || !args) {
+        respondWithMessage.call(this, "🤖 Usage: .selljoint [amount|max|all]");
+        return;
+    }
+
+    // ⏳ Cooldown check (30 minutes)
+    const now = Date.now();
+    const lastSell = lastSellJointTime[username] || 0;
+    const cooldown = 30 * 60 * 1000;
+
+    if (now - lastSell < cooldown) {
+        const timeLeft = Math.ceil((cooldown - (now - lastSell)) / 1000);
+        const mins = Math.floor(timeLeft / 60);
+        const secs = timeLeft % 60;
+        respondWithMessage.call(this, `⏳ ${nickname}, you must wait ${mins}m ${secs}s before you can sell joints again.`);
+        return;
+    }
+
+    let amount;
+    const jointsAvailable = userJointStashes[username] || 0;
+
+    if (typeof weedBuyPrice !== "number" || weedBuyPrice <= 0) {
+        respondWithMessage.call(this, "🤖 Error: Offshore market price is unavailable. Try again later!");
+        return;
+    }
+
+    if (args.toLowerCase() === "max" || args.toLowerCase() === "all") {
+        amount = jointsAvailable;
+        if (amount <= 0) {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have any joints to sell.`);
+            return;
+        }
+    } else {
+        amount = parseInt(args, 10);
+        if (isNaN(amount) || amount <= 0) {
+            respondWithMessage.call(this, "🤖 Usage: .selljoint [amount|max|all]");
+            return;
+        }
+
+        if (amount > jointsAvailable) {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have that many joints to sell. (🥖 ${amount} requested, 🥖 ${jointsAvailable} available)`);
+            return;
+        }
+    }
+
+    // 💸 Price calculation
+    const avgWeedPerJoint = 2.25;
+    const jointSellPrice = Math.ceil((weedBuyPrice * avgWeedPerJoint));
+    const totalEarnings = amount * jointSellPrice;
+    const baseBankCut = Math.floor(totalEarnings * 0.10);
+    let totalBankCut = baseBankCut;
+    let busted = false;
+
+    // 🚨 5% bust = extra 5% tax
+    if (Math.random() < 0.05) {
+        const extraCut = Math.floor(totalEarnings * 0.05);
+        totalBankCut += extraCut;
+        busted = true;
+    }
+
+    const userProfit = totalEarnings - totalBankCut;
+
+    // 💵 Apply changes
+    userJointStashes[username] -= amount;
+    if (!userBalances[username]) userBalances[username] = { balance: 0 };
+    userBalances[username].balance += userProfit;
+    lghBank += totalBankCut;
+
+    // 🍀 Lucky Coin (clean only)
+    if (!userStats[username]) userStats[username] = {};
+    if (userStats[username].luckyCoins === undefined) userStats[username].luckyCoins = 0;
+    let luckyCoinMessage = "";
+    if (!busted && Math.random() < 0.03) {
+        userStats[username].luckyCoins++;
+        luckyCoinMessage = ` 🍀 You also found a Lucky Coin!`;
+    }
+
+    // 💾 Save all
+    lastSellJointTime[username] = now;
+    saveJointStashes();
+    saveBalances();
+    saveUserStats();
+    localStorage.setItem("lghBank", lghBank.toString());
+    localStorage.setItem("lastSellJointTime", JSON.stringify(lastSellJointTime));
+
+    // 📢 Output
+    respondWithMessage.call(this,
+        `🥖💸 ${nickname} smuggled 🥖 ${amount} joint${amount > 1 ? 's' : ''} to an offshore buyer for 💵 ${totalEarnings.toLocaleString()} GBX! 🛥️\n` +
+        `🏦 ${busted ? "You were partially busted! An extra 5% was seized!" : "A 10% cut was taken by the offshore bankers."} Total cut: 💰 ${totalBankCut.toLocaleString()} GBX\n` +
+        `💰 You received 💵 ${userProfit.toLocaleString()} GBX in clean profit.\n` +
+        `🤑 Each joint sold for 💵 ${jointSellPrice.toLocaleString()} GBX.${luckyCoinMessage}`
+    );
+}
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// WORK IN PROGRESS ADVENTURE
+
+// 🕒 Cooldown storage for `.adventure`
+let lastAdventureTime = JSON.parse(localStorage.getItem("lastAdventureTime") || "{}");
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 💰 `.adventure` - Engage in a high-risk, high-reward scenario (5-minute cooldown)
+if (wsmsg["text"].toLowerCase() === ".adventure") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    // ⚠️ Error check: username must exist
+    if (!username) {
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        return;
+    }
+
+    // ⏳ Cooldown check (5 minutes)
+    const now = Date.now();
+    const lastAdventure = lastAdventureTime[username] || 0;
+    const cooldown = 5 * 60 * 1000;
+
+    if (now - lastAdventure < cooldown) {
+        const timeLeft = Math.ceil((cooldown - (now - lastAdventure)) / 1000);
+        respondWithMessage.call(this, `⏳ ${nickname}, you must wait ${timeLeft} seconds before embarking on another adventure.`);
+        return;
+    }
+
+    // 🧱 Ensure economy data exists
+    if (!userBalances[username]) userBalances[username] = { balance: 1 };
+    if (!userWeedStashes[username]) userWeedStashes[username] = 0;
+    if (!userStats[username]) userStats[username] = {};
+    if (userStats[username].luckyCoins === undefined) userStats[username].luckyCoins = 0;
+
+    // 🎲 Adventure scenario pool
+    const scenarios = [
+        {
+            name: "🥦 Weed Smuggling",
+            description: "You're transporting a van full of premium weed across state lines. What's your plan?",
+            choices: [
+                { text: "Take the highway", reward: { gojiBux: 15000 } },
+                { text: "Use the backroads", reward: { gojiBux: 30000, bustChance: 0.3 } },
+                { text: "Bribe a cop", reward: { gojiBux: 50000, bustChance: 0.9 } }
+            ]
+        },
+        {
+            name: "🎰 Casino Hustle",
+            description: "You're managing an underground casino when a high roller arrives. How do you proceed?",
+            choices: [
+                { text: "Let them play", reward: { gojiBux: 20000 } },
+                { text: "Rig the games", reward: { gojiBux: 40000, bustChance: 0.4 } },
+                { text: "Close up shop", reward: { gojiBux: 10000 } }
+            ]
+        },
+        {
+            name: "🧪 Underground Lab Raid",
+            description: "A shady dealer says there’s unguarded synthweed at an abandoned lab.",
+            choices: [
+                { text: "Sneak in solo", reward: { gojiBux: 20000, weed: 3 } },
+                { text: "Bring backup", reward: { gojiBux: 40000, weed: 5, bustChance: 0.25 } },
+                { text: "Sell the tip", reward: { gojiBux: 12000 } }
+            ]
+        },
+        {
+            name: "🏴‍☠️ Black Market Deal",
+            description: "A dubious buyer wants to purchase your entire stash. Do you trust them?",
+            choices: [
+                { text: "Sell everything", reward: { gojiBux: 50000, weed: -10 } },
+                { text: "Test the waters", reward: { gojiBux: 30000, weed: -5, bustChance: 0.2 } },
+                { text: "Decline the offer", reward: { gojiBux: 12000 } }
+            ]
+        }
+    ];
+
+    // 🎯 Pick random scenario and outcome
+    const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+    const choice = scenario.choices[Math.floor(Math.random() * scenario.choices.length)];
+
+    // 📝 Build result message
+    let result = `${scenario.name}: ${scenario.description}\n\n👉 *${choice.text}*... `;
+
+    const currentBalance = userBalances[username].balance;
+    const weedChange = choice.reward.weed || 0;
+    let busted = false;
+    let gainedSomething = false;
+
+    // 🚨 Bust chance check
+    if (choice.reward.bustChance && Math.random() < choice.reward.bustChance) {
+        const lossAmount = Math.min(currentBalance, Math.abs(choice.reward.gojiBux || 0));
+        result += `🚨 Oh no! The authorities caught ${nickname}. BUSTED! Lost 💵 ${lossAmount.toLocaleString()} GBX.`;
+        userBalances[username].balance -= lossAmount;
+        lghBank += lossAmount;
+        busted = true;
+    } else {
+        const gainAmount = choice.reward.gojiBux || 0;
+
+        if (gainAmount < 0) {
+            // Manual loss (like bribe)
+            const lossAmount = Math.min(currentBalance, Math.abs(gainAmount));
+            result += `🚔 BUSTED! ${nickname} lost 💵 ${lossAmount.toLocaleString()} GBX.`;
+            userBalances[username].balance -= lossAmount;
+            lghBank += lossAmount;
+            busted = true;
+        } else {
+            result += `💵➕ Success! ${nickname} earned 💵 ${gainAmount.toLocaleString()} GBX.`;
+            userBalances[username].balance += gainAmount;
+            gainedSomething = true;
+        }
+
+        // 🌿 Weed gain/loss
+        if (weedChange !== 0) {
+            const currentWeed = userWeedStashes[username];
+            const newWeed = Math.max(0, currentWeed + weedChange);
+            userWeedStashes[username] = newWeed;
+            result += weedChange > 0
+                ? ` 🌿 Gained ${weedChange} weed!`
+                : ` 🌿 Lost ${Math.abs(weedChange)} weed.`;
+        }
+
+        // 🍀 Lucky Coin chance (3%)
+        if (gainedSomething && Math.random() < 0.03) {
+            userStats[username].luckyCoins++;
+            result += ` 🍀 You found a Lucky Coin!`;
+        }
+    }
+
+    // ✅ Apply cooldown and save
+    lastAdventureTime[username] = now;
+    saveBalances();
+    saveWeedStashes();
+    saveUserStats();
+    localStorage.setItem("lghBank", lghBank.toString());
+    localStorage.setItem("lastAdventureTime", JSON.stringify(lastAdventureTime));
+
+    respondWithMessage.call(this, result);
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
