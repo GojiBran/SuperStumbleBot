@@ -8970,465 +8970,7 @@ if (wsmsg["text"].toLowerCase() === ".howpot") {
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 🎰 `.gamble AMOUNT` or `.bet AMOUNT` - Bet GojiBux for a chance to win!
-/*if (wsmsg["text"].toLowerCase().startsWith(".gamble ") || wsmsg["text"].toLowerCase().startsWith(".bet ")) {
-    const args = wsmsg["text"].split(" ");
-    const betInput = args[1]?.toLowerCase();
-    const handle = wsmsg["handle"];
-    const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || username || "you";
-
-    if (!username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
-        return;
-    }
-
-    if (!userStats[username]) userStats[username] = {};
-    const lastGambleTime = userStats[username].lastGamble || 0;
-    const now = Date.now();
-    const cooldown = 30 * 1000; // 30 seconds
-
-    if (now - lastGambleTime < cooldown) {
-        const remaining = Math.ceil((cooldown - (now - lastGambleTime)) / 1000); // divide by 1000 for seconds
-        respondWithMessage.call(this, `⏳ You need to wait ${remaining} more second(s) before gambling again.`);
-        return;
-    }
-
-    let betAmount;
-    if (betInput === "max" || betInput === "all") {
-        betAmount = userBalances[username].balance;
-    } else {
-        betAmount = parseInt(betInput);
-    }
-
-    if (isNaN(betAmount) || betAmount <= 0) {
-        respondWithMessage.call(this, "❌ Invalid amount! Example: `.bet 500` or `.bet max` to go all in.");
-        return;
-    }
-
-    if (userBalances[username].balance < betAmount) {
-        respondWithMessage.call(this, `🤖 Not enough GojiBux! You only have ${userBalances[username].balance.toLocaleString()} GBX.`);
-        return;
-    }
-
-    const roll = Math.random();
-    let winnings = 0;
-    let resultMessage = "";
-
-    // ✨ PREVIEW winnings to check affordability
-    let previewWinnings = 0;
-    if (roll < 0.03) {
-        previewWinnings = betAmount * 4;
-    } else if (roll < 0.15) {
-        previewWinnings = betAmount * 2;
-    } else if (roll < 0.55) {
-        previewWinnings = betAmount;
-    } else if (roll < 0.80) {
-        previewWinnings = Math.floor(betAmount * 0.25);
-    }
-
-    if (previewWinnings > 0) {
-        const potTax = Math.floor(previewWinnings * 0.10);
-        const totalCost = previewWinnings + potTax;
-        if (lghBank < totalCost) {
-            respondWithMessage.call(this, `🚫 LGH Bank is broke! Not enough funds to cover your potential winnings. Try again later.`);
-            return;
-        }
-    }
-
-    // 💰 Roll outcome
-    if (roll < 0.03) {
-        winnings = betAmount * 4;
-        resultMessage = `🎰 JACKPOT!!! ${nickname} turned 💵 ${betAmount.toLocaleString()} into 💵➕ ${winnings.toLocaleString()} GBX! 🥳💸`;
-    } else if (roll < 0.15) {
-        winnings = betAmount * 2;
-        resultMessage = `🔥 HOT STREAK! ${nickname} scored a BIG WIN: 💵➕ ${winnings.toLocaleString()} GBX! 🤑🔥`;
-    } else if (roll < 0.55) {
-        winnings = betAmount;
-        resultMessage = `✅ Clean win! ${nickname} doubled up: 💵➕ ${winnings.toLocaleString()} GBX! 💰`;
-    } else if (roll < 0.80) {
-        winnings = Math.floor(betAmount * 0.25);
-        resultMessage = `🍬 Not bad! ${nickname} got a boost: 💵➕ ${winnings.toLocaleString()} GBX. Take the W!`;
-    } else if (roll < 0.99) {
-        winnings = -Math.floor(betAmount / 2);
-        resultMessage = `😬 Close call. ${nickname} lost half their bet: 💵➖ ${Math.abs(winnings).toLocaleString()} GBX.`;
-    } else {
-        winnings = -betAmount;
-        resultMessage = `💸 WRECKED! ${nickname} lost it all: 💵➖ ${Math.abs(winnings).toLocaleString()} GBX. 😭 Rarest L!`;
-    }
-
-    // 💵 Update balances
-    if (winnings > 0) {
-        const potTax = Math.floor(winnings * 0.10);
-        const netWinnings = winnings - potTax;
-        const totalCost = winnings + potTax;
-
-        userBalances[username].balance += netWinnings;
-        lghBank -= totalCost;
-        gojiPot += potTax;
-
-        resultMessage += ` 🎟️ ${potTax.toLocaleString()} GBX added to the lottery pot.`;
-    } else {
-        const loss = Math.abs(winnings);
-        userBalances[username].balance -= loss;
-        gojiPot += loss;
-
-        resultMessage += ` 🎟️ ${loss.toLocaleString()} GBX added to the lottery pot.`;
-    }
-
-    // 🏆 Streaks and cooldown
-    if (winnings > 0) {
-        userStats[username].winStreak = (userStats[username].winStreak || 0) + 1;
-    } else {
-        userStats[username].winStreak = 0;
-    }
-
-    userStats[username].lastGamble = now;
-
-    // 💥 Bonus for streaks
-    if (userStats[username].winStreak >= 5 && winnings > 0) {
-        const bonus = Math.floor((winnings + betAmount) * (userStats[username].winStreak * 0.05));
-        userBalances[username].balance += bonus;
-        resultMessage += ` 🔥 ${nickname} is on a ${userStats[username].winStreak}-win streak! Bonus 💵➕ ${bonus.toLocaleString()} GBX!`;
-    }
-
-    // 🍀 Lucky Coin
-    if (Math.random() < 0.01) {
-        resultMessage += ` 🍀 ${nickname} found a Lucky Coin! (no effect yet, but wow!)`;
-    }
-
-    // 📈 Final saves and eligibility
-    eligibleUserSet.add(username);
-    saveEligibleUsers();
-    saveBalances();
-    saveGojiPot();
-    saveUserStats();
-    localStorage.setItem("lghBank", lghBank.toString());
-
-    respondWithMessage.call(this, resultMessage);
-}*/
-
-// 🎰 `.gamble AMOUNT` or `.bet AMOUNT` - Bet GojiBux for a chance to win!
-/*if (wsmsg["text"].toLowerCase().startsWith(".gamble ") || wsmsg["text"].toLowerCase().startsWith(".bet ")) {
-    const args = wsmsg["text"].split(" ");
-    const betInput = args[1]?.toLowerCase();
-    const handle = wsmsg["handle"];
-    const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || username || "you";
-
-    if (!username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
-        return;
-    }
-
-    if (!userStats[username]) userStats[username] = {};
-    const lastGambleTime = userStats[username].lastGamble || 0;
-    const now = Date.now();
-    const cooldown = 30 * 1000; // 30 seconds
-
-    if (now - lastGambleTime < cooldown) {
-        const remaining = Math.ceil((cooldown - (now - lastGambleTime)) / 1000);
-        respondWithMessage.call(this, `⏳ You need to wait ${remaining} more second(s) before gambling again.`);
-        return;
-    }
-
-    let betAmount;
-    const balance = userBalances[username].balance;
-
-    if (betInput === "max" || betInput === "all" || betInput === "yolo" || betInput === "degenerate") {
-        betAmount = balance;
-    } else if (betInput === "half") {
-        betAmount = Math.floor(balance / 2);
-    } else if (betInput === "quarter") {
-        betAmount = Math.floor(balance / 4);
-    } else if (betInput === "random") {
-        betAmount = Math.floor(Math.random() * balance) + 1;
-    } else if (/^\d+(\.\d+)?%$/.test(betInput)) {
-        const percent = parseFloat(betInput.replace("%", ""));
-        betAmount = Math.floor((percent / 100) * balance);
-    } else if (/^\d+(\.\d+)?[kmb]$/i.test(betInput)) {
-        const num = parseFloat(betInput);
-        const suffix = betInput.slice(-1).toLowerCase();
-        const multiplier = suffix === "k" ? 1e3 : suffix === "m" ? 1e6 : 1e9;
-        betAmount = Math.floor(num * multiplier);
-    } else {
-        betAmount = parseInt(betInput);
-    }
-
-    if (isNaN(betAmount) || betAmount <= 0) {
-        respondWithMessage.call(this, "❌ Invalid amount! Try `.bet 500`, `.bet max`, `.bet 25%`, `.bet 2k`, `.bet random`, or `.bet yolo`.");
-        return;
-    }
-
-    if (balance < betAmount) {
-        respondWithMessage.call(this, `🤖 Not enough GojiBux! You only have ${balance.toLocaleString()} GBX.`);
-        return;
-    }
-
-    const roll = Math.random();
-    let winnings = 0;
-    let resultMessage = "";
-
-    // ✨ PREVIEW winnings to check affordability
-    let previewWinnings = 0;
-    if (roll < 0.03) {
-        previewWinnings = betAmount * 4;
-    } else if (roll < 0.15) {
-        previewWinnings = betAmount * 2;
-    } else if (roll < 0.55) {
-        previewWinnings = betAmount;
-    } else if (roll < 0.80) {
-        previewWinnings = Math.floor(betAmount * 0.25);
-    }
-
-    if (previewWinnings > 0) {
-        const potTax = Math.floor(previewWinnings * 0.10);
-        const totalCost = previewWinnings + potTax;
-        if (lghBank < totalCost) {
-            respondWithMessage.call(this, `🚫 LGH Bank is broke! Not enough funds to cover your potential winnings. Try again later.`);
-            return;
-        }
-    }
-
-    // 💰 Roll outcome
-    if (roll < 0.03) {
-        winnings = betAmount * 4;
-        resultMessage = `🎰 JACKPOT!!! ${nickname} turned 💵 ${betAmount.toLocaleString()} into 💵➕ ${winnings.toLocaleString()} GBX! 🥳💸`;
-    } else if (roll < 0.15) {
-        winnings = betAmount * 2;
-        resultMessage = `🔥 HOT STREAK! ${nickname} scored a BIG WIN: 💵➕ ${winnings.toLocaleString()} GBX! 🤑🔥`;
-    } else if (roll < 0.55) {
-        winnings = betAmount;
-        resultMessage = `✅ Clean win! ${nickname} doubled up: 💵➕ ${winnings.toLocaleString()} GBX! 💰`;
-    } else if (roll < 0.80) {
-        winnings = Math.floor(betAmount * 0.25);
-        resultMessage = `🍬 Not bad! ${nickname} got a boost: 💵➕ ${winnings.toLocaleString()} GBX. Take the W!`;
-    } else if (roll < 0.99) {
-        winnings = -Math.floor(betAmount / 2);
-        resultMessage = `😬 Close call. ${nickname} lost half their bet: 💵➖ ${Math.abs(winnings).toLocaleString()} GBX.`;
-    } else {
-        winnings = -betAmount;
-        resultMessage = `💸 WRECKED! ${nickname} lost it all: 💵➖ ${Math.abs(winnings).toLocaleString()} GBX. 😭 Rarest L!`;
-    }
-
-    // 💵 Update balances
-    if (winnings > 0) {
-        const potTax = Math.floor(winnings * 0.10);
-        const netWinnings = winnings - potTax;
-        const totalCost = winnings + potTax;
-
-        userBalances[username].balance += netWinnings;
-        lghBank -= totalCost;
-        gojiPot += potTax;
-
-        resultMessage += ` 🎟️ ${potTax.toLocaleString()} GBX added to the lottery pot.`;
-    } else {
-        const loss = Math.abs(winnings);
-        userBalances[username].balance -= loss;
-        gojiPot += loss;
-
-        resultMessage += ` 🎟️ ${loss.toLocaleString()} GBX added to the lottery pot.`;
-    }
-
-    // 🏆 Streaks and cooldown
-    if (winnings > 0) {
-        userStats[username].winStreak = (userStats[username].winStreak || 0) + 1;
-    } else {
-        userStats[username].winStreak = 0;
-    }
-
-    userStats[username].lastGamble = now;
-
-    // 💥 Bonus for streaks
-    if (userStats[username].winStreak >= 5 && winnings > 0) {
-        const bonus = Math.floor((winnings + betAmount) * (userStats[username].winStreak * 0.05));
-        userBalances[username].balance += bonus;
-        resultMessage += ` 🔥 ${nickname} is on a ${userStats[username].winStreak}-win streak! Bonus 💵➕ ${bonus.toLocaleString()} GBX!`;
-    }
-
-    // 🍀 Lucky Coin
-    if (Math.random() < 0.01) {
-        resultMessage += ` 🍀 ${nickname} found a Lucky Coin! (no effect yet, but wow!)`;
-    }
-
-    // 📈 Final saves and eligibility
-    eligibleUserSet.add(username);
-    saveEligibleUsers();
-    saveBalances();
-    saveGojiPot();
-    saveUserStats();
-    localStorage.setItem("lghBank", lghBank.toString());
-
-    respondWithMessage.call(this, resultMessage);
-}*/
-
-// 🎰 `.gamble AMOUNT` or `.bet AMOUNT` - Bet GojiBux for a chance to win!
 /*if (
-    wsmsg["text"].toLowerCase().startsWith(".gamble ") ||
-    wsmsg["text"].toLowerCase().startsWith(".bet ")
-) {
-    const args = wsmsg["text"].split(" ");
-    const betInput = args[1]?.toLowerCase();
-    const handle = wsmsg["handle"];
-    const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || username || "you";
-
-    if (!username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
-        return;
-    }
-
-    if (!userStats[username]) userStats[username] = {};
-    if (userStats[username].luckyCoins === undefined) userStats[username].luckyCoins = 0;
-
-    const lastGambleTime = userStats[username].lastGamble || 0;
-    const now = Date.now();
-    const cooldown = 30 * 1000; // 30 seconds
-
-    if (now - lastGambleTime < cooldown) {
-        const remaining = Math.ceil((cooldown - (now - lastGambleTime)) / 1000);
-        respondWithMessage.call(this, `⏳ You need to wait ${remaining} more second(s) before gambling again.`);
-        return;
-    }
-
-    let betAmount;
-    const balance = userBalances[username].balance;
-
-    if (["max", "all", "yolo", "degenerate"].includes(betInput)) {
-        betAmount = balance;
-    } else if (betInput === "half") {
-        betAmount = Math.floor(balance / 2);
-    } else if (betInput === "quarter") {
-        betAmount = Math.floor(balance / 4);
-    } else if (betInput === "random") {
-        betAmount = Math.floor(Math.random() * balance) + 1;
-    } else if (/^\d+(\.\d+)?%$/.test(betInput)) {
-        const percent = parseFloat(betInput.replace("%", ""));
-        betAmount = Math.floor((percent / 100) * balance);
-    } else if (/^\d+(\.\d+)?[kmb]$/i.test(betInput)) {
-        const num = parseFloat(betInput);
-        const suffix = betInput.slice(-1).toLowerCase();
-        const multiplier = suffix === "k" ? 1e3 : suffix === "m" ? 1e6 : 1e9;
-        betAmount = Math.floor(num * multiplier);
-    } else {
-        betAmount = parseInt(betInput);
-    }
-
-    if (isNaN(betAmount) || betAmount <= 0) {
-        respondWithMessage.call(
-            this,
-            "❌ Invalid amount! Try `.bet 500`, `.bet max`, `.bet 25%`, `.bet 2k`, `.bet random`, or `.bet yolo`."
-        );
-        return;
-    }
-
-    if (balance < betAmount) {
-        respondWithMessage.call(
-            this,
-            `🤖 Not enough GojiBux! You only have ${balance.toLocaleString()} GBX.`
-        );
-        return;
-    }
-
-    const roll = Math.random();
-    let winnings = 0;
-    let resultMessage = "";
-    let usedLuckyCoin = false;
-
-    let previewWinnings = 0;
-    if (roll < 0.03) previewWinnings = betAmount * 4;
-    else if (roll < 0.15) previewWinnings = betAmount * 2;
-    else if (roll < 0.55) previewWinnings = betAmount;
-    else if (roll < 0.80) previewWinnings = Math.floor(betAmount * 0.25);
-
-    if (previewWinnings > 0) {
-        const potTax = Math.floor(previewWinnings * 0.10);
-        const totalCost = previewWinnings + potTax;
-
-        if (lghBank < totalCost) {
-            if (userStats[username].luckyCoins > 0) {
-                userStats[username].luckyCoins--;
-                usedLuckyCoin = true;
-            } else {
-                respondWithMessage.call(
-                    this,
-                    `🚫 LGH Bank is broke! Not enough funds to cover your potential winnings. Try again later.`
-                );
-                return;
-            }
-        }
-    }
-
-    if (roll < 0.03) {
-        winnings = betAmount * 4;
-        resultMessage = `🎰 JACKPOT!!! ${nickname} turned 💵 ${betAmount.toLocaleString()} into 💵➕ ${winnings.toLocaleString()} GBX! 🥳💸`;
-    } else if (roll < 0.15) {
-        winnings = betAmount * 2;
-        resultMessage = `🔥 HOT STREAK! ${nickname} scored a BIG WIN: 💵➕ ${winnings.toLocaleString()} GBX! 🤑🔥`;
-    } else if (roll < 0.55) {
-        winnings = betAmount;
-        resultMessage = `✅ Clean win! ${nickname} doubled up: 💵➕ ${winnings.toLocaleString()} GBX! 💰`;
-    } else if (roll < 0.80) {
-        winnings = Math.floor(betAmount * 0.25);
-        resultMessage = `🍬 Not bad! ${nickname} got a boost: 💵➕ ${winnings.toLocaleString()} GBX. Take the W!`;
-    } else if (roll < 0.99) {
-        winnings = -Math.floor(betAmount / 2);
-        resultMessage = `😬 Close call. ${nickname} lost half their bet: 💵➖ ${Math.abs(winnings).toLocaleString()} GBX.`;
-    } else {
-        winnings = -betAmount;
-        resultMessage = `💸 WRECKED! ${nickname} lost it all: 💵➖ ${Math.abs(winnings).toLocaleString()} GBX. 😭 Rarest L!`;
-    }
-
-    if (winnings > 0) {
-        const potTax = Math.floor(winnings * 0.10);
-        const netWinnings = winnings - potTax;
-        const totalCost = winnings + potTax;
-
-        userBalances[username].balance += netWinnings;
-        if (!usedLuckyCoin) lghBank -= totalCost;
-        gojiPot += potTax;
-
-        resultMessage += ` 🎟️ ${potTax.toLocaleString()} GBX added to the lottery pot.`;
-        if (usedLuckyCoin) {
-            resultMessage += ` 🍀 A Lucky Coin shimmered... LGH Bank was broke, but fate smiled upon you!`;
-        }
-    } else {
-        const loss = Math.abs(winnings);
-        userBalances[username].balance -= loss;
-        gojiPot += loss;
-
-        resultMessage += ` 🎟️ ${loss.toLocaleString()} GBX added to the lottery pot.`;
-    }
-
-    if (winnings > 0) {
-        userStats[username].winStreak = (userStats[username].winStreak || 0) + 1;
-    } else {
-        userStats[username].winStreak = 0;
-    }
-
-    userStats[username].lastGamble = now;
-
-    if (userStats[username].winStreak >= 5 && winnings > 0) {
-        const bonus = Math.floor((winnings + betAmount) * (userStats[username].winStreak * 0.05));
-        userBalances[username].balance += bonus;
-        resultMessage += ` 🔥 ${nickname} is on a ${userStats[username].winStreak}-win streak! Bonus 💵➕ ${bonus.toLocaleString()} GBX!`;
-    }
-
-    if (Math.random() < 0.01) {
-        userStats[username].luckyCoins++;
-        resultMessage += ` 🍀 ${nickname} found a Lucky Coin! You now have ${userStats[username].luckyCoins}.`;
-    }
-
-    eligibleUserSet.add(username);
-    saveEligibleUsers();
-    saveBalances();
-    saveGojiPot();
-    saveUserStats();
-    localStorage.setItem("lghBank", lghBank.toString());
-
-    respondWithMessage.call(this, resultMessage);
-}*/
-
-if (
     wsmsg["text"].toLowerCase().startsWith(".gamble ") ||
     wsmsg["text"].toLowerCase().startsWith(".bet ")
 ) {
@@ -9557,6 +9099,146 @@ if (
         userBalances[username].contributedToPot = (userBalances[username].contributedToPot || 0) + loss;
 
         resultMessage += ` 🎟️ ${loss.toLocaleString()} GBX added to the lottery pot.`;
+    }
+
+    userStats[username].lastGamble = now;
+    eligibleUserSet.add(username);
+
+    saveUserStats();
+    saveBalances();
+    saveGojiPot();
+    saveEligibleUsers();
+
+    respondWithMessage.call(this, resultMessage);
+}*/
+
+// 🎰 `.gamble AMOUNT` or `.bet AMOUNT` - Bet GojiBux for a chance to win!
+if (
+    wsmsg["text"].toLowerCase().startsWith(".gamble ") ||
+    wsmsg["text"].toLowerCase().startsWith(".bet ")
+) {
+    const args = wsmsg["text"].split(" ");
+    const betInput = args[1]?.toLowerCase();
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    if (!username) {
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        return;
+    }
+
+    if (!userStats[username]) userStats[username] = {};
+    if (userStats[username].luckyCoins === undefined) userStats[username].luckyCoins = 0;
+
+    const lastGambleTime = userStats[username].lastGamble || 0;
+    const now = Date.now();
+    const cooldown = 30 * 1000;
+
+    if (now - lastGambleTime < cooldown) {
+        const remaining = Math.ceil((cooldown - (now - lastGambleTime)) / 1000);
+        respondWithMessage.call(this, `⏳ You need to wait ${remaining} more second(s) before gambling again.`);
+        return;
+    }
+
+    let betAmount;
+    const balance = userBalances[username].balance;
+
+    if (["max", "all", "yolo", "degenerate"].includes(betInput)) {
+        betAmount = balance;
+    } else if (betInput === "half") {
+        betAmount = Math.floor(balance / 2);
+    } else if (betInput === "quarter") {
+        betAmount = Math.floor(balance / 4);
+    } else if (betInput === "random") {
+        betAmount = Math.floor(Math.random() * balance) + 1;
+    } else if (/^\d+(\.\d+)?%$/.test(betInput)) {
+        const percent = parseFloat(betInput.replace("%", ""));
+        betAmount = Math.floor((percent / 100) * balance);
+    } else if (/^\d+(\.\d+)?[kmb]$/i.test(betInput)) {
+        const num = parseFloat(betInput);
+        const suffix = betInput.slice(-1).toLowerCase();
+        const multiplier = suffix === "k" ? 1e3 : suffix === "m" ? 1e6 : 1e9;
+        betAmount = Math.floor(num * multiplier);
+    } else {
+        betAmount = parseInt(betInput);
+    }
+
+    if (isNaN(betAmount) || betAmount <= 0) {
+        respondWithMessage.call(this, "❌ Invalid amount! Try `.bet 500`, `.bet max`, etc.");
+        return;
+    }
+
+    if (balance < betAmount) {
+        respondWithMessage.call(this, `🤖 Not enough GojiBux! You only have ${balance.toLocaleString()} GBX.`);
+        return;
+    }
+
+    const roll = Math.random();
+    let winnings = 0;
+    let resultMessage = "";
+    let usedLuckyCoin = false;
+
+    // Simulate what the winnings *would* be
+    let previewWinnings = 0;
+    if (roll < 0.03) previewWinnings = betAmount * 4;
+    else if (roll < 0.15) previewWinnings = betAmount * 2;
+    else if (roll < 0.55) previewWinnings = betAmount;
+    else if (roll < 0.80) previewWinnings = Math.floor(betAmount * 0.25);
+
+    // If a win is possible, check if the bank can afford it
+    if (previewWinnings > 0) {
+        if (lghBank < previewWinnings) {
+            if (userStats[username].luckyCoins > 0) {
+                userStats[username].luckyCoins--;
+                usedLuckyCoin = true;
+            } else {
+                respondWithMessage.call(this, `🚫 Gamble cancelled! LGH Bank can't afford to pay you if you win.`);
+                return;
+            }
+        }
+    }
+
+    // Final outcome
+    if (roll < 0.03) {
+        winnings = betAmount * 4;
+        resultMessage = `🎰 JACKPOT!!! ${nickname} won 💵➕ ${winnings.toLocaleString()} GBX!`;
+    } else if (roll < 0.15) {
+        winnings = betAmount * 2;
+        resultMessage = `🔥 HOT STREAK! ${nickname} won 💵➕ ${winnings.toLocaleString()} GBX!`;
+    } else if (roll < 0.55) {
+        winnings = betAmount;
+        resultMessage = `✅ Win! ${nickname} gained 💵➕ ${winnings.toLocaleString()} GBX!`;
+    } else if (roll < 0.80) {
+        winnings = Math.floor(betAmount * 0.25);
+        resultMessage = `🍬 Small win! ${nickname} got 💵➕ ${winnings.toLocaleString()} GBX.`;
+    } else if (roll < 0.99) {
+        winnings = -Math.floor(betAmount / 2);
+        resultMessage = `😬 Oof. ${nickname} lost 💵➖ ${Math.abs(winnings).toLocaleString()} GBX.`;
+    } else {
+        winnings = -betAmount;
+        resultMessage = `💸 Rekt! ${nickname} lost it all: 💵➖ ${Math.abs(winnings).toLocaleString()} GBX.`;
+    }
+
+    if (winnings > 0) {
+        const potTax = Math.floor(winnings * 0.10);
+        const netWinnings = winnings - potTax;
+
+        userBalances[username].balance += netWinnings;
+
+        if (!usedLuckyCoin) lghBank -= winnings;
+        gojiPot += potTax;
+
+        userBalances[username].contributedToPot = (userBalances[username].contributedToPot || 0) + potTax;
+
+        resultMessage += ` 🎟️ ${potTax.toLocaleString()} GBX added to the lottery pot.`;
+        if (usedLuckyCoin) resultMessage += ` 🍀 Lucky Coin used!`;
+    } else {
+        const loss = Math.abs(winnings);
+        userBalances[username].balance -= loss;
+        lghBank += loss; // Loss goes to the bank, not the pot
+
+        resultMessage += ` 🏦 ${loss.toLocaleString()} GBX added to the LGH Bank.`;
     }
 
     userStats[username].lastGamble = now;
