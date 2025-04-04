@@ -8467,349 +8467,6 @@ if (wsmsg["text"].toLowerCase().startsWith(".stealbux")) {
     respondWithMessage.call(this, leaderboard.trim());
 }*/
 
-// 🏆 `.topall` / `.leaderboard` / `.top` - Show top users in each category (single message)
-const topallTriggers = [".topall", ".leaderboard", ".top"];
-const commandText = wsmsg["text"]?.toLowerCase().trim();
-
-if (topallTriggers.includes(commandText)) {
-    try {
-        console.log("🟢 Trigger matched for .topall");
-
-        const categories = [
-            { name: "GojiBux", emoji: "💵", data: userBalances, key: "balance", unit: "GBX" },
-            { name: "Offshore", emoji: "💰", data: userStashes, key: null, unit: "GBX" },
-            { name: "Weed", emoji: "🥦", data: userWeedStashes, key: null, unit: "g" },
-            { name: "Hidden Weed", emoji: "🔒", data: userHiddenWeed, key: null, unit: "g" },
-            { name: "Joints", emoji: "🥖", data: userJointStashes, key: null, unit: "Joints" },
-            { name: "Spaget", emoji: "🍝", data: userSpaghettiStashes, key: null, unit: "SPG" },
-            { name: "Pizza", emoji: "🍕", data: userPizzaStashes, key: null, unit: "PZA" },
-            { name: "Cookies", emoji: "🍪", data: userCookieStashes, key: null, unit: "Cookies" },
-            { name: "Frogs", emoji: "🐸", data: userFrogCounts, key: null, unit: "Frogs" },
-            { name: "Potatoes", emoji: "🥔", data: userPotatoCounts, key: null, unit: "Potatoes" }
-        ];
-
-        const lines = ["🏆 Top Players 🏆"];
-
-        categories.forEach(({ name, emoji, data, key, unit }) => {
-            if (!data || Object.keys(data).length === 0) {
-                lines.push(`${emoji} No ${name.toLowerCase()} data found.`);
-                return;
-            }
-
-            const sortedUsers = Object.entries(data).sort((a, b) => {
-                const valA = key ? a[1]?.[key] || 0 : a[1] || 0;
-                const valB = key ? b[1]?.[key] || 0 : b[1] || 0;
-                return valB - valA;
-            });
-
-            const [username, stash] = sortedUsers[0];
-            const value = key ? stash?.[key] || 0 : stash || 0;
-
-            if (value > 0) {
-                const nickname = userNicknames?.[username]?.nickname || username;
-                lines.push(`${emoji} ${nickname} - ${value.toLocaleString()} ${unit}`);
-            } else {
-                lines.push(`${emoji} No ${name.toLowerCase()} data found.`);
-            }
-        });
-
-        const message = lines.join("\n");
-        respondWithMessage(message.length > 300 ? message.slice(0, 295) + "…" : message);
-    } catch (err) {
-        console.error("❌ Error in .topall command:", err);
-        respondWithMessage("⚠️ Something went wrong with the leaderboard.");
-    }
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-if (wsmsg["text"].toLowerCase() === ".topcoin") {
-    let gojiCoinBalances = JSON.parse(localStorage.getItem("gojiCoinBalances")) || {};
-
-    if (Object.keys(gojiCoinBalances).length === 0) {
-        respondWithMessage.call(this, "💎 No one owns any GojiCoins yet! Be the first to flex.");
-        return;
-    }
-
-    let sortedUsers = Object.entries(gojiCoinBalances)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 3);
-
-    const medals = ["🥇", "🥈", "🥉"];
-
-    let leaderboard = sortedUsers.map(([user, coins], index) =>
-        `${medals[index]} ${user} - 💎 ${coins.toLocaleString()} GojiCoin${coins !== 1 ? "s" : ""}`
-    ).join("\n");
-
-    respondWithMessage.call(this, `🏆 Top 3 GojiCoin Holders 💎\n${leaderboard}`);
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-if (wsmsg["text"].toLowerCase() === ".topbux") {
-    let sortedUsers = Object.entries(userBalances)
-        .sort((a, b) => (b[1]?.balance || 0) - (a[1]?.balance || 0))
-        .slice(0, 3);
-
-    if (sortedUsers.length === 0) {
-        respondWithMessage.call(this, "🤖 No GojiBux data available.");
-        return;
-    }
-
-    let leaderboard = "🏆 Top 3 GojiBux Holders 💵\n";
-    const medals = ["🥇", "🥈", "🥉"];
-
-    sortedUsers.forEach(([username, data], index) => {
-        leaderboard += `${medals[index]} ${username} - 💵 ${data.balance.toLocaleString()} GBX\n`;
-    });
-
-    respondWithMessage.call(this, leaderboard.trim());
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-if (wsmsg["text"].toLowerCase() === ".topstashbux") {
-    let sortedOffshoreUsers = Object.entries(userStashes)
-        .sort((a, b) => (b[1] || 0) - (a[1] || 0))
-        .slice(0, 3);
-
-    if (sortedOffshoreUsers.length === 0) {
-        respondWithMessage.call(this, "🏝️ No offshore stash data available.");
-        return;
-    }
-
-    let leaderboard = "🏆 Top 3 Offshore Stashes 💰\n";
-    const medals = ["🥇", "🥈", "🥉"];
-
-    sortedOffshoreUsers.forEach(([username, stash], index) => {
-        const nickname = userNicknames[username]?.nickname || username;
-        leaderboard += `${medals[index]} ${nickname} - 💰 ${stash.toLocaleString()} GBX\n`;
-    });
-
-    respondWithMessage.call(this, leaderboard.trim());
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-if (wsmsg["text"].toLowerCase() === ".topweed") {
-    let sortedWeedUsers = Object.entries(userWeedStashes)
-        .sort((a, b) => (b[1] || 0) - (a[1] || 0))
-        .slice(0, 3);
-
-    if (sortedWeedUsers.length === 0) {
-        respondWithMessage.call(this, "🤖 No weed stash data available.");
-        return;
-    }
-
-    let leaderboard = "🏆 Top 3 Weed Stashes 🥦\n";
-    const medals = ["🥇", "🥈", "🥉"];
-
-    sortedWeedUsers.forEach(([username, stash], index) => {
-        const nickname = userNicknames[username]?.nickname || username;
-        leaderboard += `${medals[index]} ${nickname} - 🥦 ${stash.toLocaleString()} grams\n`;
-    });
-
-    respondWithMessage.call(this, leaderboard.trim());
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-if (wsmsg["text"].toLowerCase() === ".topjoint") {
-    const sortedUsers = Object.entries(userJointStashes)
-        .sort((a, b) => (b[1] || 0) - (a[1] || 0))
-        .filter(([username, stash]) => stash > 0)
-        .slice(0, 3); // Top 3 only
-
-    if (sortedUsers.length === 0) {
-        respondWithMessage.call(this, "🤖 Nobody has any joints to flex.");
-        return;
-    }
-
-    let leaderboard = "🏆 Top 3 Joint Rollers 🥖\n";
-    const medals = ["🥇", "🥈", "🥉"];
-
-    sortedUsers.forEach(([username, stash], index) => {
-        const nickname = userNicknames[username]?.nickname || username;
-        leaderboard += `${medals[index]} ${nickname} - ${stash.toLocaleString()} Joints\n`;
-    });
-
-    respondWithMessage.call(this, leaderboard.trim());
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-if (wsmsg["text"].toLowerCase() === ".topspaget") {
-    let sortedUsers = Object.entries(userSpaghettiStashes)
-        .sort((a, b) => (b[1] || 0) - (a[1] || 0))
-        .slice(0, 3);
-
-    if (sortedUsers.length === 0) {
-        respondWithMessage.call(this, "🤖 No spaghetti data available.");
-        return;
-    }
-
-    let leaderboard = "🏆 Top 3 Spaget Hoarders 🍝\n";
-    const medals = ["🥇", "🥈", "🥉"];
-
-    sortedUsers.forEach(([username, stash], index) => {
-        const nickname = userNicknames[username]?.nickname || username;
-        const prefix = medals[index];
-        leaderboard += `${prefix} ${nickname} - 🍝 ${stash.toLocaleString()} SPG\n`;
-    });
-
-    respondWithMessage.call(this, leaderboard.trim());
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-if (wsmsg["text"].toLowerCase() === ".toppizza") {
-    let sortedUsers = Object.entries(userPizzaStashes)
-        .sort((a, b) => (b[1] || 0) - (a[1] || 0))
-        .slice(0, 3);
-
-    if (sortedUsers.length === 0) {
-        respondWithMessage.call(this, "🤖 No pizza data available.");
-        return;
-    }
-
-    let leaderboard = "🏆 Top 3 Pizza Hoarders 🍕\n";
-    const medals = ["🥇", "🥈", "🥉"];
-
-    sortedUsers.forEach(([username, stash], index) => {
-        const nickname = userNicknames[username]?.nickname || username;
-        const prefix = medals[index];
-        leaderboard += `${prefix} ${nickname} - 🍕 ${stash.toLocaleString()} PZA\n`;
-    });
-
-    respondWithMessage.call(this, leaderboard.trim());
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-if (wsmsg["text"].toLowerCase() === ".topcookie") {
-    let sortedUsers = Object.entries(userCookieStashes)
-        .sort((a, b) => (b[1] || 0) - (a[1] || 0))
-        .slice(0, 3);
-
-    if (sortedUsers.length === 0) {
-        respondWithMessage.call(this, "🍪 No cookies? CRUMBS! Somebody dunk something!");
-        return;
-    }
-
-    let leaderboard = "🏆 Cookie Chaos 🍪\n";
-    const medals = ["🥇", "🥈", "🥉"];
-    const cookieTitles = [
-        "🚀 Intergalactic Biscuit Baron",
-        "👑 Crumb Commander",
-        "🎩 Cookie Collector Deluxe"
-    ];
-
-    sortedUsers.forEach(([username, stash], index) => {
-        const nickname = userNicknames[username]?.nickname || username;
-        const title = cookieTitles[index] || "🍪 Cookie Creature";
-        const medal = medals[index] || "🍪";
-        leaderboard += `${medal} ${nickname} - ${title} - ${stash.toLocaleString()} COOKIES\n`;
-    });
-
-    respondWithMessage.call(this, leaderboard.trim());
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-if (wsmsg["text"].toLowerCase() === ".topfrog") {
-    let sortedUsers = Object.entries(userFrogCounts)
-        .sort((a, b) => (b[1] || 0) - (a[1] || 0))
-        .slice(0, 3);
-
-    if (sortedUsers.length === 0) {
-        respondWithMessage.call(this, "🤖 No frog data available.");
-        return;
-    }
-
-    let leaderboard = "🏆 Frog Frenzy 🐸\n";
-    const medals = ["🥇", "🥈", "🥉"];
-
-    sortedUsers.forEach(([username, count], index) => {
-        const nickname = userNicknames[username]?.nickname || username;
-        const prefix = medals[index];
-        leaderboard += `${prefix} ${nickname} - 🐸 ${count.toLocaleString()} frog${count !== 1 ? "s" : ""}\n`;
-    });
-
-    respondWithMessage.call(this, leaderboard.trim());
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-if (wsmsg["text"].toLowerCase() === ".toppotato") {
-    let sortedUsers = Object.entries(userPotatoCounts)
-        .sort((a, b) => (b[1] || 0) - (a[1] || 0))
-        .slice(0, 3);
-
-    if (sortedUsers.length === 0) {
-        respondWithMessage.call(this, "🤖 No potato data available.");
-        return;
-    }
-
-    let leaderboard = "🏆 Spud Supreme 🥔\n";
-    const medals = ["🥇", "🥈", "🥉"];
-
-    sortedUsers.forEach(([username, count], index) => {
-        const nickname = userNicknames[username]?.nickname || username;
-        const prefix = medals[index];
-        leaderboard += `${prefix} ${nickname} - 🥔 ${count.toLocaleString()} potato${count !== 1 ? "es" : ""}\n`;
-    });
-
-    respondWithMessage.call(this, leaderboard.trim());
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-if (wsmsg["text"].toLowerCase() === ".leastbux") {
-    let sortedUsers = Object.entries(userBalances)
-        .sort((a, b) => (a[1]?.balance || 0) - (b[1]?.balance || 0))
-        .slice(0, 3);
-
-    if (sortedUsers.length === 0) {
-        respondWithMessage.call(this, "🤖 No GojiBux data available.");
-        return;
-    }
-
-    let leaderboard = "🏆 Bottom 3 GojiBux Holders 💵\n";
-    const medals = ["🥇", "🥈", "🥉"];
-
-    sortedUsers.forEach(([username, data], index) => {
-        const nickname = userNicknames[username]?.nickname || username;
-        const prefix = medals[index];
-        leaderboard += `${prefix} ${nickname} - 💵 ${data.balance.toLocaleString()} GBX\n`;
-    });
-
-    respondWithMessage.call(this, leaderboard.trim());
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-if (wsmsg["text"].toLowerCase() === ".leastweed") {
-    let sortedWeedUsers = Object.entries(userWeedStashes)
-        .sort((a, b) => (a[1] || 0) - (b[1] || 0))
-        .slice(0, 3);
-
-    if (sortedWeedUsers.length === 0) {
-        respondWithMessage.call(this, "🤖 No weed stash data available.");
-        return;
-    }
-
-    let leaderboard = "🏆 Bottom 3 Weed Stashes 🥦\n";
-    const medals = ["🥇", "🥈", "🥉"];
-
-    sortedWeedUsers.forEach(([username, stash], index) => {
-        const nickname = userNicknames[username]?.nickname || username;
-        const prefix = medals[index];
-        leaderboard += `${prefix} ${nickname} - 🥦 ${stash.toLocaleString()} grams\n`;
-    });
-
-    respondWithMessage.call(this, leaderboard.trim());
-}
-
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 📊 `.balance` and `.wallet` - Show full economy details for the user
@@ -9260,6 +8917,498 @@ if (wsmsg["text"].toLowerCase() === ".stats") {
         `🍝 Users with Spaget: ${usersWithSpaghetti.toLocaleString()}\n` +
         `🍕 Users with Pizza: ${usersWithPizza.toLocaleString()}`
     );
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+/*
+if (wsmsg["text"].toLowerCase() === ".topcoin") {
+    //let gojiCoinBalances = JSON.parse(localStorage.getItem("gojiCoinBalances")) || {};
+
+    if (Object.keys(gojiCoinBalances).length === 0) {
+        respondWithMessage.call(this, "💎 No one owns any GojiCoins yet! Be the first to flex.");
+        return;
+    }
+
+    let sortedUsers = Object.entries(gojiCoinBalances)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3);
+
+    const medals = ["🥇", "🥈", "🥉"];
+
+    let leaderboard = sortedUsers.map(([user, coins], index) =>
+        `${medals[index]} ${user} - 💎 ${coins.toLocaleString()} GojiCoin${coins !== 1 ? "s" : ""}`
+    ).join("\n");
+
+    respondWithMessage.call(this, `🏆 Top 3 GojiCoin Holders 💎\n${leaderboard}`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+if (wsmsg["text"].toLowerCase() === ".topbux") {
+    let sortedUsers = Object.entries(userBalances)
+        .sort((a, b) => (b[1]?.balance || 0) - (a[1]?.balance || 0))
+        .slice(0, 3);
+
+    if (sortedUsers.length === 0) {
+        respondWithMessage.call(this, "🤖 No GojiBux data available.");
+        return;
+    }
+
+    let leaderboard = "🏆 Top 3 GojiBux Holders 💵\n";
+    const medals = ["🥇", "🥈", "🥉"];
+
+    sortedUsers.forEach(([username, data], index) => {
+        leaderboard += `${medals[index]} ${username} - 💵 ${data.balance.toLocaleString()} GBX\n`;
+    });
+
+    respondWithMessage.call(this, leaderboard.trim());
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+if (wsmsg["text"].toLowerCase() === ".topstashbux") {
+    let sortedOffshoreUsers = Object.entries(userStashes)
+        .sort((a, b) => (b[1] || 0) - (a[1] || 0))
+        .slice(0, 3);
+
+    if (sortedOffshoreUsers.length === 0) {
+        respondWithMessage.call(this, "🏝️ No offshore stash data available.");
+        return;
+    }
+
+    let leaderboard = "🏆 Top 3 Offshore Stashes 💰\n";
+    const medals = ["🥇", "🥈", "🥉"];
+
+    sortedOffshoreUsers.forEach(([username, stash], index) => {
+        const nickname = userNicknames[username]?.nickname || username;
+        leaderboard += `${medals[index]} ${nickname} - 💰 ${stash.toLocaleString()} GBX\n`;
+    });
+
+    respondWithMessage.call(this, leaderboard.trim());
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+if (wsmsg["text"].toLowerCase() === ".topweed") {
+    let sortedWeedUsers = Object.entries(userWeedStashes)
+        .sort((a, b) => (b[1] || 0) - (a[1] || 0))
+        .slice(0, 3);
+
+    if (sortedWeedUsers.length === 0) {
+        respondWithMessage.call(this, "🤖 No weed stash data available.");
+        return;
+    }
+
+    let leaderboard = "🏆 Top 3 Weed Stashes 🥦\n";
+    const medals = ["🥇", "🥈", "🥉"];
+
+    sortedWeedUsers.forEach(([username, stash], index) => {
+        const nickname = userNicknames[username]?.nickname || username;
+        leaderboard += `${medals[index]} ${nickname} - 🥦 ${stash.toLocaleString()} grams\n`;
+    });
+
+    respondWithMessage.call(this, leaderboard.trim());
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+if (wsmsg["text"].toLowerCase() === ".topjoint") {
+    const sortedUsers = Object.entries(userJointStashes)
+        .sort((a, b) => (b[1] || 0) - (a[1] || 0))
+        .filter(([username, stash]) => stash > 0)
+        .slice(0, 3); // Top 3 only
+
+    if (sortedUsers.length === 0) {
+        respondWithMessage.call(this, "🤖 Nobody has any joints to flex.");
+        return;
+    }
+
+    let leaderboard = "🏆 Top 3 Joint Rollers 🥖\n";
+    const medals = ["🥇", "🥈", "🥉"];
+
+    sortedUsers.forEach(([username, stash], index) => {
+        const nickname = userNicknames[username]?.nickname || username;
+        leaderboard += `${medals[index]} ${nickname} - ${stash.toLocaleString()} Joints\n`;
+    });
+
+    respondWithMessage.call(this, leaderboard.trim());
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+if (wsmsg["text"].toLowerCase() === ".topspaget") {
+    let sortedUsers = Object.entries(userSpaghettiStashes)
+        .sort((a, b) => (b[1] || 0) - (a[1] || 0))
+        .slice(0, 3);
+
+    if (sortedUsers.length === 0) {
+        respondWithMessage.call(this, "🤖 No spaghetti data available.");
+        return;
+    }
+
+    let leaderboard = "🏆 Top 3 Spaget Hoarders 🍝\n";
+    const medals = ["🥇", "🥈", "🥉"];
+
+    sortedUsers.forEach(([username, stash], index) => {
+        const nickname = userNicknames[username]?.nickname || username;
+        const prefix = medals[index];
+        leaderboard += `${prefix} ${nickname} - 🍝 ${stash.toLocaleString()} SPG\n`;
+    });
+
+    respondWithMessage.call(this, leaderboard.trim());
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+if (wsmsg["text"].toLowerCase() === ".toppizza") {
+    let sortedUsers = Object.entries(userPizzaStashes)
+        .sort((a, b) => (b[1] || 0) - (a[1] || 0))
+        .slice(0, 3);
+
+    if (sortedUsers.length === 0) {
+        respondWithMessage.call(this, "🤖 No pizza data available.");
+        return;
+    }
+
+    let leaderboard = "🏆 Top 3 Pizza Hoarders 🍕\n";
+    const medals = ["🥇", "🥈", "🥉"];
+
+    sortedUsers.forEach(([username, stash], index) => {
+        const nickname = userNicknames[username]?.nickname || username;
+        const prefix = medals[index];
+        leaderboard += `${prefix} ${nickname} - 🍕 ${stash.toLocaleString()} PZA\n`;
+    });
+
+    respondWithMessage.call(this, leaderboard.trim());
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+if (wsmsg["text"].toLowerCase() === ".topcookie") {
+    let sortedUsers = Object.entries(userCookieStashes)
+        .sort((a, b) => (b[1] || 0) - (a[1] || 0))
+        .slice(0, 3);
+
+    if (sortedUsers.length === 0) {
+        respondWithMessage.call(this, "🍪 No cookies? CRUMBS! Somebody dunk something!");
+        return;
+    }
+
+    let leaderboard = "🏆 Cookie Chaos 🍪\n";
+    const medals = ["🥇", "🥈", "🥉"];
+    const cookieTitles = [
+        "🚀 Intergalactic Biscuit Baron",
+        "👑 Crumb Commander",
+        "🎩 Cookie Collector Deluxe"
+    ];
+
+    sortedUsers.forEach(([username, stash], index) => {
+        const nickname = userNicknames[username]?.nickname || username;
+        const title = cookieTitles[index] || "🍪 Cookie Creature";
+        const medal = medals[index] || "🍪";
+        leaderboard += `${medal} ${nickname} - ${title} - ${stash.toLocaleString()} COOKIES\n`;
+    });
+
+    respondWithMessage.call(this, leaderboard.trim());
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+if (wsmsg["text"].toLowerCase() === ".topfrog") {
+    let sortedUsers = Object.entries(userFrogCounts)
+        .sort((a, b) => (b[1] || 0) - (a[1] || 0))
+        .slice(0, 3);
+
+    if (sortedUsers.length === 0) {
+        respondWithMessage.call(this, "🤖 No frog data available.");
+        return;
+    }
+
+    let leaderboard = "🏆 Frog Frenzy 🐸\n";
+    const medals = ["🥇", "🥈", "🥉"];
+
+    sortedUsers.forEach(([username, count], index) => {
+        const nickname = userNicknames[username]?.nickname || username;
+        const prefix = medals[index];
+        leaderboard += `${prefix} ${nickname} - 🐸 ${count.toLocaleString()} frog${count !== 1 ? "s" : ""}\n`;
+    });
+
+    respondWithMessage.call(this, leaderboard.trim());
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+if (wsmsg["text"].toLowerCase() === ".toppotato") {
+    let sortedUsers = Object.entries(userPotatoCounts)
+        .sort((a, b) => (b[1] || 0) - (a[1] || 0))
+        .slice(0, 3);
+
+    if (sortedUsers.length === 0) {
+        respondWithMessage.call(this, "🤖 No potato data available.");
+        return;
+    }
+
+    let leaderboard = "🏆 Spud Supreme 🥔\n";
+    const medals = ["🥇", "🥈", "🥉"];
+
+    sortedUsers.forEach(([username, count], index) => {
+        const nickname = userNicknames[username]?.nickname || username;
+        const prefix = medals[index];
+        leaderboard += `${prefix} ${nickname} - 🥔 ${count.toLocaleString()} potato${count !== 1 ? "es" : ""}\n`;
+    });
+
+    respondWithMessage.call(this, leaderboard.trim());
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+if (wsmsg["text"].toLowerCase() === ".leastbux") {
+    let sortedUsers = Object.entries(userBalances)
+        .sort((a, b) => (a[1]?.balance || 0) - (b[1]?.balance || 0))
+        .slice(0, 3);
+
+    if (sortedUsers.length === 0) {
+        respondWithMessage.call(this, "🤖 No GojiBux data available.");
+        return;
+    }
+
+    let leaderboard = "🏆 Bottom 3 GojiBux Holders 💵\n";
+    const medals = ["🥇", "🥈", "🥉"];
+
+    sortedUsers.forEach(([username, data], index) => {
+        const nickname = userNicknames[username]?.nickname || username;
+        const prefix = medals[index];
+        leaderboard += `${prefix} ${nickname} - 💵 ${data.balance.toLocaleString()} GBX\n`;
+    });
+
+    respondWithMessage.call(this, leaderboard.trim());
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+if (wsmsg["text"].toLowerCase() === ".leastweed") {
+    let sortedWeedUsers = Object.entries(userWeedStashes)
+        .sort((a, b) => (a[1] || 0) - (b[1] || 0))
+        .slice(0, 3);
+
+    if (sortedWeedUsers.length === 0) {
+        respondWithMessage.call(this, "🤖 No weed stash data available.");
+        return;
+    }
+
+    let leaderboard = "🏆 Bottom 3 Weed Stashes 🥦\n";
+    const medals = ["🥇", "🥈", "🥉"];
+
+    sortedWeedUsers.forEach(([username, stash], index) => {
+        const nickname = userNicknames[username]?.nickname || username;
+        const prefix = medals[index];
+        leaderboard += `${prefix} ${nickname} - 🥦 ${stash.toLocaleString()} grams\n`;
+    });
+
+    respondWithMessage.call(this, leaderboard.trim());
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+if (wsmsg["text"]?.toLowerCase().trim() === ".top") {
+    try {
+        const categories = [
+            { name: "GojiBux", emoji: "💵", data: userBalances, key: "balance", unit: "GBX" },
+            { name: "Offshore", emoji: "💰", data: userStashes, key: null, unit: "GBX" },
+            { name: "Weed", emoji: "🥦", data: userWeedStashes, key: null, unit: "g" },
+            //{ name: "Hidden Weed", emoji: "🔒", data: userHiddenWeed, key: null, unit: "g" },
+            { name: "Joints", emoji: "🥖", data: userJointStashes, key: null, unit: "Joints" },
+            { name: "Spaget", emoji: "🍝", data: userSpaghettiStashes, key: null, unit: "SPG" },
+            { name: "Pizza", emoji: "🍕", data: userPizzaStashes, key: null, unit: "PZA" },
+            { name: "Cookies", emoji: "🍪", data: userCookieStashes, key: null, unit: "Cookies" },
+            { name: "Frogs", emoji: "🐸", data: userFrogCounts, key: null, unit: "Frogs" },
+            { name: "Potatoes", emoji: "🥔", data: userPotatoCounts, key: null, unit: "Potatoes" }
+        ];
+
+        const lines = ["🏆 Top Players 🏆"];
+
+        categories.forEach(({ name, emoji, data, key, unit }) => {
+            if (!data || Object.keys(data).length === 0) {
+                lines.push(`${emoji} No ${name.toLowerCase()} data found.`);
+                return;
+            }
+
+            const sortedUsers = Object.entries(data)
+                .filter(([user]) => user && user !== "undefined")
+                .sort((a, b) => {
+                    const valA = key ? a[1]?.[key] || 0 : a[1] || 0;
+                    const valB = key ? b[1]?.[key] || 0 : b[1] || 0;
+                    return valB - valA;
+                });
+
+            if (sortedUsers.length === 0) {
+                lines.push(`${emoji} No ${name.toLowerCase()} data found.`);
+                return;
+            }
+
+            const [username, stash] = sortedUsers[0];
+            const value = key ? stash?.[key] || 0 : stash || 0;
+
+            if (value > 0) {
+                const nickname = userNicknames?.[username]?.nickname || username;
+                lines.push(`${emoji} ${nickname} - ${value.toLocaleString()} ${unit}`);
+            } else {
+                lines.push(`${emoji} No ${name.toLowerCase()} data found.`);
+            }
+        });
+
+        const message = lines.join("\n");
+        respondWithMessage(message.length > 300 ? message.slice(0, 295) + "…" : message);
+    } catch {
+        respondWithMessage("⚠️ Something went wrong with the leaderboard.");
+    }
+}
+*/
+
+// Cleaned and consistent top command bundle
+
+const medals = ["🥇", "🥈", "🥉"];
+
+function formatLeaderboard(title, emoji, data, unit, valueTransform = v => v) {
+    const sorted = Object.entries(data)
+        .filter(([u, v]) => u && u !== "undefined" && valueTransform(v) > 0)
+        .sort((a, b) => valueTransform(b[1]) - valueTransform(a[1]))
+        .slice(0, 3);
+
+    if (sorted.length === 0) return `${emoji} No ${title.toLowerCase()} data available.`;
+
+    const lines = sorted.map(([username, val], index) => {
+        const nickname = userNicknames[username]?.nickname || username;
+        return `${medals[index]} ${nickname} - ${emoji} ${valueTransform(val).toLocaleString()} ${unit}`;
+    });
+
+    return `🏆 Top 3 ${title} ${emoji}\n` + lines.join("\n");
+}
+
+function formatCustomLeaderboard(title, emoji, data, titles) {
+    const sorted = Object.entries(data)
+        .filter(([u, v]) => u && u !== "undefined" && v > 0)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3);
+
+    if (sorted.length === 0) return `${emoji} No ${title.toLowerCase()} data available.`;
+
+    return [
+        `🏆 ${title} ${emoji}`,
+        ...sorted.map(([username, val], i) => {
+            const nickname = userNicknames[username]?.nickname || username;
+            return `${medals[i]} ${nickname} - ${titles[i] || "🍪 Cookie Creature"} - ${val.toLocaleString()} ${emoji}`;
+        })
+    ].join("\n");
+}
+
+if (wsmsg["text"]?.toLowerCase().trim() === ".top") {
+    const categories = [
+        { name: "GojiBux", emoji: "💵", data: userBalances, unit: "GBX", key: "balance" },
+        { name: "Offshore Stashes", emoji: "💰", data: userStashes, unit: "GBX" },
+        { name: "Weed Stashes", emoji: "🥦", data: userWeedStashes, unit: "g" },
+        { name: "Joints", emoji: "🥖", data: userJointStashes, unit: "Joints" },
+        { name: "Spaget", emoji: "🍝", data: userSpaghettiStashes, unit: "SPG" },
+        { name: "Pizza", emoji: "🍕", data: userPizzaStashes, unit: "PZA" },
+        { name: "Cookies", emoji: "🍪", data: userCookieStashes, unit: "Cookies" },
+        { name: "Frogs", emoji: "🐸", data: userFrogCounts, unit: "Frogs" },
+        { name: "Potatoes", emoji: "🥔", data: userPotatoCounts, unit: "Potatoes" }
+    ];
+
+    const lines = ["🏆 Top Players 🏆"];
+
+    for (const { name, emoji, data, unit, key } of categories) {
+        const transform = key ? v => v?.[key] || 0 : v => v;
+        lines.push(formatLeaderboard(name, emoji, data, unit, transform));
+    }
+
+    const message = lines.join("\n");
+    respondWithMessage(message.length > 300 ? message.slice(0, 295) + "…" : message);
+}
+
+if (wsmsg["text"].toLowerCase() === ".topcoin") {
+    respondWithMessage.call(this, formatLeaderboard("GojiCoin Holders", "💎", gojiCoinBalances, "GojiCoin(s)"));
+}
+
+if (wsmsg["text"].toLowerCase() === ".topbux") {
+    respondWithMessage.call(this, formatLeaderboard("GojiBux Holders", "💵", userBalances, "GBX", v => v?.balance || 0));
+}
+
+if (wsmsg["text"].toLowerCase() === ".topstashbux") {
+    respondWithMessage.call(this, formatLeaderboard("Offshore Stashes", "💰", userStashes, "GBX"));
+}
+
+if (wsmsg["text"].toLowerCase() === ".topweed") {
+    respondWithMessage.call(this, formatLeaderboard("Weed Stashes", "🥦", userWeedStashes, "grams"));
+}
+
+if (wsmsg["text"].toLowerCase() === ".topjoint") {
+    respondWithMessage.call(this, formatLeaderboard("Joint Rollers", "🥖", userJointStashes, "Joints"));
+}
+
+if (wsmsg["text"].toLowerCase() === ".topspaget") {
+    respondWithMessage.call(this, formatLeaderboard("Spaget Hoarders", "🍝", userSpaghettiStashes, "SPG"));
+}
+
+if (wsmsg["text"].toLowerCase() === ".toppizza") {
+    respondWithMessage.call(this, formatLeaderboard("Pizza Hoarders", "🍕", userPizzaStashes, "PZA"));
+}
+
+if (wsmsg["text"].toLowerCase() === ".topcookie") {
+    const cookieTitles = [
+        "🚀 Intergalactic Biscuit Baron",
+        "👑 Crumb Commander",
+        "🎩 Cookie Collector Deluxe"
+    ];
+    respondWithMessage.call(this, formatCustomLeaderboard("Cookie Chaos", "🍪", userCookieStashes, cookieTitles));
+}
+
+if (wsmsg["text"].toLowerCase() === ".topfrog") {
+    respondWithMessage.call(this, formatLeaderboard("Frog Frenzy", "🐸", userFrogCounts, "frog(s)"));
+}
+
+if (wsmsg["text"].toLowerCase() === ".toppotato") {
+    respondWithMessage.call(this, formatLeaderboard("Spud Supreme", "🥔", userPotatoCounts, "potato(es)"));
+}
+
+if (wsmsg["text"].toLowerCase() === ".leastbux") {
+    const sorted = Object.entries(userBalances)
+        .filter(([u, v]) => u && u !== "undefined")
+        .sort((a, b) => (a[1]?.balance || 0) - (b[1]?.balance || 0))
+        .slice(0, 3);
+
+    if (sorted.length === 0) {
+        respondWithMessage.call(this, "🤖 No GojiBux data available.");
+        return;
+    }
+
+    let leaderboard = "🏆 Bottom 3 GojiBux Holders 💵\n";
+    sorted.forEach(([username, data], i) => {
+        const nickname = userNicknames[username]?.nickname || username;
+        leaderboard += `${medals[i]} ${nickname} - 💵 ${data.balance.toLocaleString()} GBX\n`;
+    });
+
+    respondWithMessage.call(this, leaderboard.trim());
+}
+
+if (wsmsg["text"].toLowerCase() === ".leastweed") {
+    const sorted = Object.entries(userWeedStashes)
+        .filter(([u, v]) => u && u !== "undefined")
+        .sort((a, b) => (a[1] || 0) - (b[1] || 0))
+        .slice(0, 3);
+
+    if (sorted.length === 0) {
+        respondWithMessage.call(this, "🤖 No weed stash data available.");
+        return;
+    }
+
+    let leaderboard = "🏆 Bottom 3 Weed Stashes 🥦\n";
+    sorted.forEach(([username, stash], i) => {
+        const nickname = userNicknames[username]?.nickname || username;
+        leaderboard += `${medals[i]} ${nickname} - 🥦 ${stash.toLocaleString()} grams\n`;
+    });
+
+    respondWithMessage.call(this, leaderboard.trim());
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -12500,6 +12649,142 @@ if (wsmsg['text'].startsWith(".dice") || wsmsg['text'].startsWith(".diceroll")) 
                 this._send('{"stumble":"msg","text":"🤖 Invalid format. Use: .convert [value] [unit] to [unit]."}');
             }
         }
+
+// ADMIN -------------------------------------------------------------------------------
+
+// 🧹 `.admin pruneusers` - Prune users with no data and backup before deletion (supports dryrun)
+if (wsmsg["text"].toLowerCase().startsWith(".admin pruneusers")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const isDryRun = wsmsg["text"].toLowerCase().includes("dryrun");
+
+    if (!username) {
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        return;
+    }
+
+    const adminUsers = ["Goji"];
+    if (!adminUsers.includes(username)) {
+        respondWithMessage.call(this, "⛔ You do not have permission to use this command.");
+        return;
+    }
+
+    const storages = {
+        gojiBux, gojiCoinBalances, userBalances, offshoreStash, userStashes,
+        userWeedStashes, userJointStashes, userHiddenWeed,
+        lastGrowTime, lastHarvestTime, lastWeedRobTime, lastWeedHeistTime,
+        lastHideWeedTimes, lastUnhideWeedTimes, lastSellJointTime,
+        userSpaghettiStashes, userPizzaStashes, userEggStashes, userBananaStashes,
+        userAppleStashes, userIcecreamStashes, userCandyStashes, userBreadStashes,
+        userDonutStashes, userCheeseStashes, userWaffleStashes, userPancakeStashes,
+        userRamenStashes, userSammichStashes, userHotdogStashes, userShrimpStashes,
+        userTacoStashes, userCakeStashes, userBurgerStashes, userSushiStashes,
+        userSteakStashes, userDildoStashes, userCookieStashes,
+        userFrogCounts, userPotatoCounts,
+        lastGojibuxTimes, lastSnarfbuxTimes, lastStashTimes, lastPizzaClaim,
+        lastCookieClaim, lastCookClaim, lastBankRobTime, lastBankHeistTime,
+        lastAdventureTime,
+        userNicknames, userHandles, userStats, gambleStats
+    };
+
+    const reminderUsers = activeReminders.map(r => r.user);
+    const allUsernames = new Set();
+
+    for (const store of Object.values(storages)) {
+        for (const user in store) {
+            allUsernames.add(user);
+        }
+    }
+    for (const user of reminderUsers) allUsernames.add(user);
+
+    const deleted = [];
+
+    for (const user of allUsernames) {
+        if (!user || user === "undefined") {
+            deleted.push("undefined");
+            continue;
+        }
+
+        const hasSomething = Object.values(storages).some(store => {
+            const data = store[user];
+            return typeof data === "object"
+                ? Object.values(data).some(v => v > 0)
+                : data > 0;
+        }) || activeReminders.some(r => r.user === user);
+
+        if (!hasSomething) deleted.push(user);
+    }
+
+    if (isDryRun) {
+        console.log(`[DRYRUN] Would prune ${deleted.length} users:`, deleted);
+        respondWithMessage.call(this, `🧪 Dry Run: Would prune ${deleted.length} users. Check console.`);
+        return;
+    }
+
+    // Backup
+    const backup = { activeReminders };
+    for (const [key, store] of Object.entries(storages)) {
+        backup[key] = JSON.parse(JSON.stringify(store));
+    }
+    localStorage.setItem("pruneBackup", JSON.stringify(backup));
+
+    // Delete users
+    for (const user of deleted) {
+        for (const store of Object.values(storages)) {
+            delete store[user];
+        }
+        activeReminders = activeReminders.filter(r => r.user !== user);
+    }
+
+    // Save updated storage
+    for (const [key, store] of Object.entries(storages)) {
+        localStorage.setItem(key, JSON.stringify(store));
+    }
+    localStorage.setItem("activeReminders", JSON.stringify(activeReminders));
+
+    console.log(`[PRUNE] Removed ${deleted.length} users:`, deleted);
+    respondWithMessage.call(this, `🧹 Pruned ${deleted.length} users. Backup saved. Check console.`);
+}
+
+// 🧯 `.admin restorebackup` - Restore all user data from last prune backup
+if (wsmsg["text"].toLowerCase().startsWith(".admin restorebackup")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+
+    if (!username) {
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        return;
+    }
+
+    const adminUsers = ["Goji"];
+    if (!adminUsers.includes(username)) {
+        respondWithMessage.call(this, "⛔ You do not have permission to use this command.");
+        return;
+    }
+
+    const backupRaw = localStorage.getItem("pruneBackup");
+    if (!backupRaw) {
+        respondWithMessage.call(this, "⚠️ No backup found. Run `.admin pruneusers` first.");
+        return;
+    }
+
+    try {
+        const backup = JSON.parse(backupRaw);
+        for (const key in backup) {
+            if (key === "activeReminders") {
+                activeReminders = backup[key];
+            } else {
+                Object.assign(eval(key), backup[key] || {});
+            }
+            localStorage.setItem(key, JSON.stringify(backup[key]));
+        }
+        console.log("[RESTORE] Backup restored successfully.");
+        respondWithMessage.call(this, "🧯 Backup restored! User data is now as it was before prune.");
+    } catch (err) {
+        console.error("❌ Failed to restore backup:", err);
+        respondWithMessage.call(this, "❌ Failed to restore backup. Check the console for details.");
+    }
+}
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
