@@ -12203,6 +12203,19 @@ if (triggerBootyCommands.includes(wsmsg['text'].toLowerCase())) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+// 🎥 `.java` - Javaaaaaaaa!
+if (wsmsg["text"].toLowerCase() === ".java") {
+    const rsp = [
+        "https://i.imgur.com/OcCttVE.mp4"
+    ];
+
+    const randomRsp = rsp[Math.floor(Math.random() * rsp.length)];
+
+    this._send(`{"stumble":"msg","text":"${randomRsp}"}`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
     // start gilf
     const triggerGilfCommands = [".gilf"];
     if (triggerGilfCommands.includes(wsmsg['text'].toLowerCase())) {
@@ -12395,7 +12408,8 @@ if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
     const snarfdilfImages = [
         "https://i.imgur.com/RSZ7xzg.jpeg",
         "https://i.imgur.com/5HSAo1l.jpeg",
-        "https://i.imgur.com/oLAqMHS.jpeg"
+        "https://i.imgur.com/oLAqMHS.jpeg",
+        "https://i.imgur.com/Xm4iYBy.jpeg"
     ];
 
     // Get current image and rotate
@@ -12796,7 +12810,7 @@ if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
 //-----------------------------------------------------------------------------------------------------------------------------------
 
         //start java ass
-        if (/\bjava\b/i.test(wsmsg['text'])) { // When java
+        /*if (/\bjava\b/i.test(wsmsg['text'])) { // When java
             // Create an array of responses
             const rsp = [
                 "https://i.imgur.com/OcCttVE.mp4"
@@ -12807,7 +12821,7 @@ if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
 
             // Send the random response
             this._send(`{"stumble":"msg","text": "${randomRsp}"}`);
-        }
+        }*/
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
