@@ -2023,6 +2023,142 @@ if (wsmsg["text"].toLowerCase() === ".harvest") {
     respondWithMessage.call(this, response);
 }
 
+// THIS HARVEST SYSTEM? -------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+let userPlants = JSON.parse(localStorage.getItem("userPlants")) || {};
+let userWeedStash = JSON.parse(localStorage.getItem("userWeedStash")) || {};
+let gojiBuxStorage = JSON.parse(localStorage.getItem("gojiBuxStorage")) || {};
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+if (wsmsg["text"].toLowerCase() === ".plantseed") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    if (!username) return respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+    if (userPlants[username]?.planted) {
+        return respondWithMessage.call(this, `🌱 ${nickname}, you've already planted a seed! Wait until it's ready to harvest.`);
+    }
+
+    userPlants[username] = {
+        planted: true,
+        plantedAt: Date.now(),
+        growTime: 60 * 60 * 1000, // 1 hour
+        watered: false,
+        fed: false
+    };
+
+    localStorage.setItem("userPlants", JSON.stringify(userPlants));
+    respondWithMessage.call(this, `🌱 ${nickname} planted a new seed. Come back in about an hour to harvest.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+if (wsmsg["text"].toLowerCase() === ".waterplant") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    const plant = userPlants[username];
+    const gbx = gojiBuxStorage[username] || 0;
+
+    if (!username) return respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+    if (!plant?.planted) return respondWithMessage.call(this, `🚫 ${nickname}, nothing is planted! Use .plantseed first.`);
+    if (plant.watered) return respondWithMessage.call(this, `💧 ${nickname}, you've already watered your plant.`);
+    if (gbx < 1000) return respondWithMessage.call(this, `💸 ${nickname}, you need 1,000 GBX to water your plant.`);
+
+    gojiBuxStorage[username] = gbx - 1000;
+    plant.watered = true;
+    plant.growTime = Math.floor(plant.growTime * 0.9); // 10% faster
+
+    localStorage.setItem("gojiBuxStorage", JSON.stringify(gojiBuxStorage));
+    localStorage.setItem("userPlants", JSON.stringify(userPlants));
+    respondWithMessage.call(this, `💧 ${nickname} watered their plant. It'll grow a bit faster now!`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+if (wsmsg["text"].toLowerCase() === ".feedplant") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    const plant = userPlants[username];
+    const gbx = gojiBuxStorage[username] || 0;
+
+    if (!username) return respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+    if (!plant?.planted) return respondWithMessage.call(this, `🚫 ${nickname}, nothing is planted! Use .plantseed first.`);
+    if (plant.fed) return respondWithMessage.call(this, `🍽️ ${nickname}, you've already fed your plant.`);
+    if (gbx < 10000) return respondWithMessage.call(this, `💸 ${nickname}, you need 10,000 GBX to feed your plant.`);
+
+    gojiBuxStorage[username] = gbx - 10000;
+    plant.fed = true;
+
+    localStorage.setItem("gojiBuxStorage", JSON.stringify(gojiBuxStorage));
+    localStorage.setItem("userPlants", JSON.stringify(userPlants));
+    respondWithMessage.call(this, `🍽️ ${nickname} fed their plant premium nutrients. Expect a bigger harvest!`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+if (wsmsg["text"].toLowerCase() === ".checkplant") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    const plant = userPlants[username];
+
+    if (!username) return respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+    if (!plant?.planted) return respondWithMessage.call(this, `🌱 ${nickname}, you haven't planted anything yet.`);
+
+    const now = Date.now();
+    const remaining = Math.max(plant.plantedAt + plant.growTime - now, 0);
+    const minutes = Math.floor(remaining / 60000);
+    const seconds = Math.floor((remaining % 60000) / 1000);
+
+    respondWithMessage.call(this,
+        `🪴 Grow Report for ${nickname}:\n• Time left: ${minutes}m ${seconds}s\n• Watered: ${plant.watered ? "✅" : "❌"}\n• Fed: ${plant.fed ? "✅" : "❌"}`
+    );
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+if (wsmsg["text"].toLowerCase() === ".harvestplant") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    const plant = userPlants[username];
+
+    if (!username) return respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+    if (!plant?.planted) return respondWithMessage.call(this, `🌱 ${nickname}, you haven't planted anything yet.`);
+
+    const now = Date.now();
+    const readyTime = plant.plantedAt + plant.growTime;
+    if (now < readyTime) {
+        const remaining = Math.ceil((readyTime - now) / 1000);
+        return respondWithMessage.call(this, `⏳ ${nickname}, your plant isn’t ready yet! Try again in ${remaining} seconds.`);
+    }
+
+    // 🌿 Yield: 1–8 lb = 448–3584g
+    let baseYield = Math.floor(Math.random() * (3584 - 448 + 1)) + 448;
+    if (plant.fed) {
+        const boost = 1 + (Math.random() * 0.25 + 0.25); // +25%–50%
+        baseYield = Math.floor(baseYield * boost);
+    }
+
+    userWeedStash[username] = (userWeedStash[username] || 0) + baseYield;
+    delete userPlants[username];
+
+    localStorage.setItem("userWeedStash", JSON.stringify(userWeedStash));
+    localStorage.setItem("userPlants", JSON.stringify(userPlants));
+
+    const pounds = (baseYield / 448).toFixed(2);
+    respondWithMessage.call(this, `🌾 ${nickname} harvested their personal plant and got 🥦 ${pounds} lb [${baseYield.toLocaleString()}g] of dank homegrown weed!`);
+}
+
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 🏬🎁 `.distribute` - Take 10% of WGH and distribute evenly to users
@@ -8665,10 +8801,10 @@ if (wsmsg["text"].toLowerCase().startsWith(".selljoint")) {
         return;
     }
 
-    // ⏳ Cooldown check (30 minutes)
+    // ⏳ Cooldown check (15 minutes)
     const now = Date.now();
     const lastSell = lastSellJointTime[username] || 0;
-    const cooldown = 30 * 60 * 1000;
+    const cooldown = 15 * 60 * 1000;
 
     if (now - lastSell < cooldown) {
         const timeLeft = Math.ceil((cooldown - (now - lastSell)) / 1000);
@@ -11592,7 +11728,8 @@ if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
                 "https://i.imgur.com/dO5kkUl.gif",
                 "https://i.imgur.com/2rZMYXt.gif",
                 "https://i.imgur.com/V6W37bQ.gif",
-                "https://i.imgur.com/V8ngvRm.gif"
+                "https://i.imgur.com/V8ngvRm.gif",
+                "https://i.imgur.com/CJmeWKK.gif"
             ];
 
             // Select a random response from the array
