@@ -1597,7 +1597,7 @@ if (!window._weedPriceIntervalSet) {
 }
 */
 
-let BASE_PRICE = Math.floor(80 / 3.5); // ~22 GBX per gram
+let BASE_PRICE = Math.floor(20 / 3.5); // ~22 GBX per gram
 let weedBuyPrice = parseInt(localStorage.getItem("weedBuyPrice")) || BASE_PRICE;
 let weedSellPrice = parseInt(localStorage.getItem("weedSellPrice")) || Math.floor(BASE_PRICE * 0.8);
 let prevWeedBuyPrice = weedBuyPrice;
@@ -2026,9 +2026,9 @@ if (wsmsg["text"].toLowerCase() === ".harvest") {
 // THIS HARVEST SYSTEM? -------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+//let userBalances = JSON.parse(localStorage.getItem("userBalances")) || {};
+//let userWeedStashes = JSON.parse(localStorage.getItem("userWeedStashes")) || {};
 let userPlants = JSON.parse(localStorage.getItem("userPlants")) || {};
-let userWeedStash = JSON.parse(localStorage.getItem("userWeedStash")) || {};
-let gojiBuxStorage = JSON.parse(localStorage.getItem("gojiBuxStorage")) || {};
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -2061,19 +2061,20 @@ if (wsmsg["text"].toLowerCase() === ".waterplant") {
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
 
-    const plant = userPlants[username];
-    const gbx = gojiBuxStorage[username] || 0;
-
     if (!username) return respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+
+    const plant = userPlants[username];
+    const userBalance = userBalances[username]?.balance || 0;
+
     if (!plant?.planted) return respondWithMessage.call(this, `🚫 ${nickname}, nothing is planted! Use .plantseed first.`);
     if (plant.watered) return respondWithMessage.call(this, `💧 ${nickname}, you've already watered your plant.`);
-    if (gbx < 1000) return respondWithMessage.call(this, `💸 ${nickname}, you need 1,000 GBX to water your plant.`);
+    if (userBalance < 1000) return respondWithMessage.call(this, `💸 ${nickname}, you need 1,000 GBX to water your plant.`);
 
-    gojiBuxStorage[username] = gbx - 1000;
+    userBalances[username].balance = userBalance - 1000;
     plant.watered = true;
     plant.growTime = Math.floor(plant.growTime * 0.9); // 10% faster
 
-    localStorage.setItem("gojiBuxStorage", JSON.stringify(gojiBuxStorage));
+    localStorage.setItem("userBalances", JSON.stringify(userBalances));
     localStorage.setItem("userPlants", JSON.stringify(userPlants));
     respondWithMessage.call(this, `💧 ${nickname} watered their plant. It'll grow a bit faster now!`);
 }
@@ -2085,18 +2086,19 @@ if (wsmsg["text"].toLowerCase() === ".feedplant") {
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
 
-    const plant = userPlants[username];
-    const gbx = gojiBuxStorage[username] || 0;
-
     if (!username) return respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+
+    const plant = userPlants[username];
+    const userBalance = userBalances[username]?.balance || 0;
+
     if (!plant?.planted) return respondWithMessage.call(this, `🚫 ${nickname}, nothing is planted! Use .plantseed first.`);
     if (plant.fed) return respondWithMessage.call(this, `🍽️ ${nickname}, you've already fed your plant.`);
-    if (gbx < 10000) return respondWithMessage.call(this, `💸 ${nickname}, you need 10,000 GBX to feed your plant.`);
+    if (userBalance < 10000) return respondWithMessage.call(this, `💸 ${nickname}, you need 10,000 GBX to feed your plant.`);
 
-    gojiBuxStorage[username] = gbx - 10000;
+    userBalances[username].balance = userBalance - 10000;
     plant.fed = true;
 
-    localStorage.setItem("gojiBuxStorage", JSON.stringify(gojiBuxStorage));
+    localStorage.setItem("userBalances", JSON.stringify(userBalances));
     localStorage.setItem("userPlants", JSON.stringify(userPlants));
     respondWithMessage.call(this, `🍽️ ${nickname} fed their plant premium nutrients. Expect a bigger harvest!`);
 }
@@ -11331,6 +11333,8 @@ function saveSnarfdilfIndex() {
     localStorage.setItem("snarfdilfIndex", snarfdilfIndex.toString());
 }
 
+
+/*
 // 🧃 `.snarfdilf` - Pay 10k GBX to view rotating images
 if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
     const handle = wsmsg['handle'];
@@ -11366,6 +11370,70 @@ if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
     const currentImage = snarfdilfImages[snarfdilfIndex];
     snarfdilfIndex = (snarfdilfIndex + 1) % snarfdilfImages.length;
     saveSnarfdilfIndex();
+
+    // Send image
+    this._send(`{"stumble":"msg","text": "${currentImage}"}`);
+
+    // Confirm transaction after delay
+    setTimeout(() => {
+        this._send(`{"stumble":"msg","text": "🤖 ${nickname} paid 💵 10,000 GBX for this snarfdilf masterpiece. ${recipient} received the payment."}`);
+    }, 1000);
+}
+*/
+
+// 🕒 Cooldown storage for `.snarfdilf`
+let lastSnarfdilfTime = JSON.parse(localStorage.getItem("lastSnarfdilfTime") || "{}");
+
+// 🧃 `.snarfdilf` - Pay 10k GBX to view rotating images (5-minute cooldown)
+if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
+    const handle = wsmsg['handle'];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || "Someone";
+    const recipient = "jedisnarf"; // Person receiving payment
+
+    if (!username) return;
+
+    // ⏳ Cooldown check (5 minutes)
+    const now = Date.now();
+    const lastUse = lastSnarfdilfTime[username] || 0;
+    const cooldown = 5 * 60 * 1000;
+
+    if (now - lastUse < cooldown) {
+        const timeLeft = Math.ceil((cooldown - (now - lastUse)) / 1000);
+        respondWithMessage.call(this, `⏳ ${nickname}, wait ${timeLeft} seconds before peeking at another snarfdilf image.`);
+        return;
+    }
+
+    const cost = 10_000;
+    const userBalance = userBalances[username]?.balance || 0;
+
+    if (userBalance < cost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 10,000 GBX to access peak snarfdilf content. Get your GBX up!`);
+        return;
+    }
+
+    // Deduct and transfer GBX
+    userBalances[username].balance -= cost;
+    if (!userBalances[recipient]) userBalances[recipient] = { balance: 0 };
+    userBalances[recipient].balance += cost;
+    saveBalances();
+
+    // Image list
+    const snarfdilfImages = [
+        "https://i.imgur.com/RSZ7xzg.jpeg",
+        "https://i.imgur.com/5HSAo1l.jpeg",
+        "https://i.imgur.com/oLAqMHS.jpeg",
+        "https://i.imgur.com/Xm4iYBy.jpeg"
+    ];
+
+    // Get current image and rotate
+    const currentImage = snarfdilfImages[snarfdilfIndex];
+    snarfdilfIndex = (snarfdilfIndex + 1) % snarfdilfImages.length;
+    saveSnarfdilfIndex();
+
+    // 🕒 Apply cooldown
+    lastSnarfdilfTime[username] = now;
+    localStorage.setItem("lastSnarfdilfTime", JSON.stringify(lastSnarfdilfTime));
 
     // Send image
     this._send(`{"stumble":"msg","text": "${currentImage}"}`);
