@@ -2151,10 +2151,10 @@ if (wsmsg["text"].toLowerCase() === ".harvestplant") {
         baseYield = Math.floor(baseYield * boost);
     }
 
-    userWeedStash[username] = (userWeedStash[username] || 0) + baseYield;
+    userWeedStashes[username] = (userWeedStashes[username] || 0) + baseYield;
     delete userPlants[username];
 
-    localStorage.setItem("userWeedStash", JSON.stringify(userWeedStash));
+    localStorage.setItem("userWeedStashes", JSON.stringify(userWeedStashes));
     localStorage.setItem("userPlants", JSON.stringify(userPlants));
 
     const pounds = (baseYield / 448).toFixed(2);
