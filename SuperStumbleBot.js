@@ -1884,7 +1884,7 @@ if (donateweedTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
 let lastGrowTime = JSON.parse(localStorage.getItem("lastGrowTime")) || {};
 
 // 🥦🌱 `.grow` - Grow a random amount of weed for your stash! (30-minute cooldown)
-if ([".grow", ".getweed"].includes(wsmsg["text"].toLowerCase())) {
+/*if ([".grow", ".getweed"].includes(wsmsg["text"].toLowerCase())) {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
@@ -1934,7 +1934,7 @@ if ([".grow", ".getweed"].includes(wsmsg["text"].toLowerCase())) {
     }
 
     respondWithMessage.call(this, response);
-}
+}*/
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -2032,7 +2032,7 @@ let userPlants = JSON.parse(localStorage.getItem("userPlants")) || {};
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-if (wsmsg["text"].toLowerCase() === ".plantseed") {
+/*if (wsmsg["text"].toLowerCase() === ".plantseed") {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
@@ -2052,11 +2052,33 @@ if (wsmsg["text"].toLowerCase() === ".plantseed") {
 
     localStorage.setItem("userPlants", JSON.stringify(userPlants));
     respondWithMessage.call(this, `🌱 ${nickname} planted a new seed. Come back in about an hour to harvest.`);
+}*/
+
+if (wsmsg["text"].toLowerCase() === ".plantseed") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    if (!username) return respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+    if (userPlants[username]?.planted) {
+        return respondWithMessage.call(this, `🌱 ${nickname}, you've already planted a seed! Wait until it's ready to harvest.`);
+    }
+
+    userPlants[username] = {
+        planted: true,
+        plantedAt: Date.now(),
+        growTime: 60 * 60 * 1000, // 1 hour
+        waterings: [],
+        feedings: []
+    };
+
+    localStorage.setItem("userPlants", JSON.stringify(userPlants));
+    respondWithMessage.call(this, `🌱 ${nickname} planted a new seed. Come back in about an hour to harvest.`);
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-if (wsmsg["text"].toLowerCase() === ".waterplant") {
+/*if (wsmsg["text"].toLowerCase() === ".waterplant") {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
@@ -2077,11 +2099,39 @@ if (wsmsg["text"].toLowerCase() === ".waterplant") {
     localStorage.setItem("userBalances", JSON.stringify(userBalances));
     localStorage.setItem("userPlants", JSON.stringify(userPlants));
     respondWithMessage.call(this, `💧 ${nickname} watered their plant. It'll grow a bit faster now!`);
+}*/
+
+if (wsmsg["text"].toLowerCase() === ".plantwater") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    if (!username) return respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+
+    const plant = userPlants[username];
+    const userBalance = userBalances[username]?.balance || 0;
+    if (!plant?.planted) return respondWithMessage.call(this, `🚫 ${nickname}, nothing is planted! Use .plantseed first.`);
+
+    const now = Date.now();
+    const lastWater = plant.waterings?.slice(-1)[0] || 0;
+    if (now - lastWater < 5 * 60 * 1000) {
+        const waitTime = Math.ceil((5 * 60 * 1000 - (now - lastWater)) / 1000);
+        return respondWithMessage.call(this, `⏳ ${nickname}, wait ${waitTime}s before watering again.`);
+    }
+
+    if (userBalance < 10) return respondWithMessage.call(this, `💸 ${nickname}, you need 10 GBX to water your plant.`);
+
+    userBalances[username].balance = userBalance - 10;
+    plant.waterings.push(now);
+    plant.growTime = Math.floor(plant.growTime * 0.9); // 10% faster per water
+
+    localStorage.setItem("userBalances", JSON.stringify(userBalances));
+    localStorage.setItem("userPlants", JSON.stringify(userPlants));
+    respondWithMessage.call(this, `💧 ${nickname} watered their plant! It's growing faster now.`);
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-if (wsmsg["text"].toLowerCase() === ".feedplant") {
+/*if (wsmsg["text"].toLowerCase() === ".feedplant") {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
@@ -2101,11 +2151,38 @@ if (wsmsg["text"].toLowerCase() === ".feedplant") {
     localStorage.setItem("userBalances", JSON.stringify(userBalances));
     localStorage.setItem("userPlants", JSON.stringify(userPlants));
     respondWithMessage.call(this, `🍽️ ${nickname} fed their plant premium nutrients. Expect a bigger harvest!`);
+}*/
+
+if (wsmsg["text"].toLowerCase() === ".plantfeed") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    if (!username) return respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+
+    const plant = userPlants[username];
+    const userBalance = userBalances[username]?.balance || 0;
+    if (!plant?.planted) return respondWithMessage.call(this, `🚫 ${nickname}, nothing is planted! Use .plantseed first.`);
+
+    const now = Date.now();
+    const lastFeed = plant.feedings?.slice(-1)[0] || 0;
+    if (now - lastFeed < 10 * 60 * 1000) {
+        const waitTime = Math.ceil((10 * 60 * 1000 - (now - lastFeed)) / 1000);
+        return respondWithMessage.call(this, `⏳ ${nickname}, wait ${waitTime}s before feeding again.`);
+    }
+
+    if (userBalance < 100) return respondWithMessage.call(this, `💸 ${nickname}, you need 100 GBX to feed your plant.`);
+
+    userBalances[username].balance = userBalance - 100;
+    plant.feedings.push(now);
+
+    localStorage.setItem("userBalances", JSON.stringify(userBalances));
+    localStorage.setItem("userPlants", JSON.stringify(userPlants));
+    respondWithMessage.call(this, `🐟 ${nickname} fed their plant! Expect better yields.`);
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-if (wsmsg["text"].toLowerCase() === ".checkplant") {
+/*if (wsmsg["text"].toLowerCase() === ".checkplant") {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
@@ -2123,11 +2200,47 @@ if (wsmsg["text"].toLowerCase() === ".checkplant") {
     respondWithMessage.call(this,
         `🪴 Grow Report for ${nickname}:\n• Time left: ${minutes}m ${seconds}s\n• Watered: ${plant.watered ? "✅" : "❌"}\n• Fed: ${plant.fed ? "✅" : "❌"}`
     );
+}*/
+
+if (wsmsg["text"].toLowerCase() === ".myplant") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    const plant = userPlants[username];
+    if (!username) return respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+    if (!plant?.planted) return respondWithMessage.call(this, `🌱 ${nickname}, you haven't planted anything yet.`);
+
+    const now = Date.now();
+    const remaining = Math.max(plant.plantedAt + plant.growTime - now, 0);
+    const minutes = Math.floor(remaining / 60000);
+    const seconds = Math.floor((remaining % 60000) / 1000);
+
+    const waterings = plant.waterings?.length || 0;
+    const feedings = plant.feedings?.length || 0;
+
+    const lastWater = plant.waterings?.slice(-1)[0] || 0;
+    const nextWater = Math.max(0, Math.ceil((5 * 60 * 1000 - (now - lastWater)) / 1000));
+
+    const lastFeed = plant.feedings?.slice(-1)[0] || 0;
+    const nextFeed = Math.max(0, Math.ceil((10 * 60 * 1000 - (now - lastFeed)) / 1000));
+
+    const yieldBoost = Math.min(50, feedings * 10);
+    const growSpeedBoost = Math.floor((1 - (plant.growTime / (60 * 60 * 1000))) * 100);
+
+    respondWithMessage.call(this,
+        `🌲 Grow Report for ${nickname}:\n` +
+        `⏳ Time left: ${minutes}m ${seconds}s\n` +
+        `💧 Watered: ${waterings}x (Next: ${nextWater}s)\n` +
+        `🐟 Fed: ${feedings}x (Next: ${nextFeed}s)\n` +
+        `🥦 Yield Bonus: +${yieldBoost}%\n` +
+        `⏰ Grow Speed: +${growSpeedBoost}%`
+    );
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-if (wsmsg["text"].toLowerCase() === ".harvestplant") {
+if (wsmsg["text"].toLowerCase() === ".plantharvest") {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
@@ -2159,6 +2272,66 @@ if (wsmsg["text"].toLowerCase() === ".harvestplant") {
 
     const pounds = (baseYield / 448).toFixed(2);
     respondWithMessage.call(this, `🌾 ${nickname} harvested their personal plant and got 🥦 ${pounds} lb [${baseYield.toLocaleString()}g] of dank homegrown weed!`);
+}
+
+if (wsmsg["text"].toLowerCase().startsWith(".plantgrows")) {
+    const args = wsmsg["text"].split(" ");
+    const page = parseInt(args[1]) || 1;
+    const growers = [];
+
+    for (const [username, plant] of Object.entries(userPlants)) {
+        if (plant.planted) {
+            const waterings = plant.waterings?.length || 0;
+            const feedings = plant.feedings?.length || 0;
+            const yieldBoost = Math.min(50, feedings * 10);
+
+            growers.push({
+                username,
+                nickname: userNicknames[username]?.nickname || username,
+                waterings,
+                feedings,
+                yieldBoost
+            });
+        }
+    }
+
+    if (growers.length === 0) {
+        respondWithMessage.call(this, `🌱 No active growers found.`);
+        return;
+    }
+
+    // Sort by grow activity (feedings = 2 points, waterings = 1)
+    growers.sort((a, b) => (b.feedings * 2 + b.waterings) - (a.feedings * 2 + a.waterings));
+
+    const growersPerPage = 5;
+    const totalPages = Math.ceil(growers.length / growersPerPage);
+
+    if (page < 1 || page > totalPages) {
+        respondWithMessage.call(this, `📄 Invalid page. Use \`.plants [1-${totalPages}]\`.`);
+        return;
+    }
+
+    const start = (page - 1) * growersPerPage;
+    const end = start + growersPerPage;
+    const pageGrowers = growers.slice(start, end);
+
+    let emojiForBoost = boost => {
+        if (boost >= 50) return "🌲";
+        if (boost >= 30) return "🌳";
+        if (boost >= 10) return "🥦";
+        return "🌱";
+    };
+
+    let output = `🌲 Top Growers – Page ${page}/${totalPages} – Use \`.plants [page]\`\n`;
+    pageGrowers.forEach((g, i) => {
+        output += `${start + i + 1}. ${g.nickname} – 💧 ${g.waterings} | 🐟 ${g.feedings} | +${g.yieldBoost}% yield ${emojiForBoost(g.yieldBoost)}\n`;
+    });
+
+    if (page < totalPages) {
+        output += `👉 Type \`.plants ${page + 1}\` for the next page!\n`;
+    }
+
+    respondWithMessage.call(this, output.trim());
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -7775,7 +7948,7 @@ if (wsmsg["text"].toLowerCase() === ".admin clearitems") {
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 🔥 `.burn` - Removes 20% from all users' GojiBux balance, stash, and weed stash
-if (wsmsg["text"].toLowerCase() === ".burn") {
+/*if (wsmsg["text"].toLowerCase() === ".burn") {
     let totalBurnedBalance = 0;
     let totalBurnedStash = 0;
     let totalBurnedWeed = 0;
@@ -7821,7 +7994,7 @@ if (wsmsg["text"].toLowerCase() === ".burn") {
     } else {
         respondWithMessage.call(this, `🔥 The Great GojiBux Purge has occurred! 💀 💵 ${totalBurnedBalance.toLocaleString()} GBX burned from balances, 💰 ${totalBurnedStash.toLocaleString()} GBX burned from stashes, and 🥦 ${totalBurnedWeed.toLocaleString()}g of weed went up in smoke!`);
     }
-}
+}*/
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
