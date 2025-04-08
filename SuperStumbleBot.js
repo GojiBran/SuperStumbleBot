@@ -6,6 +6,14 @@
 // @description  Play youtube videos from the chat box and/or add custom commands to StumbleChat
 // @author       Goji
 // @match        https://stumblechat.com/room/*
+// @grant        GM_xmlhttpRequest
+// @connect      uselessfacts.jsph.pl
+// @connect      www.boredapi.com
+// @connect      excuser.herokuapp.com
+// @connect      api.kanye.rest
+// @connect      catfact.ninja
+// @connect      restcountries.com
+// @connect      official-joke-api.appspot.com
 // ==/UserScript==
 
 // Notes ---
@@ -511,7 +519,7 @@ if (wsmsg['text'].toLowerCase().startsWith(".clearmyhistory")) {
 }
 
 // Handle .clearhistory (admin nuke)
-if (wsmsg['text'].toLowerCase() === ".clearhistory") {
+/*if (wsmsg['text'].toLowerCase() === ".clearhistory") {
     const handle = wsmsg['handle'];
     const username = userHandles[handle];
 
@@ -523,7 +531,7 @@ if (wsmsg['text'].toLowerCase() === ".clearhistory") {
     youtubeHistory = [];
     localStorage.setItem("youtubeHistory", JSON.stringify(youtubeHistory));
     respondWithMessage.call(this, "💣 All YouTube history cleared by Goji.");
-}
+}*/
 
 // Handle .topplayed command — most frequently played tracks
 if (wsmsg['text'].toLowerCase().startsWith(".topplayed")) {
@@ -839,7 +847,7 @@ if (wsmsg['text'].toLowerCase().startsWith(".clearmynotes")) {
 }
 
 // Handle .clearNotes to wipe ALL notes (admin-only)
-if (wsmsg['text'] === ".clearNotes") {
+/*if (wsmsg['text'] === ".clearNotes") {
     const handle = wsmsg['handle'];
     const username = userHandles[handle];
 
@@ -851,7 +859,7 @@ if (wsmsg['text'] === ".clearNotes") {
     universalNotes = [];
     localStorage.removeItem("universalNotes");
     respondWithMessage.call(this, "🧨 All notes have been cleared by Goji.");
-}
+}*/
 
 // Reminders ------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -1036,7 +1044,8 @@ if ([".gojibux", ".gbx", ".getbux"].includes(wsmsg["text"].toLowerCase())) {
 
     const now = Date.now();
     //const cooldown = 1 * 60 * 1000; // [1] 30-minute cooldown
-    const cooldown = 10 * 1000; // 10-second cooldown
+    //const cooldown = 10 * 1000; // 10-second cooldown
+    const cooldown = 0 * 1000;
     const lastUsed = lastGojibuxTimes[username] || 0;
 
     if (now - lastUsed < cooldown) {
@@ -1091,7 +1100,7 @@ if ([".gojibux", ".gbx", ".getbux"].includes(wsmsg["text"].toLowerCase())) {
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 💰 `.admin givebux` - Give a specified user or all users a certain amount of GojiBux (default: 500)
-if (wsmsg["text"].toLowerCase().startsWith(".admin givebux")) {
+/*if (wsmsg["text"].toLowerCase().startsWith(".admin givebux")) {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
 
@@ -1148,7 +1157,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".admin givebux")) {
         saveBalances();
         respondWithMessage.call(this, `💵 All ${userCount} users just received ${amount.toLocaleString()} GojiBux!`);
     }
-}
+}*/
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -1170,7 +1179,8 @@ if (wsmsg["text"].toLowerCase() === ".snarfbux") {
     }
 
     const now = Date.now();
-    const cooldown = 1 * 60 * 1000; // 1-minute cooldown (same as .gojibux)
+    //const cooldown = 1 * 60 * 1000; // 1-minute cooldown (same as .gojibux)
+    const cooldown = 0 * 60 * 1000;
     const lastUsed = lastSnarfbuxTimes[username] || 0;
 
     if (now - lastUsed < cooldown) {
@@ -1410,7 +1420,8 @@ if (stashbuxTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     }
 
     const now = Date.now();
-    const cooldown = 10 * 1000; // 10-second cooldown
+    //const cooldown = 10 * 1000; // 10-second cooldown
+    const cooldown = 0 * 1000;
     const lastUsed = lastStashTimes[username] || 0;
 
     if (now - lastUsed < cooldown) {
@@ -1730,7 +1741,8 @@ if (wsmsg["text"].toLowerCase().startsWith(".buyweed ")) {
     if (!userStats[username]) userStats[username] = {};
     const now = Date.now();
     const lastBuyTime = userStats[username].lastBuyWeed || 0;
-    const cooldown = 30 * 1000;
+    //const cooldown = 30 * 1000;
+    const cooldown = 0 * 1000;
 
     if (now - lastBuyTime < cooldown) {
         const remaining = Math.ceil((cooldown - (now - lastBuyTime)) / 1000);
@@ -1884,7 +1896,7 @@ if (donateweedTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
 let lastGrowTime = JSON.parse(localStorage.getItem("lastGrowTime")) || {};
 
 // 🥦🌱 `.grow` - Grow a random amount of weed for your stash! (30-minute cooldown)
-/*if ([".grow", ".getweed"].includes(wsmsg["text"].toLowerCase())) {
+if ([".grow", ".getweed"].includes(wsmsg["text"].toLowerCase())) {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
@@ -1897,7 +1909,8 @@ let lastGrowTime = JSON.parse(localStorage.getItem("lastGrowTime")) || {};
     const now = Date.now();
     const lastGrow = lastGrowTime[username] || 0;
     //const cooldown = 30 * 60 * 1000; // 30-minute cooldown
-    const cooldown = 30 * 1000; // 30-second cooldown
+    //const cooldown = 30 * 1000; // 30-second cooldown
+    const cooldown = 0 * 1000;
 
     if (now - lastGrow < cooldown) {
         //const timeLeft = Math.ceil((cooldown - (now - lastGrow)) / 60000);
@@ -1934,7 +1947,7 @@ let lastGrowTime = JSON.parse(localStorage.getItem("lastGrowTime")) || {};
     }
 
     respondWithMessage.call(this, response);
-}*/
+}
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -1956,7 +1969,8 @@ if (wsmsg["text"].toLowerCase() === ".harvest") {
     const now = Date.now();
     const lastHarvest = lastHarvestTime[username] || 0;
     //const cooldown = 30 * 60 * 1000; // 30-minute cooldown
-    const cooldown = 30 * 1000; // 30-second cooldown
+    //const cooldown = 30 * 1000; // 30-second cooldown
+    const cooldown = 0 * 1000;
 
     if (now - lastHarvest < cooldown) {
         //const timeLeft = Math.ceil((cooldown - (now - lastHarvest)) / 60000);
@@ -2032,28 +2046,6 @@ let userPlants = JSON.parse(localStorage.getItem("userPlants")) || {};
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-/*if (wsmsg["text"].toLowerCase() === ".plantseed") {
-    const handle = wsmsg["handle"];
-    const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || username || "you";
-
-    if (!username) return respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
-    if (userPlants[username]?.planted) {
-        return respondWithMessage.call(this, `🌱 ${nickname}, you've already planted a seed! Wait until it's ready to harvest.`);
-    }
-
-    userPlants[username] = {
-        planted: true,
-        plantedAt: Date.now(),
-        growTime: 60 * 60 * 1000, // 1 hour
-        watered: false,
-        fed: false
-    };
-
-    localStorage.setItem("userPlants", JSON.stringify(userPlants));
-    respondWithMessage.call(this, `🌱 ${nickname} planted a new seed. Come back in about an hour to harvest.`);
-}*/
-
 if (wsmsg["text"].toLowerCase() === ".plantseed") {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
@@ -2067,39 +2059,16 @@ if (wsmsg["text"].toLowerCase() === ".plantseed") {
     userPlants[username] = {
         planted: true,
         plantedAt: Date.now(),
-        growTime: 60 * 60 * 1000, // 1 hour
+        growTime: 30 * 60 * 1000, // 30min
         waterings: [],
         feedings: []
     };
 
     localStorage.setItem("userPlants", JSON.stringify(userPlants));
-    respondWithMessage.call(this, `🌱 ${nickname} planted a new seed. Come back in about an hour to harvest.`);
+    respondWithMessage.call(this, `🌱 ${nickname} planted a new seed. Come back in about 30min to harvest.`);
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
-
-/*if (wsmsg["text"].toLowerCase() === ".waterplant") {
-    const handle = wsmsg["handle"];
-    const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || username || "you";
-
-    if (!username) return respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
-
-    const plant = userPlants[username];
-    const userBalance = userBalances[username]?.balance || 0;
-
-    if (!plant?.planted) return respondWithMessage.call(this, `🚫 ${nickname}, nothing is planted! Use .plantseed first.`);
-    if (plant.watered) return respondWithMessage.call(this, `💧 ${nickname}, you've already watered your plant.`);
-    if (userBalance < 1000) return respondWithMessage.call(this, `💸 ${nickname}, you need 1,000 GBX to water your plant.`);
-
-    userBalances[username].balance = userBalance - 1000;
-    plant.watered = true;
-    plant.growTime = Math.floor(plant.growTime * 0.9); // 10% faster
-
-    localStorage.setItem("userBalances", JSON.stringify(userBalances));
-    localStorage.setItem("userPlants", JSON.stringify(userPlants));
-    respondWithMessage.call(this, `💧 ${nickname} watered their plant. It'll grow a bit faster now!`);
-}*/
 
 if (wsmsg["text"].toLowerCase() === ".plantwater") {
     const handle = wsmsg["handle"];
@@ -2131,28 +2100,6 @@ if (wsmsg["text"].toLowerCase() === ".plantwater") {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-/*if (wsmsg["text"].toLowerCase() === ".feedplant") {
-    const handle = wsmsg["handle"];
-    const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || username || "you";
-
-    if (!username) return respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
-
-    const plant = userPlants[username];
-    const userBalance = userBalances[username]?.balance || 0;
-
-    if (!plant?.planted) return respondWithMessage.call(this, `🚫 ${nickname}, nothing is planted! Use .plantseed first.`);
-    if (plant.fed) return respondWithMessage.call(this, `🍽️ ${nickname}, you've already fed your plant.`);
-    if (userBalance < 10000) return respondWithMessage.call(this, `💸 ${nickname}, you need 10,000 GBX to feed your plant.`);
-
-    userBalances[username].balance = userBalance - 10000;
-    plant.fed = true;
-
-    localStorage.setItem("userBalances", JSON.stringify(userBalances));
-    localStorage.setItem("userPlants", JSON.stringify(userPlants));
-    respondWithMessage.call(this, `🍽️ ${nickname} fed their plant premium nutrients. Expect a bigger harvest!`);
-}*/
-
 if (wsmsg["text"].toLowerCase() === ".plantfeed") {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
@@ -2182,26 +2129,6 @@ if (wsmsg["text"].toLowerCase() === ".plantfeed") {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-/*if (wsmsg["text"].toLowerCase() === ".checkplant") {
-    const handle = wsmsg["handle"];
-    const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || username || "you";
-
-    const plant = userPlants[username];
-
-    if (!username) return respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
-    if (!plant?.planted) return respondWithMessage.call(this, `🌱 ${nickname}, you haven't planted anything yet.`);
-
-    const now = Date.now();
-    const remaining = Math.max(plant.plantedAt + plant.growTime - now, 0);
-    const minutes = Math.floor(remaining / 60000);
-    const seconds = Math.floor((remaining % 60000) / 1000);
-
-    respondWithMessage.call(this,
-        `🪴 Grow Report for ${nickname}:\n• Time left: ${minutes}m ${seconds}s\n• Watered: ${plant.watered ? "✅" : "❌"}\n• Fed: ${plant.fed ? "✅" : "❌"}`
-    );
-}*/
-
 if (wsmsg["text"].toLowerCase() === ".myplant") {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
@@ -2226,8 +2153,7 @@ if (wsmsg["text"].toLowerCase() === ".myplant") {
     const nextFeed = Math.max(0, Math.ceil((10 * 60 * 1000 - (now - lastFeed)) / 1000));
 
     const yieldBoost = Math.min(50, feedings * 10);
-    const growSpeedBoost = Math.floor((1 - (plant.growTime / (60 * 60 * 1000))) * 100);
-
+    const growSpeedBoost = Math.floor((1 - (plant.growTime / (30 * 60 * 1000))) * 100);
     respondWithMessage.call(this,
         `🌲 Grow Report for ${nickname}:\n` +
         `⏳ Time left: ${minutes}m ${seconds}s\n` +
@@ -2240,7 +2166,7 @@ if (wsmsg["text"].toLowerCase() === ".myplant") {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-if (wsmsg["text"].toLowerCase() === ".plantharvest") {
+/*if (wsmsg["text"].toLowerCase() === ".plantharvest") {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
@@ -2272,7 +2198,44 @@ if (wsmsg["text"].toLowerCase() === ".plantharvest") {
 
     const pounds = (baseYield / 448).toFixed(2);
     respondWithMessage.call(this, `🌾 ${nickname} harvested their personal plant and got 🥦 ${pounds} lb [${baseYield.toLocaleString()}g] of dank homegrown weed!`);
+}*/
+
+if (wsmsg["text"].toLowerCase() === ".plantharvest") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    const plant = userPlants[username];
+
+    if (!username) return respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+    if (!plant?.planted) return respondWithMessage.call(this, `🌱 ${nickname}, you haven't planted anything yet.`);
+
+    const now = Date.now();
+    const readyTime = plant.plantedAt + plant.growTime;
+    if (now < readyTime) {
+        const remaining = Math.ceil((readyTime - now) / 1000);
+        return respondWithMessage.call(this, `⏳ ${nickname}, your plant isn’t ready yet! Try again in ${remaining} seconds.`);
+    }
+
+    // 🌿 Yield: 1–8 lb = 448–3584g
+    let baseYield = Math.floor(Math.random() * (3584 - 448 + 1)) + 448;
+    const feedings = plant.feedings?.length || 0;
+    if (feedings > 0) {
+        const boost = 1 + (Math.random() * 0.25 + 0.25); // +25%–50%
+        baseYield = Math.floor(baseYield * boost);
+    }
+
+    userWeedStashes[username] = (userWeedStashes[username] || 0) + baseYield;
+    delete userPlants[username];
+
+    localStorage.setItem("userWeedStashes", JSON.stringify(userWeedStashes));
+    localStorage.setItem("userPlants", JSON.stringify(userPlants));
+
+    const pounds = (baseYield / 448).toFixed(2);
+    respondWithMessage.call(this, `🌾 ${nickname} harvested their personal plant and got 🥦 ${pounds} lb [${baseYield.toLocaleString()}g] of dank homegrown weed!`);
 }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
 
 if (wsmsg["text"].toLowerCase().startsWith(".plantgrows")) {
     const args = wsmsg["text"].split(" ");
@@ -2307,7 +2270,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".plantgrows")) {
     const totalPages = Math.ceil(growers.length / growersPerPage);
 
     if (page < 1 || page > totalPages) {
-        respondWithMessage.call(this, `📄 Invalid page. Use \`.plants [1-${totalPages}]\`.`);
+        respondWithMessage.call(this, `📄 Invalid page. Use \`.plantgrows [1-${totalPages}]\`.`);
         return;
     }
 
@@ -2322,13 +2285,13 @@ if (wsmsg["text"].toLowerCase().startsWith(".plantgrows")) {
         return "🌱";
     };
 
-    let output = `🌲 Top Growers – Page ${page}/${totalPages} – Use \`.plants [page]\`\n`;
+    let output = `🌲 Top Growers – Page ${page}/${totalPages} – Use \`.plantgrows [page]\`\n`;
     pageGrowers.forEach((g, i) => {
         output += `${start + i + 1}. ${g.nickname} – 💧 ${g.waterings} | 🐟 ${g.feedings} | +${g.yieldBoost}% yield ${emojiForBoost(g.yieldBoost)}\n`;
     });
 
     if (page < totalPages) {
-        output += `👉 Type \`.plants ${page + 1}\` for the next page!\n`;
+        output += `👉 Type \`.plantgrows ${page + 1}\` for the next page!\n`;
     }
 
     respondWithMessage.call(this, output.trim());
@@ -2393,7 +2356,7 @@ if (wsmsg["text"].toLowerCase() === ".distribute") {
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 💨 `.admin giveweed` - Give all users a specified amount of weed (default: 420g)
-if (wsmsg["text"].toLowerCase().startsWith(".admin giveweed")) {
+/*if (wsmsg["text"].toLowerCase().startsWith(".admin giveweed")) {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
 
@@ -2429,7 +2392,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".admin giveweed")) {
     saveWeedStashes();
 
     respondWithMessage.call(this, `🚀 All ${userCount} users just got 🥦 ${amount.toLocaleString()} grams of premium bud! 💚`);
-}
+}*/
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -2462,16 +2425,16 @@ setInterval(() => {
                     if (!wghBank) {
                         wghBank = 0;
                     }
-                    wghBank += 69420;
+                    wghBank += 6900420;
 
                     // Save updated WGH stash
                     localStorage.setItem("wghBank", JSON.stringify(wghBank));
 
                     // Format WGH in pounds for the message (1 lb = 448g)
-                    const addedPounds = (69420 / 448).toFixed(2);
+                    const addedPounds = (6900420 / 448).toFixed(2);
                     const wghTotalPounds = (wghBank / 448).toFixed(2);
 
-                    this._send(`{"stumble":"msg","text": "🏬➕ WGH just grew by 🥦 ${addedPounds} lb [69,420g]! 💚"}`);
+                    this._send(`{"stumble":"msg","text": "🏬➕ WGH just grew by 🥦 ${addedPounds} lb [6900420g]! Nice! 💚"}`);
 
                     // Optional: Send .help message after another delay
                     // setTimeout(() => {
@@ -6561,7 +6524,8 @@ if (cookieTriggers.includes(wsmsg["text"].toLowerCase())) {
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
     const now = Date.now();
-    const cooldown = 7 * 1000; // 7-second cooldown because cookies are FASTER
+    //const cooldown = 7 * 1000; // 7-second cooldown because cookies are FASTER
+    const cooldown = 0 * 1000;
 
     if (!username) {
         respondWithMessage.call(this, "🍪 Error: Your cookie jar is missing.");
@@ -6607,7 +6571,8 @@ if (wsmsg["text"].toLowerCase() === ".cook") {
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
     const now = Date.now();
-    const cooldown = 30 * 60 * 1000; // 30-minute cooldown
+    //const cooldown = 30 * 60 * 1000; // 30-minute cooldown
+    const cooldown = 0 * 60 * 1000;
 
     if (!username) {
         respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
@@ -6789,7 +6754,8 @@ if (wsmsg["text"].toLowerCase() === ".bankrob") {
     // Cooldown check (2 minutes)
     const now = Date.now();
     const lastRobbery = lastBankRobTime[username] || 0;
-    const cooldownTime = 2 * 60 * 1000; // 2 minutes in milliseconds
+    //const cooldownTime = 2 * 60 * 1000; // 2 minutes in milliseconds
+    const cooldownTime = 0 * 60 * 1000;
 
     if (now - lastRobbery < cooldownTime) {
         const remaining = Math.ceil((cooldownTime - (now - lastRobbery)) / 1000);
@@ -6913,7 +6879,8 @@ if (wsmsg["text"].toLowerCase() === ".weedrob") {
 
     const now = Date.now();
     const lastRobbery = lastWeedRobTime[username] || 0;
-    const cooldownTime = 2 * 60 * 1000; // 2 minutes
+    //const cooldownTime = 2 * 60 * 1000; // 2 minutes
+    const cooldownTime = 0 * 60 * 1000;
 
     if (now - lastRobbery < cooldownTime) {
         const remaining = Math.ceil((cooldownTime - (now - lastRobbery)) / 1000);
@@ -6995,7 +6962,8 @@ if (wsmsg["text"].toLowerCase() === ".bankheist") {
 
     const now = Date.now();
     const lastHeist = lastBankHeistTime[username] || 0;
-    const cooldown = 10 * 60 * 1000; // 10 minutes
+    //const cooldown = 10 * 60 * 1000; // 10 minutes
+    const cooldown = 0 * 60 * 1000;
 
     if (now - lastHeist < cooldown) {
         const remaining = Math.ceil((cooldown - (now - lastHeist)) / 1000);
@@ -7062,7 +7030,8 @@ if (wsmsg["text"].toLowerCase() === ".weedheist") {
 
     const now = Date.now();
     const lastHeist = lastWeedHeistTime[username] || 0;
-    const cooldown = 10 * 60 * 1000; // 10 minutes
+    //const cooldown = 10 * 60 * 1000; // 10 minutes
+    const cooldown = 0 * 60 * 1000;
 
     if (now - lastHeist < cooldown) {
         const remaining = Math.ceil((cooldown - (now - lastHeist)) / 1000);
@@ -7115,7 +7084,7 @@ if (wsmsg["text"].toLowerCase() === ".weedheist") {
 // DUMP -----------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-if (wsmsg["text"].toLowerCase() === ".dumpall") {
+/*if (wsmsg["text"].toLowerCase() === ".dumpall") {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
@@ -7336,7 +7305,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".extract")) {
     respondWithMessage.call(this, messages[Math.floor(Math.random() * messages.length)]);
 
     console.log(`[DEBUG] ${user} After Extraction - Weed Stash: ${userWeedStashes[user]}g, Extract Stash: ${userExtractStashes[user][extractType]}g, GBX: ${userBalances[user].balance}`);
-}
+}*/
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 /*
@@ -7546,7 +7515,8 @@ if (wsmsg["text"].toLowerCase().startsWith(".stashweed")) {
 
     // Cooldown settings
     const now = Date.now();
-    const cooldown = 60 * 1000; // 60-second cooldown
+    //const cooldown = 60 * 1000; // 60-second cooldown
+    const cooldown = 0 * 1000;
     const lastUsed = lastHideWeedTimes[username] || 0;
 
     if (now - lastUsed < cooldown) {
@@ -7604,7 +7574,8 @@ if (wsmsg["text"].toLowerCase().startsWith(".unstashweed")) {
 
     // Cooldown settings
     const now = Date.now();
-    const cooldown = 60 * 1000;
+    //const cooldown = 60 * 1000;
+    const cooldown = 0 * 1000;
     const lastUsed = lastUnhideWeedTimes[username] || 0;
 
     if (now - lastUsed < cooldown) {
@@ -7873,7 +7844,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".myitems")) {
     respondWithMessage.call(this, message.trim());
 }
 
-if (wsmsg["text"].toLowerCase() === ".admin clearitems") {
+/*if (wsmsg["text"].toLowerCase() === ".admin clearitems") {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
 
@@ -7943,7 +7914,7 @@ if (wsmsg["text"].toLowerCase() === ".admin clearitems") {
     localStorage.setItem("userDildoStashes", JSON.stringify(userDildoStashes));
 
     respondWithMessage.call(this, "🧹 All user item inventories have been wiped.");
-}
+}*/
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -8295,6 +8266,14 @@ if (wsmsg["text"].toLowerCase() === ".howpot") {
     );
 }
 
+//ADD A DAILY TAX!
+//ADD A DAILY TAX!
+//ADD A DAILY TAX!
+//ADD A DAILY TAX!
+//ADD A DAILY TAX!
+//ADD A DAILY TAX!
+//5% and 1%
+
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 🎰 `.gamble AMOUNT` or `.bet AMOUNT` - Bet GojiBux for a chance to win!
@@ -8318,7 +8297,8 @@ if (
 
     const lastGambleTime = userStats[username].lastGamble || 0;
     const now = Date.now();
-    const cooldown = 30 * 1000;
+    //const cooldown = 30 * 1000;
+    const cooldown = 0 * 1000;
 
     if (now - lastGambleTime < cooldown) {
         const remaining = Math.ceil((cooldown - (now - lastGambleTime)) / 1000);
@@ -8673,7 +8653,8 @@ if (wsmsg["text"].toLowerCase().startsWith(".stealbux")) {
 
     const victimNickname = userNicknames[victimUsername]?.nickname || victimUsername;
     const now = Date.now();
-    const cooldown = 5 * 60 * 1000; // 5 minutes
+    //const cooldown = 5 * 60 * 1000; // 5 minutes
+    const cooldown = 0 * 60 * 1000;
 
     const lastSteal = userStats[thiefUsername].stealCooldowns[victimUsername] || 0;
     if (now - lastSteal < cooldown) {
@@ -8979,7 +8960,8 @@ if (wsmsg["text"].toLowerCase().startsWith(".selljoint")) {
     // ⏳ Cooldown check (15 minutes)
     const now = Date.now();
     const lastSell = lastSellJointTime[username] || 0;
-    const cooldown = 15 * 60 * 1000;
+    //const cooldown = 15 * 60 * 1000;
+    const cooldown = 0 * 60 * 1000;
 
     if (now - lastSell < cooldown) {
         const timeLeft = Math.ceil((cooldown - (now - lastSell)) / 1000);
@@ -9064,6 +9046,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".selljoint")) {
         `🤑 Each joint sold for 💵 ${jointSellPrice.toLocaleString()} GBX.${luckyCoinMessage}`
     );
 }
+
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // WORK IN PROGRESS ADVENTURE
@@ -9088,7 +9071,8 @@ if (wsmsg["text"].toLowerCase() === ".adventure") {
     // ⏳ Cooldown check (5 minutes)
     const now = Date.now();
     const lastAdventure = lastAdventureTime[username] || 0;
-    const cooldown = 5 * 60 * 1000;
+    //const cooldown = 5 * 60 * 1000;
+    const cooldown = 0 * 60 * 1000;
 
     if (now - lastAdventure < cooldown) {
         const timeLeft = Math.ceil((cooldown - (now - lastAdventure)) / 1000);
@@ -10692,6 +10676,311 @@ if ([".help", ".halp"].includes(wsmsg['text'].toLowerCase())) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+// Command: .bored (case insensitive)
+if (wsmsg["text"].toLowerCase().startsWith(".bored")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || "Someone";
+
+    fetch("https://www.boredapi.com/api/activity/")
+        .then(res => res.json())
+        .then(data => {
+            const activity = data.activity;
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `😐 ${nickname}, try this: ${activity}`
+            }));
+        })
+        .catch(() => {
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `🥱 ${nickname}, even the Bored API is too bored to respond.`
+            }));
+        });
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+if (wsmsg["text"].toLowerCase().startsWith(".fact")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || "Someone";
+
+    GM.xmlHttpRequest({
+        method: "GET",
+        url: "https://uselessfacts.jsph.pl/random.json?language=en",
+        onload: function(response) {
+            try {
+                const data = JSON.parse(response.responseText);
+                const fact = data.text;
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: `📘 ${nickname}, did you know? ${fact}`
+                }));
+            } catch (err) {
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: `🤯 ${nickname}, that fact was too wild to handle.`
+                }));
+            }
+        }.bind(this),
+        onerror: function() {
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `😵 ${nickname}, facts engine failed. Smoke instead?`
+            }));
+        }.bind(this)
+    });
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+/*if (wsmsg["text"].toLowerCase().startsWith(".kanye")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || "YeFan";
+
+    GM.xmlhttpRequest({
+        method: "GET",
+        url: "https://api.kanye.rest",
+        onload: function(response) {
+            try {
+                const data = JSON.parse(response.responseText);
+                const quote = data.quote;
+
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: `🎤 ${nickname}, Kanye says: "${quote}"`
+                }));
+            } catch {
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: `🧠 ${nickname}, Ye went silent.`
+                }));
+            }
+        }.bind(this),
+        onerror: function() {
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `💀 ${nickname}, Kanye server ghosted us.`
+            }));
+        }.bind(this)
+    });
+}*/
+
+if (wsmsg["text"].toLowerCase().startsWith(".kanye")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username] || "Someone";
+
+    GM.xmlhttpRequest({
+        method: "GET",
+        url: "https://api.kanye.rest",
+        onload: function(response) {
+            try {
+                const data = JSON.parse(response.responseText);
+                if (data.quote) {
+                    this._send(JSON.stringify({
+                        stumble: "msg",
+                        text: `🎤 ${nickname}, Kanye says: "${data.quote}"`
+                    }));
+                } else throw new Error("No quote");
+            } catch {
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: `🧠 ${nickname}, Ye is speechless.`
+                }));
+            }
+        }.bind(this),
+        onerror: function() {
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `📴 ${nickname}, Ye is offline.`
+            }));
+        }.bind(this)
+    });
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+if (wsmsg["text"].toLowerCase().startsWith(".excuse")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || "Someone";
+
+    GM.xmlhttpRequest({
+        method: "GET",
+        url: "https://excuser.herokuapp.com/v1/excuse",
+        onload: function(response) {
+            try {
+                const data = JSON.parse(response.responseText);
+                const excuse = data[0]?.excuse;
+
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: `🧉 ${nickname}, here's your excuse: "${excuse}"`
+                }));
+            } catch {
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: `😬 ${nickname}, no excuses today.`
+                }));
+            }
+        }.bind(this),
+        onerror: function() {
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `📴 ${nickname}, excuse engine failed.`
+            }));
+        }.bind(this)
+    });
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+if (wsmsg["text"].toLowerCase().startsWith(".bored")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || "Someone";
+
+    GM.xmlhttpRequest({
+        method: "GET",
+        url: "https://www.boredapi.com/api/activity/",
+        onload: function(response) {
+            try {
+                const data = JSON.parse(response.responseText);
+                const activity = data.activity;
+
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: `🥱 ${nickname}, here's something to do: ${activity}`
+                }));
+            } catch {
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: `😶 ${nickname}, couldn't process that boredom cure.`
+                }));
+            }
+        }.bind(this),
+        onerror: function() {
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `📴 ${nickname}, Bored API is still passed out.`
+            }));
+        }.bind(this)
+    });
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+if (wsmsg["text"].toLowerCase().startsWith(".catfact")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username] || "Someone";
+
+    GM.xmlhttpRequest({
+        method: "GET",
+        url: "https://catfact.ninja/fact",
+        onload: function(response) {
+            try {
+                const data = JSON.parse(response.responseText);
+                const fact = data.fact;
+
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: `🐱 ${nickname}, did you know? ${fact}`
+                }));
+            } catch {
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: `😿 ${nickname}, couldn't fetch a cat fact.`
+                }));
+            }
+        }.bind(this),
+        onerror: function() {
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `📴 ${nickname}, cat facts server is unreachable.`
+            }));
+        }.bind(this)
+    });
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+if (wsmsg["text"].toLowerCase().startsWith(".countryinfo ")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username] || "Someone";
+    const countryName = wsmsg["text"].slice(13).trim();
+
+    GM.xmlhttpRequest({
+        method: "GET",
+        url: `https://restcountries.com/v3.1/name/${encodeURIComponent(countryName)}`,
+        onload: function(response) {
+            try {
+                const data = JSON.parse(response.responseText);
+                const country = data[0];
+                const info = `Country: ${country.name.common}\nCapital: ${country.capital[0]}\nPopulation: ${country.population.toLocaleString()}\nRegion: ${country.region}`;
+
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: `🌍 ${nickname}, here's info about ${countryName}:\n${info}`
+                }));
+            } catch {
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: `❓ ${nickname}, couldn't find information on "${countryName}".`
+                }));
+            }
+        }.bind(this),
+        onerror: function() {
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `📴 ${nickname}, country info server is unreachable.`
+            }));
+        }.bind(this)
+    });
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+if (wsmsg["text"].toLowerCase().startsWith(".rjoke")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username] || "Someone";
+
+    GM.xmlhttpRequest({
+        method: "GET",
+        url: "https://official-joke-api.appspot.com/random_joke",
+        onload: function(response) {
+            try {
+                const data = JSON.parse(response.responseText);
+                const joke = `${data.setup} ${data.punchline}`;
+
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: `😂 ${nickname}, here's a joke: ${joke}`
+                }));
+            } catch {
+                this._send(JSON.stringify({
+                    stumble: "msg",
+                    text: `😶 ${nickname}, couldn't fetch a joke.`
+                }));
+            }
+        }.bind(this),
+        onerror: function() {
+            this._send(JSON.stringify({
+                stumble: "msg",
+                text: `📴 ${nickname}, joke server is unreachable.`
+            }));
+        }.bind(this)
+    });
+}
+
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
     // Command: .team (case insensitive)
     if ([".team"].includes(wsmsg['text'].toLowerCase())) {
         this._send(JSON.stringify({
@@ -11558,7 +11847,7 @@ if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
 let lastSnarfdilfTime = JSON.parse(localStorage.getItem("lastSnarfdilfTime") || "{}");
 
 // 🧃 `.snarfdilf` - Pay 10k GBX to view rotating images (5-minute cooldown)
-if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
+/*if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
     const handle = wsmsg['handle'];
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || "Someone";
@@ -11569,7 +11858,70 @@ if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
     // ⏳ Cooldown check (5 minutes)
     const now = Date.now();
     const lastUse = lastSnarfdilfTime[username] || 0;
-    const cooldown = 5 * 60 * 1000;
+    //const cooldown = 5 * 60 * 1000;
+    const cooldown = 0 * 60 * 1000;
+
+    if (now - lastUse < cooldown) {
+        const timeLeft = Math.ceil((cooldown - (now - lastUse)) / 1000);
+        respondWithMessage.call(this, `⏳ ${nickname}, wait ${timeLeft} seconds before peeking at another snarfdilf image.`);
+        return;
+    }
+
+    const cost = 10_000;
+    const userBalance = userBalances[username]?.balance || 0;
+
+    if (userBalance < cost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 10,000 GBX to access peak snarfdilf content. Get your GBX up!`);
+        return;
+    }
+
+    // Deduct and transfer GBX
+    userBalances[username].balance -= cost;
+    if (!userBalances[recipient]) userBalances[recipient] = { balance: 0 };
+    userBalances[recipient].balance += cost;
+    saveBalances();
+
+    // Image list
+    const snarfdilfImages = [
+        "https://i.imgur.com/RSZ7xzg.jpeg",
+        "https://i.imgur.com/5HSAo1l.jpeg",
+        "https://i.imgur.com/oLAqMHS.jpeg",
+        "https://i.imgur.com/Xm4iYBy.jpeg"
+    ];
+
+    // Get current image and rotate
+    const currentImage = snarfdilfImages[snarfdilfIndex];
+    snarfdilfIndex = (snarfdilfIndex + 1) % snarfdilfImages.length;
+    saveSnarfdilfIndex();
+
+    // 🕒 Apply cooldown
+    lastSnarfdilfTime[username] = now;
+    localStorage.setItem("lastSnarfdilfTime", JSON.stringify(lastSnarfdilfTime));
+
+    // Send image
+    this._send(`{"stumble":"msg","text": "${currentImage}"}`);
+
+    // Confirm transaction after delay
+    setTimeout(() => {
+        this._send(`{"stumble":"msg","text": "🤖 ${nickname} paid 💵 10,000 GBX for this snarfdilf masterpiece. ${recipient} received the payment."}`);
+    }, 1000);
+}*/
+
+// 🧃 `.snarfdilf` - Pay 10k GBX to view rotating images (5-minute cooldown)
+const snarfdilfAliases = [".snarfdilf", ".nipples", ".nips"];
+if (snarfdilfAliases.includes(wsmsg['text'].toLowerCase())) {
+    const handle = wsmsg['handle'];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || "Someone";
+    const recipient = "jedisnarf"; // Person receiving payment
+
+    if (!username) return;
+
+    // ⏳ Cooldown check (5 minutes)
+    const now = Date.now();
+    const lastUse = lastSnarfdilfTime[username] || 0;
+    // const cooldown = 5 * 60 * 1000;
+    const cooldown = 0 * 60 * 1000;
 
     if (now - lastUse < cooldown) {
         const timeLeft = Math.ceil((cooldown - (now - lastUse)) / 1000);
