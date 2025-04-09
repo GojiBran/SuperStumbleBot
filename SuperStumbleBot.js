@@ -1608,11 +1608,11 @@ if (!window._weedPriceIntervalSet) {
 }
 */
 
-let BASE_PRICE = Math.floor(20 / 3.5); // ~22 GBX per gram
-let weedBuyPrice = parseInt(localStorage.getItem("weedBuyPrice")) || BASE_PRICE;
-let weedSellPrice = parseInt(localStorage.getItem("weedSellPrice")) || Math.floor(BASE_PRICE * 0.8);
-let prevWeedBuyPrice = weedBuyPrice;
+let BASE_PRICE = Math.floor(110 / 3.5); // ~22 GBX per gram
+let weedSellPrice = parseInt(localStorage.getItem("weedSellPrice")) || BASE_PRICE; // reversed
+let weedBuyPrice = parseInt(localStorage.getItem("weedBuyPrice")) || Math.floor(BASE_PRICE * 0.8); // reversed
 let prevWeedSellPrice = weedSellPrice;
+let prevWeedBuyPrice = weedBuyPrice;
 
 function updateWeedPrices() {
     const bank = wghBank || 0;
@@ -1641,46 +1641,47 @@ function updateWeedPrices() {
     let finalPriceFactor = scarcityFactor * inflationFactor * demandFactor;
     const randomFactor = 1 + ((Math.random() * 0.5) - 0.25);
 
-    let newBuyPrice = Math.max(1, Math.round(BASE_PRICE * finalPriceFactor * randomFactor));
-    let diff = newBuyPrice - prevWeedBuyPrice;
+    // Reversed logic: calculate new **sell** price first, make it go up
+    let newSellPrice = Math.max(1, Math.round(BASE_PRICE * finalPriceFactor * randomFactor));
+    let diff = newSellPrice - prevWeedSellPrice;
     let smoothingFactor = Math.min(1, Math.abs(diff) / 5);
     let priceShift = Math.round(diff * smoothingFactor);
-    weedBuyPrice = Math.max(1, prevWeedBuyPrice + priceShift);
+    weedSellPrice = Math.max(1, prevWeedSellPrice + priceShift);
 
-    let sellMultiplier = 0.7;
-    if (totalWeed < 50000) sellMultiplier += 0.3;
-    else if (totalWeed < 100000) sellMultiplier += 0.2;
-    else if (totalWeed > 300000) sellMultiplier -= 0.1;
-    if (hiddenTotal < 10000) sellMultiplier += 0.1;
-    if (offshoreTotal > 300000) sellMultiplier -= 0.1;
-    if (gbxReserve > 1000000) sellMultiplier += 0.2;
-    else if (gbxReserve < 100000) sellMultiplier -= 0.1;
-    sellMultiplier *= (1 + ((Math.random() * 0.2) - 0.1));
+    // Now calculate **buy** price as lower than sell (reversed)
+    let buyMultiplier = 0.7;
+    if (totalWeed < 50000) buyMultiplier += 0.3;
+    else if (totalWeed < 100000) buyMultiplier += 0.2;
+    else if (totalWeed > 300000) buyMultiplier -= 0.1;
+    if (hiddenTotal < 10000) buyMultiplier += 0.1;
+    if (offshoreTotal > 300000) buyMultiplier -= 0.1;
+    if (gbxReserve > 1000000) buyMultiplier += 0.2;
+    else if (gbxReserve < 100000) buyMultiplier -= 0.1;
+    buyMultiplier *= (1 + ((Math.random() * 0.2) - 0.1));
 
-    let newSellPrice = Math.max(1, Math.round(newBuyPrice * sellMultiplier));
-    let sellDiff = newSellPrice - prevWeedSellPrice;
-    let sellShift = Math.round(sellDiff * smoothingFactor);
-    weedSellPrice = Math.max(1, prevWeedSellPrice + sellShift);
+    let newBuyPrice = Math.max(1, Math.round(newSellPrice * buyMultiplier));
+    let buyDiff = newBuyPrice - prevWeedBuyPrice;
+    let buyShift = Math.round(buyDiff * smoothingFactor);
+    weedBuyPrice = Math.max(1, prevWeedBuyPrice + buyShift);
 
-    prevWeedBuyPrice = weedBuyPrice;
     prevWeedSellPrice = weedSellPrice;
+    prevWeedBuyPrice = weedBuyPrice;
 
-    // 🌿 Store last 5 price updates
     let weedPriceHistory = JSON.parse(localStorage.getItem("weedPriceHistory")) || [];
     weedPriceHistory.push({ buy: weedBuyPrice, sell: weedSellPrice });
     if (weedPriceHistory.length > 5) weedPriceHistory.shift();
     localStorage.setItem("weedPriceHistory", JSON.stringify(weedPriceHistory));
 
-    localStorage.setItem("weedBuyPrice", weedBuyPrice);
     localStorage.setItem("weedSellPrice", weedSellPrice);
+    localStorage.setItem("weedBuyPrice", weedBuyPrice);
 
-    console.log(`🌿 Weed Prices Updated: Buy ${weedBuyPrice} GBX/g | Sell ${weedSellPrice} GBX/g | WGH: ${bank} | LGH: ${gbxReserve}`);
+    console.log(`🌿 Reversed Weed Prices: Buy ${weedBuyPrice} GBX/g | Sell ${weedSellPrice} GBX/g | WGH: ${bank} | LGH: ${gbxReserve}`);
 }
 
 if (!window._weedPriceIntervalSet) {
-    setInterval(updateWeedPrices, 30 * 1000);
+    setInterval(updateWeedPrices, 10 * 1000);
     window._weedPriceIntervalSet = true;
-    console.log("🌿 Weed price updater initialized.");
+    console.log("🌿 Weed price updater initialized (reversed).");
 }
 
 if (wsmsg["text"].toLowerCase() === ".weedgraph") {
@@ -8938,6 +8939,34 @@ if (wsmsg["text"].toLowerCase() === ".priceweed") {
     console.log(`🥦💵 .weedprice command triggered:\n- Buy Price: ${weedBuyPrice} GBX/g\n- Sell Price: ${weedSellPrice} GBX/g\n- WGH: ${bank}\n- LGH: ${gbxReserve}\n- Total Weed: ${totalWeed}\n- Hidden Weed: ${hiddenTotal}`);
 }
 
+// 🔄 `.weedprice` - Show current reversed weed prices + economy stats with split messages
+if (wsmsg["text"].toLowerCase() === ".weedprice") {
+    const bank = wghBank || 0;
+    const gbxReserve = lghBank || 0;
+    const totalWeed = Object.values(userWeedStashes || {}).reduce((a, b) => a + (b || 0), 0);
+    const hiddenTotal = Object.values(userHiddenWeed || {}).reduce((a, b) => a + (b || 0), 0);
+
+    // Ensure weed prices exist & are valid
+    weedBuyPrice = parseInt(localStorage.getItem("weedBuyPrice")) || Math.floor(20 / 3.5);
+    weedSellPrice = parseInt(localStorage.getItem("weedSellPrice")) || Math.floor(weedBuyPrice * 0.8);
+    weedBuyPrice = Math.max(1, parseInt(weedBuyPrice));
+    weedSellPrice = Math.max(1, parseInt(weedSellPrice));
+
+    // First message (Weed Prices)
+    const message1 = `🌿💸 Reversed Weed Prices (for fun):\n➕ Buy: ${weedBuyPrice.toLocaleString()} GBX/g\n➖ Sell: ${weedSellPrice.toLocaleString()} GBX/g\n😏 Yes, sell high & buy low — don’t question it.`;
+
+    // Second message (Market Stats)
+    const message2 = `📊 Market Stats:\n🏬 WGH Supply: ${bank.toLocaleString()} g\n🏦 LGH Reserve: ${gbxReserve.toLocaleString()} GBX\n🥦 Total Weed: ${totalWeed.toLocaleString()} g\n🔒 Hidden Weed: ${hiddenTotal.toLocaleString()} g`;
+
+    // Send messages with delay
+    respondWithMessage.call(this, message1);
+    setTimeout(() => {
+        respondWithMessage.call(this, message2);
+    }, 1000);
+
+    console.log(`🌿💸 .weedprice triggered:\n- Buy: ${weedBuyPrice} GBX/g\n- Sell: ${weedSellPrice} GBX/g\n- WGH: ${bank}\n- LGH: ${gbxReserve}\n- Total Weed: ${totalWeed}\n- Hidden Weed: ${hiddenTotal}`);
+}
+
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 🕒 Cooldown storage for `.selljoint`
@@ -11605,6 +11634,289 @@ if (triggerCommands.includes(wsmsg['text'].toLowerCase())) {
     setTimeout(() => {
         this._send(`{"stumble":"msg","text": "🤖 ${nickname} paid 💵 100 GBX for some quality titties."}`);
     }, 1000);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+let userDownloadHistories = JSON.parse(localStorage.getItem("userDownloadHistories") || "{}");
+let userFileStats = JSON.parse(localStorage.getItem("userFileStats") || "{}");
+
+function saveUserDownloadHistories() {
+    localStorage.setItem("userDownloadHistories", JSON.stringify(userDownloadHistories));
+}
+
+function saveUserFileStats() {
+    localStorage.setItem("userFileStats", JSON.stringify(userFileStats));
+}
+
+if (wsmsg['text'].toLowerCase() === ".download") {
+    const handle = wsmsg['handle'];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    if (!username) return;
+
+    let cost;
+    const roll = Math.random();
+    if (roll < 0.85) cost = Math.floor(Math.random() * 901) + 100;
+    else if (roll < 0.98) cost = Math.floor(Math.random() * 4001) + 1000;
+    else cost = Math.floor(Math.random() * 10001) + 10000;
+
+    const userBalance = userBalances[username]?.balance || 0;
+    if (userBalance < cost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 ${cost} GBX to download this file. You're a little short!`);
+        return;
+    }
+
+    userBalances[username].balance -= cost;
+    saveBalances();
+
+    if (!userDownloadHistories[username]) userDownloadHistories[username] = [];
+    if (!userFileStats[username]) userFileStats[username] = { spent: 0, earned: 0, uploads: 0 };
+    userFileStats[username].spent += cost;
+    saveUserFileStats();
+
+    const files = [
+        "dank_meme_pack.zip",
+        "forbidden_snack.iso",
+        "booty_assets.rar",
+        "420_guide.pdf",
+        "totally_legit.exe",
+        "vaporwave_loops.mp3",
+        "bong_simulator_2025.img",
+        "grax_loveletters.txt",
+        "secret_police_docs.docx",
+        "crunchy_taco_recipe.pdf",
+        "do_not_open_this.bat",
+        "hotdog_printer_drivers.dll",
+        "enchanted_dildo_patch.rar",
+        "weed_stock_chart.xlsx",
+        "smoke_signals_decoder.py",
+        "illegal_pigeon_fights.mov",
+        "lil_goji_mixtape_vol1.mp3",
+        "waluigi_manifesto.epub",
+        "dorito_chipset_firmware.bin",
+        "ghost_of_clippy.vbs",
+        "booty_physics_engine.unitypackage",
+        "meme_compiler_69.elf",
+        "graxOS_installer.img",
+        "bigfoot_tax_return_1997.pdf",
+        "suspicious_file.unknown",
+        "lunar_bong_designs.stl",
+        "nuggies_database.db",
+        "AI_generated_socks.csv",
+        "gojibux_mining_tool.exe",
+        "stumblechat_chatlogs_encrypted.txt",
+        "buttcoin_wallet_recovery_tool.exe",
+        "amongus_soundpack_v2.wav",
+        "rickroll_defense_shield.dll",
+        "banana_wifi_firmware.patch",
+        "toilet_simulator_pro_mod.apk",
+        "shrek_rtx_remastered.mkv",
+        "haunted_zip_file_4real.zip",
+        "boneless_pizza_config.sys",
+        "catgirl_driver_installer.pkg",
+        "usb_milk_adapter_docs.pdf",
+        "minecraft2_leak_earlybuild.iso",
+        "wario's_secret_folder.7z",
+        "vape_cloud_analyzer_9000.exe",
+        "real_golden_ticket.png",
+        "soggy_nachos_license_key.txt",
+        "fart_reverb_plugin.vst",
+        "mystery_meat_catalogue_2025.pdf",
+        "nsa_watchlist_simulator.exe",
+        "pickleOS_kernel32.sys",
+        "cursed_midi_files_collection.mid",
+        "windows_95_twerking_patch.reg",
+        "interdimensional_weed_field.jpg",
+        "bongo_cat_AI_revolution.mp4",
+        "emotional_damage_calculator.xlsx",
+        "goblin_language_pack.json",
+        "wholesome_thoughts.dmg",
+        "illegal_cheese_network.yaml",
+        "sassy_robot_voice_addon.aiff",
+        "left_sock_tracker_v3.bin",
+        "potato_overclocking_guide.docx",
+        "boobahOS_beta.img",
+        "dad_joke_generator_AI.exe",
+        "real_grax_coords.kml",
+        "sussy_baka_locator.gpx",
+        "cursed_chrome_extensions.crx",
+        "sims_weed_expansion_pack.package",
+        "blessed_burrito_sim.rom",
+        "booty_locator_pro.ipa",
+        "404_not_found_found.txt",
+        "screenshot_of_nothing.png",
+        "chaos_gremlin_manual_final_finalFINAL.pdf"
+    ];
+    const selectedFile = files[Math.floor(Math.random() * files.length)];
+
+    userDownloadHistories[username].unshift(selectedFile);
+    userDownloadHistories[username] = userDownloadHistories[username].slice(0, 100);
+    saveUserDownloadHistories();
+
+    const progressStages = [
+        `[░░░░░░░░░░] 0%`,
+        `[▓▓░░░░░░░░] 25%`,
+        `[▓▓▓▓▓░░░░░] 50%`,
+        `[▓▓▓▓▓▓▓░░░] 75%`,
+        `[▓▓▓▓▓▓▓▓▓▓] 100%`
+    ];
+
+    respondWithMessage.call(this, `🤖 Downloading ${selectedFile}...`);
+
+    progressStages.forEach((bar, i) => {
+        setTimeout(() => this._send(`{"stumble":"msg","text": "📦 ${bar}"}`), 1000 * (i + 1));
+    });
+
+    setTimeout(() => {
+        let resultMsg = `✅ ${nickname}, your file ${selectedFile} is ready. 💵 ${cost.toLocaleString()} GBX deducted.`;
+
+        if (!userStats[username]) userStats[username] = {};
+        if (userStats[username].luckyCoins === undefined) userStats[username].luckyCoins = 0;
+
+        if (cost >= 10000) {
+            userStats[username].luckyCoins++;
+            saveUserStats();
+            resultMsg += ` 🍀 You found a Lucky Coin inside the download!`;
+        }
+
+        this._send(`{"stumble":"msg","text": "${resultMsg}"}`);
+    }, 1000 * (progressStages.length + 1));
+}
+
+if (wsmsg["text"].toLowerCase() === ".upload") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    if (!username) return;
+
+    const history = userDownloadHistories[username];
+    if (!history || history.length === 0) {
+        respondWithMessage.call(this, `📤 ${nickname}, you don't have any files to upload. Try .download first.`);
+        return;
+    }
+
+    const index = Math.floor(Math.random() * history.length);
+    const selectedFile = history.splice(index, 1)[0];
+    saveUserDownloadHistories();
+
+    const luck = Math.random();
+    let profit = luck < 0.30 ? Math.floor(Math.random() * 4001) + 1000 : Math.floor(Math.random() * 201) + 50;
+
+    if (!userBalances[username]) userBalances[username] = { balance: 0 };
+    userBalances[username].balance += profit;
+    saveBalances();
+
+    if (!userFileStats[username]) userFileStats[username] = { spent: 0, earned: 0, uploads: 0 };
+    userFileStats[username].earned += profit;
+    userFileStats[username].uploads++;
+    saveUserFileStats();
+
+    const uploadStages = [
+        `[░░░░░░░░░░] 0%`,
+        `[▓▓░░░░░░░░] 25%`,
+        `[▓▓▓▓▓░░░░░] 50%`,
+        `[▓▓▓▓▓▓▓░░░] 75%`,
+        `[▓▓▓▓▓▓▓▓▓▓] 100%`
+    ];
+
+    respondWithMessage.call(this, `📤 Uploading ${selectedFile}...`);
+
+    uploadStages.forEach((bar, i) => {
+        setTimeout(() => this._send(`{"stumble":"msg","text": "🚀 ${bar}"}`), 1000 * (i + 1));
+    });
+
+    setTimeout(() => {
+        let msg = `✅ ${nickname} uploaded ${selectedFile} and made 💵 ${profit.toLocaleString()} GBX!`;
+
+        if (!userStats[username]) userStats[username] = {};
+        if (userStats[username].luckyCoins === undefined) userStats[username].luckyCoins = 0;
+
+        if (profit >= 5000) {
+            userStats[username].luckyCoins++;
+            saveUserStats();
+            msg += ` 🍀 You found a Lucky Coin in the upload!`;
+        }
+
+        this._send(`{"stumble":"msg","text": "${msg}"}`);
+    }, 1000 * (uploadStages.length + 1));
+}
+
+if (wsmsg["text"].toLowerCase().startsWith(".myfiles")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    if (!username) return;
+
+    const args = wsmsg["text"].split(" ");
+    let page = parseInt(args[1]) || 1;
+    if (isNaN(page) || page < 1) page = 1;
+
+    const allFiles = userDownloadHistories[username] || [];
+    const total = allFiles.length;
+    const perPage = 5;
+    const maxPage = Math.ceil(total / perPage);
+
+    if (total === 0) {
+        respondWithMessage.call(this, `📁 ${nickname}, you haven’t downloaded anything yet.`);
+        return;
+    }
+
+    if (page > maxPage) {
+        respondWithMessage.call(this, `📁 Page ${page} doesn't exist. You only have ${maxPage} page${maxPage !== 1 ? "s" : ""} of files.`);
+        return;
+    }
+
+    const start = (page - 1) * perPage;
+    const end = start + perPage;
+    const files = allFiles.slice(start, end);
+
+    const lines = files.map((file, i) => `🔹 ${start + i + 1}. ${file}`);
+    const msg = `📁 ${nickname}'s Files (Page ${page}/${maxPage}):\n` + lines.join("\n");
+
+    respondWithMessage.call(this, msg);
+}
+
+if (wsmsg["text"].toLowerCase() === ".clearmyfiles") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    if (!username) return;
+
+    delete userDownloadHistories[username];
+    saveUserDownloadHistories();
+
+    respondWithMessage.call(this, `🧼 ${nickname}, your download history has been wiped clean.`);
+}
+
+if (wsmsg["text"].toLowerCase() === ".filegraph") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    if (!username) return;
+
+    const stats = userFileStats[username] || { spent: 0, earned: 0 };
+    const spent = stats.spent || 0;
+    const earned = stats.earned || 0;
+    const total = spent + earned;
+
+    if (total === 0) {
+        respondWithMessage.call(this, `📉 ${nickname}, you haven't spent or earned any GBX through file trades yet.`);
+        return;
+    }
+
+    const spentPct = Math.round((spent / total) * 100);
+    const earnedPct = 100 - spentPct;
+
+    const totalBars = 20;
+    const spentBars = Math.round((spentPct / 100) * totalBars);
+    const earnedBars = totalBars - spentBars;
+
+    const bar = `💸${"▓".repeat(spentBars)}${"░".repeat(earnedBars)}💰`;
+    const msg = `📊 GBX File Flow for ${nickname}:\n${bar}\n💸 Spent: ${spent.toLocaleString()} GBX (${spentPct}%)\n💰 Earned: ${earned.toLocaleString()} GBX (${earnedPct}%)`;
+
+    respondWithMessage.call(this, msg);
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
