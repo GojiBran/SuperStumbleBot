@@ -13367,7 +13367,7 @@ if (wsmsg['text'].startsWith(".dice") || wsmsg['text'].startsWith(".diceroll")) 
 
 // Utility Commands -----------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
-
+/*
         if (wsmsg['text'].startsWith(".time")) {
             const userInput = wsmsg['text'].split(" ")[1]?.toLowerCase();
 
@@ -13495,8 +13495,10 @@ if (wsmsg['text'].startsWith(".dice") || wsmsg['text'].startsWith(".diceroll")) 
 
                     // Split operations for detailed steps
                     let result = eval(exp);
-                    let formattedExp = exp.replace(/\*/g, ' * ').replace(/\//g, ' / ').replace(/\+/g, ' + ').replace(/-/g, ' - ');
+*/
 
+//                    let formattedExp = exp.replace(/\*/g, ' * ').replace(/\//g, ' / ').replace(/\+/g, ' + ').replace(/-/g, ' - ');
+/*
                     steps.push(`🧮 Evaluating: ${formattedExp}`);
                     steps.push(`🤖 Final result: ${result}`);
 
@@ -13625,11 +13627,11 @@ if (wsmsg['text'].startsWith(".dice") || wsmsg['text'].startsWith(".diceroll")) 
                 this._send('{"stumble":"msg","text":"🤖 Invalid format. Use: .convert [value] [unit] to [unit]."}');
             }
         }
-
+*/
 // ADMIN -------------------------------------------------------------------------------
 
 // 🧹 `.admin pruneusers` - Prune users with no data and backup before deletion (supports dryrun)
-if (wsmsg["text"].toLowerCase().startsWith(".admin pruneusers")) {
+/*if (wsmsg["text"].toLowerCase().startsWith(".admin pruneusers")) {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
     const isDryRun = wsmsg["text"].toLowerCase().includes("dryrun");
@@ -13761,7 +13763,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".admin restorebackup")) {
         respondWithMessage.call(this, "❌ Failed to restore backup. Check the console for details.");
     }
 }
-
+*/
 //-----------------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
