@@ -155,6 +155,87 @@ setInterval(() => {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+// 💰 LGH (Limited Goji Holdings) - Prevent Reset & Allow Unlimited Cap
+let storedLghBank = localStorage.getItem("lghBank");
+let lghBank = storedLghBank !== null ? parseInt(storedLghBank) : 500000;
+
+// Ensure LGH stays within a valid range (no negative values)
+if (lghBank < 0) lghBank = 0;
+
+// 💰 Save LGH
+function saveLghBank() {
+    localStorage.setItem("lghBank", lghBank);
+}
+
+// 🔍 Debugging Log
+console.log(`LGH Bank Loaded: ${lghBank} GBX`);
+
+// 🛑 Ensure LGH Saves on Exit
+window.addEventListener("beforeunload", saveLghBank);
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 💰 Universal GojiBux Storage (Per-user)
+let userBalances = JSON.parse(localStorage.getItem("userBalances")) || {};
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 💸 Transaction Tax System
+function applyTax(amount, taxRate) {
+    return Math.floor(amount * (1 - taxRate));
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// Function to save user balances
+function saveBalances() {
+    localStorage.setItem("userBalances", JSON.stringify(userBalances));
+    localStorage.setItem("lghBank", lghBank);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+let userStats = JSON.parse(localStorage.getItem("userStats") || "{}");
+
+function saveUserStats() {
+    localStorage.setItem("userStats", JSON.stringify(userStats));
+}
+
+
+
+// 💰 Universal Stashed GojiBux (Per-user)
+let userStashes = JSON.parse(localStorage.getItem("userStashes")) || {};
+
+// Function to save user stashes
+function saveUserStashes() {
+    localStorage.setItem("userStashes", JSON.stringify(userStashes));
+}
+
+
+// 🌿 WGH (Weed Global Holdings) - Prevent Reset & Allow Unlimited Cap
+let storedWghBank = localStorage.getItem("wghBank");
+let wghBank = storedWghBank !== null ? parseInt(storedWghBank) : 10000;
+
+// Ensure WGH stays within a valid range (no negative values)
+if (wghBank < 0) wghBank = 0;
+
+// 🌿 Save WGH
+function saveWGHBank() {
+    localStorage.setItem("wghBank", wghBank);
+}
+
+// 🔍 Debugging Log
+console.log(`WGH Bank Loaded: ${wghBank} grams`);
+
+// 🛑 Ensure WGH Saves on Exit
+window.addEventListener("beforeunload", saveWGHBank);
+
+
+// 🌿 Universal Weed Storage (Per-user)
+let userWeedStashes = JSON.parse(localStorage.getItem("userWeedStashes")) || {};
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
 function handleMessage(msg) {
         const data = msg.data;
         const wsmsg = safeJSONParse(data);
@@ -954,51 +1035,7 @@ if (wsmsg['text'].toLowerCase().startsWith(".myreminders")) {
 // GojiBux --------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-// 💰 LGH (Limited Goji Holdings) - Prevent Reset & Allow Unlimited Cap
-let storedLghBank = localStorage.getItem("lghBank");
-let lghBank = storedLghBank !== null ? parseInt(storedLghBank) : 500000;
 
-// Ensure LGH stays within a valid range (no negative values)
-if (lghBank < 0) lghBank = 0;
-
-// 💰 Save LGH
-function saveLghBank() {
-    localStorage.setItem("lghBank", lghBank);
-}
-
-// 🔍 Debugging Log
-console.log(`LGH Bank Loaded: ${lghBank} GBX`);
-
-// 🛑 Ensure LGH Saves on Exit
-window.addEventListener("beforeunload", saveLghBank);
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-// 💰 Universal GojiBux Storage (Per-user)
-let userBalances = JSON.parse(localStorage.getItem("userBalances")) || {};
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-// 💸 Transaction Tax System
-function applyTax(amount, taxRate) {
-    return Math.floor(amount * (1 - taxRate));
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-// Function to save user balances
-function saveBalances() {
-    localStorage.setItem("userBalances", JSON.stringify(userBalances));
-    localStorage.setItem("lghBank", lghBank);
-}
-
-//-----------------------------------------------------------------------------------------------------------------------------------
-
-let userStats = JSON.parse(localStorage.getItem("userStats") || "{}");
-
-function saveUserStats() {
-    localStorage.setItem("userStats", JSON.stringify(userStats));
-}
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -1393,13 +1430,7 @@ if (donatebankTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-// 💰 Universal Stashed GojiBux (Per-user)
-let userStashes = JSON.parse(localStorage.getItem("userStashes")) || {};
 
-// Function to save user stashes
-function saveUserStashes() {
-    localStorage.setItem("userStashes", JSON.stringify(userStashes));
-}
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -1515,28 +1546,11 @@ if (wsmsg["text"].toLowerCase() === ".mystashbux") {
 // Weed Stash -----------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-// 🌿 WGH (Weed Global Holdings) - Prevent Reset & Allow Unlimited Cap
-let storedWghBank = localStorage.getItem("wghBank");
-let wghBank = storedWghBank !== null ? parseInt(storedWghBank) : 10000;
 
-// Ensure WGH stays within a valid range (no negative values)
-if (wghBank < 0) wghBank = 0;
-
-// 🌿 Save WGH
-function saveWGHBank() {
-    localStorage.setItem("wghBank", wghBank);
-}
-
-// 🔍 Debugging Log
-console.log(`WGH Bank Loaded: ${wghBank} grams`);
-
-// 🛑 Ensure WGH Saves on Exit
-window.addEventListener("beforeunload", saveWGHBank);
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-// 🌿 Universal Weed Storage (Per-user)
-let userWeedStashes = JSON.parse(localStorage.getItem("userWeedStashes")) || {};
+
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 /*
@@ -2046,6 +2060,7 @@ let userPlants = JSON.parse(localStorage.getItem("userPlants")) || {};
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+// 🌱 `.plantseed` — Plant a new seed if not already planted (costs 100 GBX)
 if (wsmsg["text"].toLowerCase() === ".plantseed") {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
@@ -2067,12 +2082,18 @@ if (wsmsg["text"].toLowerCase() === ".plantseed") {
 
     localStorage.setItem("userBalances", JSON.stringify(userBalances));
     localStorage.setItem("userPlants", JSON.stringify(userPlants));
-    respondWithMessage.call(this, `🌱 ${nickname} planted a new seed! Time to water and feed it!`);
+    respondWithMessage.call(this, `🌱 ${nickname} planted a new seed! (-100 GBX)`);
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-if (wsmsg["text"].toLowerCase() === ".plantwater") {
+// 💧 `.plantwater [amount%]` — Water your plant to increase growth
+if (wsmsg["text"].toLowerCase().startsWith(".plantwater")) {
+    const args = wsmsg["text"].split(" ");
+    let percent = parseInt(args[1]);
+    if (isNaN(percent)) percent = 10;
+    percent = Math.min(100, Math.max(1, percent)); // Clamp between 1–100
+
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
@@ -2081,37 +2102,55 @@ if (wsmsg["text"].toLowerCase() === ".plantwater") {
     if (!plant?.planted) return respondWithMessage.call(this, `🚫 ${nickname}, nothing is planted!`);
     if (plant.growth >= 100) return respondWithMessage.call(this, `✅ ${nickname}, your plant is already fully grown!`);
 
-    plant.growth = Math.min(100, plant.growth + 10);
+    const cost = percent; // 1 GBX per 1%
+    const userBalance = userBalances[username]?.balance || 0;
+    if (userBalance < cost) return respondWithMessage.call(this, `💸 ${nickname}, you need ${cost} GBX to water that much.`);
+
+    userBalances[username].balance = userBalance - cost;
+    plant.growth = Math.min(100, plant.growth + percent);
     plant.waterings += 1;
 
+    localStorage.setItem("userBalances", JSON.stringify(userBalances));
     localStorage.setItem("userPlants", JSON.stringify(userPlants));
-    respondWithMessage.call(this, `💧 ${nickname} watered their plant! It's now ${plant.growth}% grown.`);
+
+    const progress = "▓".repeat(plant.growth / 10) + "░".repeat((100 - plant.growth) / 10);
+    respondWithMessage.call(this,
+        `💧 ${nickname} watered their plant by ${percent}%.\n🌱 Growth: ${plant.growth}%\n🌲 ${progress}\n💸 Spent ${cost} GBX`
+    );
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-if (wsmsg["text"].toLowerCase() === ".plantfeed") {
+// 🐟 `.plantfeed [amount]` — Feed your plant to boost final yield (no cap)
+if (wsmsg["text"].toLowerCase().startsWith(".plantfeed")) {
+    const args = wsmsg["text"].split(" ");
+    let feedCount = parseInt(args[1]);
+    if (isNaN(feedCount) || feedCount <= 0) feedCount = 1;
+
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
 
     const plant = userPlants[username];
     const userBalance = userBalances[username]?.balance || 0;
+    const cost = feedCount * 100;
 
     if (!plant?.planted) return respondWithMessage.call(this, `🚫 ${nickname}, nothing is planted!`);
     if (plant.growth >= 100) return respondWithMessage.call(this, `❌ ${nickname}, you can't feed a fully grown plant.`);
-    if (userBalance < 100) return respondWithMessage.call(this, `💸 ${nickname}, you need 100 GBX to feed your plant.`);
+    if (userBalance < cost) return respondWithMessage.call(this, `💸 ${nickname}, you need ${cost} GBX to feed that much.`);
 
-    userBalances[username].balance = userBalance - 100;
-    plant.feedings += 1;
+    userBalances[username].balance = userBalance - cost;
+    plant.feedings += feedCount;
 
     localStorage.setItem("userBalances", JSON.stringify(userBalances));
     localStorage.setItem("userPlants", JSON.stringify(userPlants));
-    respondWithMessage.call(this, `🐟 ${nickname} fed their plant! It'll yield more when it's ready.`);
+
+    respondWithMessage.call(this, `🐟 ${nickname} fed their plant ${feedCount}x! (+${feedCount * 10}% yield)\n💸 Spent ${cost} GBX`);
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+// 📊 `.myplant` — View your plant's current growth and stats
 if (wsmsg["text"].toLowerCase() === ".myplant") {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
@@ -2125,16 +2164,15 @@ if (wsmsg["text"].toLowerCase() === ".myplant") {
 
     respondWithMessage.call(this,
         `🌱 Plant Status for ${nickname}:\n` +
-        `📊 Growth: ${plant.growth}%\n` +
-        `🌲 ${progress}\n` +
-        `💧 Watered: ${plant.waterings}x\n` +
-        `🐟 Fed: ${plant.feedings}x\n` +
+        `📊 Growth: ${plant.growth}%\n🌲 ${progress}\n` +
+        `💧 Watered: ${plant.waterings}x\n🐟 Fed: ${plant.feedings}x\n` +
         `🥦 Yield Bonus: +${yieldBoost}%`
     );
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+// 🌾 `.plantharvest` — Harvest your fully grown plant for weed (with yield bonus + chance for Lucky Coin)
 if (wsmsg["text"].toLowerCase() === ".plantharvest") {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
@@ -2146,12 +2184,11 @@ if (wsmsg["text"].toLowerCase() === ".plantharvest") {
 
     let baseYield = Math.floor(Math.random() * (3584 - 448 + 1)) + 448;
     if (plant.feedings > 0) {
-        const bonusMultiplier = 1 + (plant.feedings * 0.1); // +10% per feeding
+        const bonusMultiplier = 1 + (plant.feedings * 0.1);
         baseYield = Math.floor(baseYield * bonusMultiplier);
     }
 
-    // Lucky Coin drop (5% chance)
-    const foundLuckyCoin = Math.random() < 0.05;
+    const foundLuckyCoin = Math.random() < 0.25;
     if (foundLuckyCoin) {
         userLuckyCoins[username] = (userLuckyCoins[username] || 0) + 1;
         localStorage.setItem("userLuckyCoins", JSON.stringify(userLuckyCoins));
@@ -2172,25 +2209,27 @@ if (wsmsg["text"].toLowerCase() === ".plantharvest") {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+// 🌿 `.plantgrows [page]` — Minimalist grower leaderboard, one clean line per user
 if (wsmsg["text"].toLowerCase().startsWith(".plantgrows")) {
     const args = wsmsg["text"].split(" ");
     const page = parseInt(args[1]) || 1;
     const growers = [];
 
     for (const [username, plant] of Object.entries(userPlants)) {
-        if (plant.planted) {
-            const waterings = plant.waterings?.length || 0;
-            const feedings = plant.feedings?.length || 0;
-            const yieldBoost = Math.min(50, feedings * 10);
+        if (!plant?.planted || isNaN(plant.growth) || isNaN(plant.feedings) || isNaN(plant.waterings)) continue;
 
-            growers.push({
-                username,
-                nickname: userNicknames[username]?.nickname || username,
-                waterings,
-                feedings,
-                yieldBoost
-            });
-        }
+        const growth = Math.min(100, Math.max(0, plant.growth));
+        const feedings = Math.max(0, plant.feedings);
+        const waterings = Math.max(0, plant.waterings);
+        const yieldBoost = feedings * 10;
+        const score = feedings * 2 + waterings;
+
+        growers.push({
+            nickname: userNicknames[username]?.nickname || username,
+            yieldBoost,
+            growth,
+            score
+        });
     }
 
     if (growers.length === 0) {
@@ -2198,35 +2237,23 @@ if (wsmsg["text"].toLowerCase().startsWith(".plantgrows")) {
         return;
     }
 
-    // Sort by grow activity (feedings = 2 points, waterings = 1)
-    growers.sort((a, b) => (b.feedings * 2 + b.waterings) - (a.feedings * 2 + a.waterings));
+    // Best growers sorted by effort
+    growers.sort((a, b) => b.score - a.score);
 
-    const growersPerPage = 5;
-    const totalPages = Math.ceil(growers.length / growersPerPage);
-
+    const perPage = 10;
+    const totalPages = Math.ceil(growers.length / perPage);
     if (page < 1 || page > totalPages) {
         respondWithMessage.call(this, `📄 Invalid page. Use \`.plantgrows [1-${totalPages}]\`.`);
         return;
     }
 
-    const start = (page - 1) * growersPerPage;
-    const end = start + growersPerPage;
-    const pageGrowers = growers.slice(start, end);
+    const start = (page - 1) * perPage;
+    const pageGrowers = growers.slice(start, start + perPage);
 
-    let emojiForBoost = boost => {
-        if (boost >= 50) return "🌲";
-        if (boost >= 30) return "🌳";
-        if (boost >= 10) return "🥦";
-        return "🌱";
-    };
-
-    let output = `🌲 Top Growers – Page ${page}/${totalPages} – Use \`.plantgrows [page]\`\n`;
-    pageGrowers.forEach((g, i) => {
-        output += `${start + i + 1}. ${g.nickname} – 💧 ${g.waterings} | 🐟 ${g.feedings} | +${g.yieldBoost}% yield ${emojiForBoost(g.yieldBoost)}\n`;
-    });
-
-    if (page < totalPages) {
-        output += `👉 Type \`.plantgrows ${page + 1}\` for the next page!\n`;
+    let output = `🌿 Top Growers – Page ${page}/${totalPages}\n`;
+    for (let i = 0; i < pageGrowers.length; i++) {
+        const g = pageGrowers[i];
+        output += `${start + i + 1}. ${g.nickname}\n`;
     }
 
     respondWithMessage.call(this, output.trim());
@@ -11395,7 +11422,8 @@ if (wsmsg['text'].toLowerCase() === ".chucknorris" || wsmsg['text'].toLowerCase(
             "https://i.imgur.com/Ktk81y7.jpg",
             "https://i.imgur.com/j2sa2W2.jpg",
             "https://i.imgur.com/UMoJyYw.jpg",
-            "https://i.imgur.com/ezZmA3Z.jpeg"
+            "https://i.imgur.com/ezZmA3Z.jpeg",
+            "https://i.imgur.com/vVOSWWo.jpeg"
         ];
         const randomCat = cats[Math.floor(Math.random() * cats.length)];
         this._send(`{"stumble":"msg","text": "${randomCat}"}`);
@@ -12041,117 +12069,8 @@ function saveSnarfdilfIndex() {
     localStorage.setItem("snarfdilfIndex", snarfdilfIndex.toString());
 }
 
-
-/*
-// 🧃 `.snarfdilf` - Pay 10k GBX to view rotating images
-if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
-    const handle = wsmsg['handle'];
-    const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || "Someone";
-    const recipient = "jedisnarf"; // Person receiving payment
-
-    if (!username) return;
-
-    const cost = 10_000;
-    const userBalance = userBalances[username]?.balance || 0;
-
-    if (userBalance < cost) {
-        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 10,000 GBX to access peak snarfdilf content. Get your GBX up!`);
-        return;
-    }
-
-    // Deduct and transfer GBX
-    userBalances[username].balance -= cost;
-    if (!userBalances[recipient]) userBalances[recipient] = { balance: 0 };
-    userBalances[recipient].balance += cost;
-    saveBalances();
-
-    // Image list
-    const snarfdilfImages = [
-        "https://i.imgur.com/RSZ7xzg.jpeg",
-        "https://i.imgur.com/5HSAo1l.jpeg",
-        "https://i.imgur.com/oLAqMHS.jpeg",
-        "https://i.imgur.com/Xm4iYBy.jpeg"
-    ];
-
-    // Get current image and rotate
-    const currentImage = snarfdilfImages[snarfdilfIndex];
-    snarfdilfIndex = (snarfdilfIndex + 1) % snarfdilfImages.length;
-    saveSnarfdilfIndex();
-
-    // Send image
-    this._send(`{"stumble":"msg","text": "${currentImage}"}`);
-
-    // Confirm transaction after delay
-    setTimeout(() => {
-        this._send(`{"stumble":"msg","text": "🤖 ${nickname} paid 💵 10,000 GBX for this snarfdilf masterpiece. ${recipient} received the payment."}`);
-    }, 1000);
-}
-*/
-
 // 🕒 Cooldown storage for `.snarfdilf`
 let lastSnarfdilfTime = JSON.parse(localStorage.getItem("lastSnarfdilfTime") || "{}");
-
-// 🧃 `.snarfdilf` - Pay 10k GBX to view rotating images (5-minute cooldown)
-/*if (wsmsg['text'].toLowerCase() === ".snarfdilf") {
-    const handle = wsmsg['handle'];
-    const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || "Someone";
-    const recipient = "jedisnarf"; // Person receiving payment
-
-    if (!username) return;
-
-    // ⏳ Cooldown check (5 minutes)
-    const now = Date.now();
-    const lastUse = lastSnarfdilfTime[username] || 0;
-    //const cooldown = 5 * 60 * 1000;
-    const cooldown = 0 * 60 * 1000;
-
-    if (now - lastUse < cooldown) {
-        const timeLeft = Math.ceil((cooldown - (now - lastUse)) / 1000);
-        respondWithMessage.call(this, `⏳ ${nickname}, wait ${timeLeft} seconds before peeking at another snarfdilf image.`);
-        return;
-    }
-
-    const cost = 10_000;
-    const userBalance = userBalances[username]?.balance || 0;
-
-    if (userBalance < cost) {
-        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 10,000 GBX to access peak snarfdilf content. Get your GBX up!`);
-        return;
-    }
-
-    // Deduct and transfer GBX
-    userBalances[username].balance -= cost;
-    if (!userBalances[recipient]) userBalances[recipient] = { balance: 0 };
-    userBalances[recipient].balance += cost;
-    saveBalances();
-
-    // Image list
-    const snarfdilfImages = [
-        "https://i.imgur.com/RSZ7xzg.jpeg",
-        "https://i.imgur.com/5HSAo1l.jpeg",
-        "https://i.imgur.com/oLAqMHS.jpeg",
-        "https://i.imgur.com/Xm4iYBy.jpeg"
-    ];
-
-    // Get current image and rotate
-    const currentImage = snarfdilfImages[snarfdilfIndex];
-    snarfdilfIndex = (snarfdilfIndex + 1) % snarfdilfImages.length;
-    saveSnarfdilfIndex();
-
-    // 🕒 Apply cooldown
-    lastSnarfdilfTime[username] = now;
-    localStorage.setItem("lastSnarfdilfTime", JSON.stringify(lastSnarfdilfTime));
-
-    // Send image
-    this._send(`{"stumble":"msg","text": "${currentImage}"}`);
-
-    // Confirm transaction after delay
-    setTimeout(() => {
-        this._send(`{"stumble":"msg","text": "🤖 ${nickname} paid 💵 10,000 GBX for this snarfdilf masterpiece. ${recipient} received the payment."}`);
-    }, 1000);
-}*/
 
 // 🧃 `.snarfdilf` - Pay 10k GBX to view rotating images (5-minute cooldown)
 const snarfdilfAliases = [".snarfdilf", ".nipples", ".nips"];
@@ -12212,6 +12131,142 @@ if (snarfdilfAliases.includes(wsmsg['text'].toLowerCase())) {
     // Confirm transaction after delay
     setTimeout(() => {
         this._send(`{"stumble":"msg","text": "🤖 ${nickname} paid 💵 10,000 GBX for this snarfdilf masterpiece. ${recipient} received the payment."}`);
+    }, 1000);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🖼️ Zemodilf Image Rotation System
+let zemodilfIndex = localStorage.getItem("zemodilfIndex") ? parseInt(localStorage.getItem("zemodilfIndex")) : 0;
+
+// 🔁 Save zemodilf index
+function saveZemodilfIndex() {
+    localStorage.setItem("zemodilfIndex", zemodilfIndex.toString());
+}
+
+// 🕒 Cooldown storage for `.zemodilf`
+let lastZemodilfTime = JSON.parse(localStorage.getItem("lastZemodilfTime") || "{}");
+
+// 🐍 `.zemodilf` - Pay 10k GBX to view rotating Zemo images (5-minute cooldown)
+const zemodilfAliases = [".zemodilf"];
+if (zemodilfAliases.includes(wsmsg['text'].toLowerCase())) {
+    const handle = wsmsg['handle'];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || "Someone";
+    const recipient = "zemo"; // Payment recipient
+
+    if (!username) return;
+
+    // ⏳ Cooldown check
+    const now = Date.now();
+    const lastUse = lastZemodilfTime[username] || 0;
+    const cooldown = 0 * 60 * 1000; // change to 5 * 60 * 1000 for 5 mins
+
+    if (now - lastUse < cooldown) {
+        const timeLeft = Math.ceil((cooldown - (now - lastUse)) / 1000);
+        respondWithMessage.call(this, `⏳ ${nickname}, wait ${timeLeft} seconds before peeking at another zemodilf image.`);
+        return;
+    }
+
+    const cost = 10_000;
+    const userBalance = userBalances[username]?.balance || 0;
+
+    if (userBalance < cost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 10,000 GBX to see peak zemodilf content. You broke, buddy.`);
+        return;
+    }
+
+    // 💸 Deduct and transfer GBX
+    userBalances[username].balance -= cost;
+    if (!userBalances[recipient]) userBalances[recipient] = { balance: 0 };
+    userBalances[recipient].balance += cost;
+    saveBalances();
+
+    // 🖼️ Zemo image links (update these)
+    const zemodilfImages = [
+        "https://i.imgur.com/jrCEgtY.jpeg"
+    ];
+
+    const currentImage = zemodilfImages[zemodilfIndex];
+    zemodilfIndex = (zemodilfIndex + 1) % zemodilfImages.length;
+    saveZemodilfIndex();
+
+    // 🕒 Apply cooldown
+    lastZemodilfTime[username] = now;
+    localStorage.setItem("lastZemodilfTime", JSON.stringify(lastZemodilfTime));
+
+    // Send image
+    this._send(`{"stumble":"msg","text": "${currentImage}"}`);
+
+    // Confirm message
+    setTimeout(() => {
+        this._send(`{"stumble":"msg","text": "🤖 ${nickname} dropped 10k GBX for a spicy zemodilf moment. ${recipient} got the bag."}`);
+    }, 1000);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🐉 DragonMILF Image Rotation System
+let dragonmilfIndex = localStorage.getItem("dragonmilfIndex") ? parseInt(localStorage.getItem("dragonmilfIndex")) : 0;
+
+// 🔁 Save dragonmilf index
+function saveDragonmilfIndex() {
+    localStorage.setItem("dragonmilfIndex", dragonmilfIndex.toString());
+}
+
+// 🕒 Cooldown storage for `.dragonmilf`
+let lastDragonmilfTime = JSON.parse(localStorage.getItem("lastDragonmilfTime") || "{}");
+
+// 🔥 `.dragonmilf` - Pay 10k GBX to see the fire-breathing milf herself (5-minute cooldown)
+const dragonmilfAliases = [".dragonmilf"];
+if (dragonmilfAliases.includes(wsmsg['text'].toLowerCase())) {
+    const handle = wsmsg['handle'];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || "Someone";
+    const recipient = "DragonDoll";
+
+    if (!username) return;
+
+    const now = Date.now();
+    const lastUse = lastDragonmilfTime[username] || 0;
+    const cooldown = 0 * 60 * 1000; // change to 5 * 60 * 1000 to re-enable cooldown
+
+    if (now - lastUse < cooldown) {
+        const timeLeft = Math.ceil((cooldown - (now - lastUse)) / 1000);
+        respondWithMessage.call(this, `⏳ ${nickname}, the dragon needs a moment. Wait ${timeLeft}s to see her again.`);
+        return;
+    }
+
+    const cost = 10_000;
+    const userBalance = userBalances[username]?.balance || 0;
+
+    if (userBalance < cost) {
+        respondWithMessage.call(this, `🤖 ${nickname}, you need 💵 10,000 GBX to summon the DragonMILF. No funds, no flames.`);
+        return;
+    }
+
+    // 💸 Transfer payment
+    userBalances[username].balance -= cost;
+    if (!userBalances[recipient]) userBalances[recipient] = { balance: 0 };
+    userBalances[recipient].balance += cost;
+    saveBalances();
+
+    // 🔥 DragonDoll's rotating image links
+    const dragonmilfImages = [
+        "https://i.imgur.com/yzWxYmo.jpeg"
+    ];
+
+    const currentImage = dragonmilfImages[dragonmilfIndex];
+    dragonmilfIndex = (dragonmilfIndex + 1) % dragonmilfImages.length;
+    saveDragonmilfIndex();
+
+    lastDragonmilfTime[username] = now;
+    localStorage.setItem("lastDragonmilfTime", JSON.stringify(lastDragonmilfTime));
+
+    this._send(`{"stumble":"msg","text": "${currentImage}"}`);
+
+    setTimeout(() => {
+        this._send(`{"stumble":"msg","text": "🔥 ${nickname} sacrificed 10k GBX to the mighty DragonMILF. Tribute accepted by ${recipient}."}`);
     }, 1000);
 }
 
