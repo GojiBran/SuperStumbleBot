@@ -2173,7 +2173,7 @@ if (wsmsg["text"].toLowerCase() === ".myplant") {
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 🌾 `.plantharvest` — Harvest your fully grown plant for weed (with yield bonus + chance for Lucky Coin)
-if (wsmsg["text"].toLowerCase() === ".plantharvest") {
+/*if (wsmsg["text"].toLowerCase() === ".plantharvest") {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
@@ -2185,6 +2185,46 @@ if (wsmsg["text"].toLowerCase() === ".plantharvest") {
     let baseYield = Math.floor(Math.random() * (3584 - 448 + 1)) + 448;
     if (plant.feedings > 0) {
         const bonusMultiplier = 1 + (plant.feedings * 0.1);
+        baseYield = Math.floor(baseYield * bonusMultiplier);
+    }
+
+    const foundLuckyCoin = Math.random() < 0.25;
+    if (foundLuckyCoin) {
+        userLuckyCoins[username] = (userLuckyCoins[username] || 0) + 1;
+        localStorage.setItem("userLuckyCoins", JSON.stringify(userLuckyCoins));
+    }
+
+    userWeedStashes[username] = (userWeedStashes[username] || 0) + baseYield;
+    delete userPlants[username];
+
+    localStorage.setItem("userWeedStashes", JSON.stringify(userWeedStashes));
+    localStorage.setItem("userPlants", JSON.stringify(userPlants));
+
+    const pounds = (baseYield / 448).toFixed(2);
+    let msg = `🌾 ${nickname} harvested their plant and got 🥦 ${pounds} lb [${baseYield.toLocaleString()}g] of dank homegrown weed!`;
+    if (foundLuckyCoin) msg += `\n🍀 Whoa! You also found a Lucky Coin!`;
+
+    respondWithMessage.call(this, msg);
+}*/
+
+// 🌾 `.plantharvest` — Harvest your fully grown plant for weed (with yield bonus + chance for Lucky Coin)
+if (wsmsg["text"].toLowerCase() === ".plantharvest") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    const plant = userPlants[username];
+    if (!plant?.planted) return respondWithMessage.call(this, `🌱 ${nickname}, you haven't planted anything yet.`);
+
+    // Ensure plant has valid data (for older/incomplete formats)
+    const growth = typeof plant.growth === "number" ? plant.growth : 100; // treat missing/null as fully grown
+    const feedings = typeof plant.feedings === "number" ? plant.feedings : 0;
+
+    if (growth < 100) return respondWithMessage.call(this, `⏳ ${nickname}, your plant isn’t fully grown! It's at ${growth}%.`);
+
+    let baseYield = Math.floor(Math.random() * (3584 - 448 + 1)) + 448;
+    if (feedings > 0) {
+        const bonusMultiplier = 1 + (feedings * 0.1);
         baseYield = Math.floor(baseYield * bonusMultiplier);
     }
 
@@ -13819,6 +13859,110 @@ if (wsmsg["text"].toLowerCase().startsWith(".admin restorebackup")) {
     }
 }
 */
+
+// 📊 `.gojicon` — Opens a live GojiBux economy dashboard pop-out with large text + up/down animations
+if (wsmsg["text"].toLowerCase() === ".gojicon") {
+    const popup = window.open("", "Goji Economy", "width=500,height=500");
+    if (!popup) return respondWithMessage.call(this, "⚠️ Pop-up blocked! Please allow pop-ups and try again.");
+
+    popup.document.title = "GojiCon";
+    popup.document.head.innerHTML += `
+        <style>
+            body {
+                margin: 0;
+                overflow-y: auto;
+                background: #111;
+                color: #99cc33;
+                font-family: monospace;
+                font-size: 22px;
+                padding: 16px;
+                line-height: 1.2;
+            }
+            .stat {
+                transition: color 0.4s ease;
+                color: #ffffff;
+                margin-bottom: 4px;
+            }
+            .stat.up {
+                color: #66ff66;
+            }
+            .stat.down {
+                color: #ff6666;
+            }
+        </style>
+    `;
+
+    const list = popup.document.createElement("div");
+    popup.document.body.appendChild(list);
+
+    function getTotal(obj, accessor = null) {
+        return Object.values(obj || {}).reduce((a, b) => {
+            if (accessor && typeof b === "object") return a + (typeof b[accessor] === "number" ? b[accessor] : 0);
+            return a + (typeof b === "number" ? b : 0);
+        }, 0);
+    }
+
+    const prevValues = {};
+
+    function updateStat(label, newValue) {
+        let div = list.querySelector(`[data-label="${label}"]`);
+        if (!div) {
+            div = popup.document.createElement("div");
+            div.setAttribute("data-label", label);
+            div.className = "stat";
+            list.appendChild(div);
+        }
+
+        const formatted = newValue.toLocaleString();
+        const newText = `${label} <b>${formatted}</b>`;
+        const prev = prevValues[label];
+
+        if (prev !== undefined && prev !== newValue) {
+            div.classList.remove("up", "down");
+            div.offsetWidth; // force reflow for transition
+
+            if (newValue > prev) div.classList.add("up");
+            else if (newValue < prev) div.classList.add("down");
+
+            setTimeout(() => div.classList.remove("up", "down"), 600);
+        }
+
+        div.innerHTML = newText;
+        prevValues[label] = newValue;
+    }
+
+    function update() {
+        const lghBank = parseInt(localStorage.getItem("lghBank")) || 0;
+        const wghBank = parseInt(localStorage.getItem("wghBank")) || 0;
+        const userBalances = JSON.parse(localStorage.getItem("userBalances") || "{}");
+        const userStashes = JSON.parse(localStorage.getItem("userStashes") || "{}");
+        const userWeedStashes = JSON.parse(localStorage.getItem("userWeedStashes") || "{}");
+        const userHiddenWeed = JSON.parse(localStorage.getItem("userHiddenWeed") || "{}");
+        const userJointStashes = JSON.parse(localStorage.getItem("userJointStashes") || "{}");
+        const weedBuyPrice = parseInt(localStorage.getItem("weedBuyPrice")) || 20;
+        const weedSellPrice = parseInt(localStorage.getItem("weedSellPrice")) || Math.floor(20 * 0.8);
+        const gojiPot = parseInt(localStorage.getItem("gojiPot")) || 0;
+
+        updateStat("🏦", lghBank);
+        updateStat("🏬", wghBank);
+        updateStat("💵", getTotal(userBalances, "balance"));
+        updateStat("💰", getTotal(userStashes));
+        updateStat("🥦", getTotal(userWeedStashes));
+        updateStat("🔒", getTotal(userHiddenWeed));
+        updateStat("🥖", getTotal(userJointStashes));
+        updateStat("📈", weedBuyPrice);
+        updateStat("📉", weedSellPrice);
+        updateStat("🎰", gojiPot);
+    }
+
+    update();
+    popup.setInterval(update, 1000);
+    popup.addEventListener("storage", update);
+
+    respondWithMessage.call(this, "📤 GojiCon opened!");
+}
+
+
 //-----------------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
