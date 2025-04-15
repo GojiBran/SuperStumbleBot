@@ -9947,7 +9947,7 @@ if (wsmsg["text"].toLowerCase() === ".leastweed") {
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // ⚠️ `.resetall` - Wipe all economy data (Admin-only)
-if (wsmsg["text"].toLowerCase() === ".resetall") {
+/*if (wsmsg["text"].toLowerCase() === ".resetall") {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
@@ -9977,12 +9977,12 @@ if (wsmsg["text"].toLowerCase() === ".resetall") {
     localStorage.setItem("userHiddenWeed", JSON.stringify(userHiddenWeed));
 
     //respondWithMessage.call(this, `🚨 ${nickname} has reset the entire economy!\n💵 LGH Bank: 0 GBX\n🌿 WGH Bank: 0g\nAll user balances, stashes, weed, and hidden weed have been wiped.`);
-}
+}/*
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 🔥 `.fourtwentyall` — Sets all key Goji economy values to 420 and sends a crash meme
-if (wsmsg["text"].toLowerCase() === ".fourtwentyall") {
+/*if (wsmsg["text"].toLowerCase() === ".fourtwentyall") {
     const fourtwenty = 420;
 
     // Set global banks and pot
@@ -10021,7 +10021,7 @@ if (wsmsg["text"].toLowerCase() === ".fourtwentyall") {
     setTimeout(() => {
         respondWithMessage.call(this, "https://i.imgur.com/6TdaDDT.gif");
     }, 1000);
-}
+}*/
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
