@@ -2122,7 +2122,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".plantwater")) {
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 🐟 `.plantfeed [amount]` — Feed your plant to boost final yield (no cap)
-if (wsmsg["text"].toLowerCase().startsWith(".plantfeed")) {
+/*if (wsmsg["text"].toLowerCase().startsWith(".plantfeed")) {
     const args = wsmsg["text"].split(" ");
     let feedCount = parseInt(args[1]);
     if (isNaN(feedCount) || feedCount <= 0) feedCount = 1;
@@ -2146,6 +2146,40 @@ if (wsmsg["text"].toLowerCase().startsWith(".plantfeed")) {
     localStorage.setItem("userPlants", JSON.stringify(userPlants));
 
     respondWithMessage.call(this, `🐟 ${nickname} fed their plant ${feedCount}x! (+${feedCount * 10}% yield)\n💸 Spent ${cost} GBX`);
+}*/
+
+// 🐟 `.plantfeed [amount]` — Feed your plant to boost final yield (capped at 10 feedings)
+if (wsmsg["text"].toLowerCase().startsWith(".plantfeed")) {
+    const args = wsmsg["text"].split(" ");
+    let feedCount = parseInt(args[1]);
+    if (isNaN(feedCount) || feedCount <= 0) feedCount = 1;
+
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+
+    const plant = userPlants[username];
+    const userBalance = userBalances[username]?.balance || 0;
+
+    if (!plant?.planted) return respondWithMessage.call(this, `🚫 ${nickname}, nothing is planted!`);
+    if (plant.growth >= 100) return respondWithMessage.call(this, `❌ ${nickname}, you can't feed a fully grown plant.`);
+
+    const currentFeeds = plant.feedings || 0;
+    const maxFeeds = 10;
+    const allowedFeedCount = Math.min(feedCount, maxFeeds - currentFeeds);
+
+    if (allowedFeedCount <= 0) return respondWithMessage.call(this, `🔒 ${nickname}, your plant has reached the max feeding limit (${maxFeeds}x).`);
+
+    const cost = allowedFeedCount * 100;
+    if (userBalance < cost) return respondWithMessage.call(this, `💸 ${nickname}, you need ${cost} GBX to feed that much.`);
+
+    userBalances[username].balance = userBalance - cost;
+    plant.feedings = currentFeeds + allowedFeedCount;
+
+    localStorage.setItem("userBalances", JSON.stringify(userBalances));
+    localStorage.setItem("userPlants", JSON.stringify(userPlants));
+
+    respondWithMessage.call(this, `🐟 ${nickname} fed their plant ${allowedFeedCount}x! (+${allowedFeedCount * 10}% yield)\n💸 Spent ${cost} GBX`);
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -2423,6 +2457,35 @@ setInterval(() => {
                 this._send('{"stumble":"msg","text": "🍃 It\'s 4:20 somewhere! Smoke em if you got em! 💨"}');
 
                 setTimeout(() => {
+                    // 🔥 Burn % of GBX silently if over threshold (from balances + stashes)
+                    for (const username of Object.keys(userBalances || {})) {
+                        const balance = userBalances[username] || 0;
+                        const stash = userStashes[username] || 0;
+                        const total = balance + stash;
+
+                        let burnRate = 0;
+                        if (total > 1_000_000_000_000) {
+                            burnRate = 0.50;
+                        } else if (total > 1_000_000_000) {
+                            burnRate = 0.10;
+                        }
+
+                        if (burnRate > 0) {
+                            const burnAmount = Math.floor(total * burnRate);
+
+                            // Proportional burn: first from balance, then stash if needed
+                            const burnFromBalance = Math.min(burnAmount, balance);
+                            const burnFromStash = burnAmount - burnFromBalance;
+
+                            userBalances[username] = balance - burnFromBalance;
+                            userStashes[username] = stash - burnFromStash;
+                        }
+                    }
+
+                    localStorage.setItem("userBalances", JSON.stringify(userBalances));
+                    localStorage.setItem("userStashes", JSON.stringify(userStashes));
+
+
                     // Add 69,420g to WGH (Weed Global Holdings)
                     if (!wghBank) {
                         wghBank = 0;
@@ -2437,11 +2500,6 @@ setInterval(() => {
                     const wghTotalPounds = (wghBank / 448).toFixed(2);
 
                     this._send(`{"stumble":"msg","text": "🏬➕ WGH just grew by 🥦 ${addedPounds} lb [6900420g]! Nice! 💚"}`);
-
-                    // Optional: Send .help message after another delay
-                    // setTimeout(() => {
-                    //     this._send('{"stumble":"msg","text": "💡 Use .help to join the fun!"}');
-                    // }, 3000);
                 }, 3000); // 3-second delay before WGH message
             }, 2000); // 2-second delay after GIF
         }, 1000); // 1-second delay for initial GIF
@@ -2492,7 +2550,7 @@ if (wsmsg["text"].toLowerCase() === ".myweed") {
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 🥖 `.jointroll [amount|max|all]` - Convert weed into joints using random weed cost (1–3.5g per joint)
-const jointrollTriggers = [".jointroll"]; // add aliases here like ".rollup"
+/*const jointrollTriggers = [".jointroll"]; // add aliases here like ".rollup"
 if (jointrollTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
@@ -2552,6 +2610,55 @@ if (jointrollTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
 
     userWeedStashes[username] -= requiredWeed;
     userJointStashes[username] = (userJointStashes[username] || 0) + amount;
+    saveWeedStashes();
+    saveJointStashes();
+
+    respondWithMessage.call(this, `🥖 ${nickname} rolled ${amount} joint${amount !== 1 ? "s" : ""} using 🥦 ${requiredWeed}g of weed.`);
+}*/
+
+const jointrollTriggers = [".jointroll"];
+if (jointrollTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].trim().split(/\s+/);
+
+    if (!username || args.length < 2) {
+        respondWithMessage.call(this, "🤖 Usage: .jointroll [amount|max|all]");
+        return;
+    }
+
+    const arg = args[1].toLowerCase();
+    const weedAvailable = userWeedStashes[username] || 0;
+    const jointCost = 2.0;
+    let amount, requiredWeed;
+
+    if (arg === "max" || arg === "all") {
+        amount = Math.floor(weedAvailable / jointCost);
+        requiredWeed = amount * jointCost;
+
+        if (amount === 0) {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough weed to roll any joints.`);
+            return;
+        }
+    } else {
+        amount = parseInt(arg, 10);
+        if (isNaN(amount) || amount <= 0) {
+            respondWithMessage.call(this, "🤖 Usage: .jointroll [amount|max|all]");
+            return;
+        }
+
+        requiredWeed = amount * jointCost;
+        if (weedAvailable < requiredWeed) {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have enough weed to roll 🥖 ${amount} joints. 🥦 (${requiredWeed.toFixed(1)}g needed)`);
+            return;
+        }
+    }
+
+    userWeedStashes[username] -= requiredWeed;
+    userJointStashes[username] = (userJointStashes[username] || 0) + amount;
+
+    // Save
     saveWeedStashes();
     saveJointStashes();
 
@@ -8976,7 +9083,7 @@ let lastSellJointTime = JSON.parse(localStorage.getItem("lastSellJointTime") || 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 // 🥖 `.selljoint [amount|max|all]` - Sell joints for GBX, taxed by LGH Bank
-if (wsmsg["text"].toLowerCase().startsWith(".selljoint")) {
+/*if (wsmsg["text"].toLowerCase().startsWith(".selljoint")) {
     const handle = wsmsg["handle"];
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
@@ -9071,6 +9178,107 @@ if (wsmsg["text"].toLowerCase().startsWith(".selljoint")) {
     // 📢 Output
     respondWithMessage.call(this,
         `🥖💸 ${nickname} smuggled 🥖 ${amount} joint${amount > 1 ? 's' : ''} to an offshore buyer for 💵 ${totalEarnings.toLocaleString()} GBX! 🛥️\n` +
+        `🏦 ${busted ? "You were partially busted! An extra 5% was seized!" : "A 10% cut was taken by the offshore bankers."} Total cut: 💰 ${totalBankCut.toLocaleString()} GBX\n` +
+        `💰 You received 💵 ${userProfit.toLocaleString()} GBX in clean profit.\n` +
+        `🤑 Each joint sold for 💵 ${jointSellPrice.toLocaleString()} GBX.${luckyCoinMessage}`
+    );
+}*/
+
+if (wsmsg["text"].toLowerCase().startsWith(".selljoint")) {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+    const nickname = userNicknames[username]?.nickname || username || "you";
+    const args = wsmsg["text"].split(" ")[1];
+
+    if (!username || !args) {
+        respondWithMessage.call(this, "🤖 Usage: .selljoint [amount|max|all]");
+        return;
+    }
+
+    // Cooldown logic (set to 0 for now)
+    const now = Date.now();
+    const lastSell = lastSellJointTime[username] || 0;
+    const cooldown = 0;
+    if (now - lastSell < cooldown) {
+        const timeLeft = Math.ceil((cooldown - (now - lastSell)) / 1000);
+        const mins = Math.floor(timeLeft / 60);
+        const secs = timeLeft % 60;
+        respondWithMessage.call(this, `⏳ ${nickname}, wait ${mins}m ${secs}s before selling joints again.`);
+        return;
+    }
+
+    const jointsAvailable = userJointStashes[username] || 0;
+    const jointCost = 2.0;
+    let amount;
+
+    if (typeof weedBuyPrice !== "number" || weedBuyPrice <= 0) {
+        respondWithMessage.call(this, "🤖 Error: Offshore market price is unavailable. Try again later!");
+        return;
+    }
+
+    if (args.toLowerCase() === "max" || args.toLowerCase() === "all") {
+        amount = jointsAvailable;
+        if (amount <= 0) {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have any joints to sell.`);
+            return;
+        }
+    } else {
+        amount = parseInt(args, 10);
+        if (isNaN(amount) || amount <= 0) {
+            respondWithMessage.call(this, "🤖 Usage: .selljoint [amount|max|all]");
+            return;
+        }
+        if (amount > jointsAvailable) {
+            respondWithMessage.call(this, `🤖 ${nickname}, you don't have that many joints. (🥖 ${amount} requested, 🥖 ${jointsAvailable} available)`);
+            return;
+        }
+    }
+
+    //const jointSellPrice = Math.ceil(weedBuyPrice * jointCost);
+    const jointSellPrice = Math.ceil(weedSellPrice * jointCost);
+    const totalEarnings = amount * jointSellPrice;
+    const baseBankCut = Math.floor(totalEarnings * 0.10);
+    let totalBankCut = baseBankCut;
+    let busted = false;
+
+    if (Math.random() < 0.05) {
+        const extraCut = Math.floor(totalEarnings * 0.05);
+        totalBankCut += extraCut;
+        busted = true;
+    }
+
+    const userProfit = totalEarnings - totalBankCut;
+
+    // Update storage
+    userJointStashes[username] -= amount;
+    if (!userBalances[username]) userBalances[username] = { balance: 0 };
+    userBalances[username].balance += userProfit;
+    lghBank += totalBankCut;
+
+    // Lucky coin chance (if not busted)
+    if (!userStats[username]) userStats[username] = {};
+    if (userStats[username].luckyCoins === undefined) userStats[username].luckyCoins = 0;
+
+    let luckyCoinMessage = "";
+    if (!busted && Math.random() < 0.03) {
+        userStats[username].luckyCoins++;
+        luckyCoinMessage = ` 🍀 You also found a Lucky Coin!`;
+    }
+
+    // Save everything
+    lastSellJointTime[username] = now;
+    function saveAll() {
+        saveJointStashes();
+        saveBalances();
+        saveUserStats();
+        localStorage.setItem("lghBank", lghBank.toString());
+        localStorage.setItem("lastSellJointTime", JSON.stringify(lastSellJointTime));
+    }
+    saveAll();
+
+    // Respond
+    respondWithMessage.call(this,
+        `🥖💸 ${nickname} smuggled 🥖 ${amount} joint${amount > 1 ? "s" : ""} to an offshore buyer for 💵 ${totalEarnings.toLocaleString()} GBX! 🛥️\n` +
         `🏦 ${busted ? "You were partially busted! An extra 5% was seized!" : "A 10% cut was taken by the offshore bankers."} Total cut: 💰 ${totalBankCut.toLocaleString()} GBX\n` +
         `💰 You received 💵 ${userProfit.toLocaleString()} GBX in clean profit.\n` +
         `🤑 Each joint sold for 💵 ${jointSellPrice.toLocaleString()} GBX.${luckyCoinMessage}`
@@ -9756,7 +9964,7 @@ if (wsmsg["text"].toLowerCase() === ".resetall") {
     userBalances = {}; // Clear all user GojiBux balances
     userStashes = {}; // Clear all offshore GojiBux stashes
     userWeedStashes = {}; // Clear all user weed stashes
-    userJointStashes = {}; // Clear all user joint stashes
+    //userJointStashes = {}; // Clear all user joint stashes
     userHiddenWeed = {}; // Clear all user hidden weed stashes
 
     // Save all changes
@@ -9765,10 +9973,54 @@ if (wsmsg["text"].toLowerCase() === ".resetall") {
     localStorage.setItem("userBalances", JSON.stringify(userBalances));
     localStorage.setItem("userStashes", JSON.stringify(userStashes));
     localStorage.setItem("userWeedStashes", JSON.stringify(userWeedStashes));
-    localStorage.setItem("userJointStashes", JSON.stringify(userJointStashes));
+    //localStorage.setItem("userJointStashes", JSON.stringify(userJointStashes));
     localStorage.setItem("userHiddenWeed", JSON.stringify(userHiddenWeed));
 
-    respondWithMessage.call(this, `🚨 ${nickname} has reset the entire economy!\n💵 LGH Bank: 0 GBX\n🌿 WGH Bank: 0g\nAll user balances, stashes, joints, and hidden weed have been wiped.`);
+    //respondWithMessage.call(this, `🚨 ${nickname} has reset the entire economy!\n💵 LGH Bank: 0 GBX\n🌿 WGH Bank: 0g\nAll user balances, stashes, weed, and hidden weed have been wiped.`);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+// 🔥 `.fourtwentyall` — Sets all key Goji economy values to 420 and sends a crash meme
+if (wsmsg["text"].toLowerCase() === ".fourtwentyall") {
+    const fourtwenty = 420;
+
+    // Set global banks and pot
+    localStorage.setItem("lghBank", fourtwenty.toString());
+    localStorage.setItem("wghBank", fourtwenty.toString());
+    localStorage.setItem("gojiPot", fourtwenty.toString());
+
+    // Set all user balances
+    for (const user in userBalances) {
+        userBalances[user].balance = fourtwenty;
+    }
+
+    // Set all stashes
+    for (const user in userStashes) {
+        userStashes[user] = fourtwenty;
+    }
+
+    // Set all weed stashes
+    for (const user in userWeedStashes) {
+        userWeedStashes[user] = fourtwenty;
+    }
+
+    // Set all hidden weed stashes
+    for (const user in userHiddenWeed) {
+        userHiddenWeed[user] = fourtwenty;
+    }
+
+    // Save everything
+    saveBalances();
+    saveUserStashes();
+    saveWeedStashes();
+    localStorage.setItem("userHiddenWeed", JSON.stringify(userHiddenWeed));
+
+    respondWithMessage.call(this, "🌿🔥 Everything is now 420. The prophecy is fulfilled. 💸🥦");
+
+    setTimeout(() => {
+        respondWithMessage.call(this, "https://i.imgur.com/6TdaDDT.gif");
+    }, 1000);
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -13860,8 +14112,10 @@ if (wsmsg["text"].toLowerCase().startsWith(".admin restorebackup")) {
 }
 */
 
+//-----------------------------------------------------------------------------------------------------------------------------------
+
 // 📊 `.gojicon` — Opens a live GojiBux economy dashboard pop-out with large text + up/down animations
-if (wsmsg["text"].toLowerCase() === ".gojicon") {
+/*if (wsmsg["text"].toLowerCase() === ".gojicon") {
     const popup = window.open("", "Goji Economy", "width=500,height=500");
     if (!popup) return respondWithMessage.call(this, "⚠️ Pop-up blocked! Please allow pop-ups and try again.");
 
@@ -13957,6 +14211,162 @@ if (wsmsg["text"].toLowerCase() === ".gojicon") {
 
     update();
     popup.setInterval(update, 1000);
+    popup.addEventListener("storage", update);
+
+    respondWithMessage.call(this, "📤 GojiCon opened!");
+}*/
+
+if (wsmsg["text"].toLowerCase() === ".gojicon") {
+    const popup = window.open("", "Goji Economy", "width=500,height=500");
+    if (!popup) return respondWithMessage.call(this, "⚠️ Pop-up blocked! Please allow pop-ups and try again.");
+
+    popup.document.title = "GojiCon";
+    popup.document.head.innerHTML += `
+        <style>
+            body {
+                margin: 0;
+                overflow-y: auto;
+                background: #111;
+                color: #99cc33;
+                font-family: monospace;
+                font-size: 22px;
+                padding: 16px;
+                line-height: 1.2;
+            }
+            .stat {
+                transition: color 0.4s ease;
+                color: #ffffff;
+                margin-bottom: 4px;
+                display: flex;
+                justify-content: space-between;
+            }
+            .stat.up {
+                color: #66ff66;
+            }
+            .stat.down {
+                color: #ff6666;
+            }
+            .label {
+                flex: 1;
+            }
+            .trend {
+                min-width: 80px;
+                text-align: right;
+                font-weight: bold;
+                color: inherit;
+            }
+
+            .trend.mild { opacity: 0.6; }
+            .trend.med { opacity: 0.8; }
+            .trend.intense { opacity: 1; font-weight: 900; }
+        </style>
+    `;
+
+    const list = popup.document.createElement("div");
+    popup.document.body.appendChild(list);
+
+    function getTotal(obj, accessor = null) {
+        return Object.values(obj || {}).reduce((a, b) => {
+            if (accessor && typeof b === "object") return a + (typeof b[accessor] === "number" ? b[accessor] : 0);
+            return a + (typeof b === "number" ? b : 0);
+        }, 0);
+    }
+
+    const prevValues = {};
+    const liveValues = {};
+
+    function updateStat(label, newValue) {
+        let div = list.querySelector(`[data-label="${label}"]`);
+        let labelSpan, trendSpan;
+
+        if (!div) {
+            div = popup.document.createElement("div");
+            div.setAttribute("data-label", label);
+            div.className = "stat";
+
+            labelSpan = popup.document.createElement("span");
+            labelSpan.className = "label";
+
+            trendSpan = popup.document.createElement("span");
+            trendSpan.className = "trend";
+
+            div.appendChild(labelSpan);
+            div.appendChild(trendSpan);
+            list.appendChild(div);
+        } else {
+            labelSpan = div.querySelector(".label");
+            trendSpan = div.querySelector(".trend");
+        }
+
+        const formatted = newValue.toLocaleString();
+        const baseline = prevValues[label];
+        let percent = 0;
+        let arrow = "±";
+
+        if (baseline !== undefined && baseline !== 0) {
+            percent = ((newValue - baseline) / baseline) * 100;
+            percent = Math.round(percent * 10) / 10; // One decimal place
+
+            if (percent > 0) arrow = "🡅";
+            else if (percent < 0) arrow = "🡇";
+        }
+
+        // Color animation
+        /*div.classList.remove("up", "down");
+        if (baseline !== undefined && newValue !== baseline) {
+            div.offsetWidth;
+            div.classList.add(newValue > baseline ? "up" : "down");
+            setTimeout(() => div.classList.remove("up", "down"), 600);
+        }*/
+
+        div.classList.remove("up", "down");
+        if (baseline !== undefined && newValue !== baseline) {
+            div.classList.add(newValue > baseline ? "up" : "down");
+        }
+
+        // Intensity class
+        trendSpan.classList.remove("mild", "med", "intense");
+        const abs = Math.abs(percent);
+        if (abs < 5) trendSpan.classList.add("mild");
+        else if (abs < 20) trendSpan.classList.add("med");
+        else trendSpan.classList.add("intense");
+
+        trendSpan.textContent = `${arrow}${Math.abs(percent)}%`;
+        labelSpan.innerHTML = `${label} <b>${formatted}</b>`;
+        liveValues[label] = newValue;
+    }
+
+    function update() {
+        const lghBank = parseInt(localStorage.getItem("lghBank")) || 0;
+        const wghBank = parseInt(localStorage.getItem("wghBank")) || 0;
+        const userBalances = JSON.parse(localStorage.getItem("userBalances") || "{}");
+        const userStashes = JSON.parse(localStorage.getItem("userStashes") || "{}");
+        const userWeedStashes = JSON.parse(localStorage.getItem("userWeedStashes") || "{}");
+        const userHiddenWeed = JSON.parse(localStorage.getItem("userHiddenWeed") || "{}");
+        const userJointStashes = JSON.parse(localStorage.getItem("userJointStashes") || "{}");
+        const weedBuyPrice = parseInt(localStorage.getItem("weedBuyPrice")) || 20;
+        const weedSellPrice = parseInt(localStorage.getItem("weedSellPrice")) || Math.floor(20 * 0.8);
+        const gojiPot = parseInt(localStorage.getItem("gojiPot")) || 0;
+
+        updateStat("🏦", lghBank);
+        updateStat("🏬", wghBank);
+        updateStat("💵", getTotal(userBalances, "balance"));
+        updateStat("💰", getTotal(userStashes));
+        updateStat("🥦", getTotal(userWeedStashes));
+        updateStat("🔒", getTotal(userHiddenWeed));
+        updateStat("🥖", getTotal(userJointStashes));
+        updateStat("📈", weedBuyPrice);
+        updateStat("📉", weedSellPrice);
+        updateStat("🎰", gojiPot);
+    }
+
+    function updateBaselines() {
+        Object.assign(prevValues, liveValues);
+    }
+
+    update();
+    popup.setInterval(update, 1000);
+    popup.setInterval(updateBaselines, 10000);
     popup.addEventListener("storage", update);
 
     respondWithMessage.call(this, "📤 GojiCon opened!");
