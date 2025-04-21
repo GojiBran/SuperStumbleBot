@@ -235,6 +235,52 @@ window.addEventListener("beforeunload", saveWGHBank);
 let userWeedStashes = JSON.parse(localStorage.getItem("userWeedStashes")) || {};
 
 //-----------------------------------------------------------------------------------------------------------------------------------
+//Graxus
+
+let userGraxus = JSON.parse(localStorage.getItem("userGraxus")) || {};
+function saveUserGraxus() {
+    localStorage.setItem("userGraxus", JSON.stringify(userGraxus));
+}
+// OLD^^^
+
+let sharedGraxus = JSON.parse(localStorage.getItem("sharedGraxus")) || {
+    graxus: [],
+    createdAt: Date.now()
+};
+
+function saveSharedGraxus() {
+    localStorage.setItem("sharedGraxus", JSON.stringify(sharedGraxus));
+}
+
+function updateGraxusTimers() {
+    const now = Date.now();
+    for (let grax of sharedGraxus.graxus) {
+        const elapsedMs = now - (grax.lastUpdate || now);
+        const minutes = Math.floor(elapsedMs / 60000);
+
+        if (minutes >= 1) {
+            grax.hunger += Math.floor(minutes / 20);  // +1 hunger per 20min
+            grax.boredom += Math.floor(minutes / 10); // +1 boredom per 10min
+            grax.age += Math.floor(minutes / 60);     // +1 age per 1hr
+        }
+
+        // Cap stats
+        grax.hunger = Math.min(150, grax.hunger);
+        grax.boredom = Math.min(150, grax.boredom);
+
+        // Check for death
+        if (!grax.dead && (grax.hunger >= 100 || grax.boredom >= 100)) {
+            grax.dead = true;
+            grax.deathTime = now;
+        }
+
+        grax.lastUpdate = now;
+    }
+    saveSharedGraxus();
+}
+
+
+//-----------------------------------------------------------------------------------------------------------------------------------
 
 function handleMessage(msg) {
         const data = msg.data;
@@ -508,7 +554,7 @@ if (wsmsg['text'].toLowerCase().startsWith(".myhistory")) {
     const user = userNicknames[username];
 
     if (!user || !user.username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
         return;
     }
 
@@ -537,7 +583,7 @@ if (wsmsg['text'].toLowerCase().startsWith(".myhistory")) {
     const historyToShow = allUserHistory.slice(start, end);
     const nickname = user.nickname || user.username;
 
-    let response = `📺 ${nickname}'s YouTube Tracks — Page ${page}/${totalPages}\n`;
+    let response = `📺 ${nickname}'s YouTube — Page ${page}/${totalPages}\n`;
     historyToShow.forEach((entry, index) => {
         response += `${start + index + 1}. ${entry.track}\n`;
     });
@@ -555,7 +601,7 @@ if (wsmsg['text'].toLowerCase().startsWith(".clearmyhistory")) {
     const user = userNicknames[username];
 
     if (!user || !user.username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
         return;
     }
 
@@ -599,49 +645,61 @@ if (wsmsg['text'].toLowerCase().startsWith(".clearmyhistory")) {
     respondWithMessage.call(this, `🗑️ Deleted ${toDelete.length} track(s): #${start}${start !== end ? `–${end}` : ""}.`);
 }
 
-// Handle .clearhistory (admin nuke)
-/*if (wsmsg['text'].toLowerCase() === ".clearhistory") {
-    const handle = wsmsg['handle'];
-    const username = userHandles[handle];
-
-    if (username !== "Goji") {
-        respondWithMessage.call(this, "🚫 Only Goji can use this command.");
-        return;
-    }
-
-    youtubeHistory = [];
-    localStorage.setItem("youtubeHistory", JSON.stringify(youtubeHistory));
-    respondWithMessage.call(this, "💣 All YouTube history cleared by Goji.");
-}*/
-
-// Handle .topplayed command — most frequently played tracks
+// Handle .topplayed [page] command (one per play count, most recent, paginated)
 if (wsmsg['text'].toLowerCase().startsWith(".topplayed")) {
     if (youtubeHistory.length === 0) {
         respondWithMessage.call(this, "🤖 No YouTube tracks played yet.");
         return;
     }
 
-    // Count plays per track
-    const countMap = {};
+    // Count total plays per track
+    const playCounts = {};
+    const latestPlays = {};
     youtubeHistory.forEach((entry, index) => {
         const key = entry.track;
-        if (!countMap[key]) {
-            countMap[key] = { count: 1, latestIndex: index };
-        } else {
-            countMap[key].count += 1;
-            countMap[key].latestIndex = index; // For breaking ties (newest first)
-        }
+        playCounts[key] = (playCounts[key] || 0) + 1;
+        latestPlays[key] = index; // Update latest index
     });
 
-    // Convert map to array and sort
-    const topTracks = Object.entries(countMap)
-        .map(([track, data]) => ({ track, count: data.count, index: data.latestIndex }))
-        .sort((a, b) => b.count - a.count || b.index - a.index)
-        .slice(0, 5); // Top 5
+    // Build all tracks with count and latest index
+    const allTracks = Object.keys(playCounts).map(track => ({
+        track,
+        count: playCounts[track],
+        index: latestPlays[track]
+    }));
 
-    let response = `📊 Top Played YouTube Tracks:\n`;
-    topTracks.forEach((entry, i) => {
-        response += `${i + 1}. ${entry.track} (${entry.count} play${entry.count > 1 ? 's' : ''})\n`;
+    // Sort by count descending, then latest index descending
+    allTracks.sort((a, b) => b.count - a.count || b.index - a.index);
+
+    // Deduplicate by play count: only most recent per unique play count
+    const seenCounts = new Set();
+    const filteredTracks = [];
+    for (const track of allTracks) {
+        if (!seenCounts.has(track.count)) {
+            filteredTracks.push(track);
+            seenCounts.add(track.count);
+        }
+    }
+
+    // Pagination
+    const args = wsmsg['text'].split(" ");
+    const page = parseInt(args[1]) || 1;
+    const itemsPerPage = 5;
+    const totalPages = Math.ceil(filteredTracks.length / itemsPerPage);
+
+    if (page < 1 || page > totalPages) {
+        respondWithMessage.call(this, `⚠️ Invalid page. Use \`.topplayed [1-${totalPages}]\`.`);
+        return;
+    }
+
+    const start = (page - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const tracksToShow = filteredTracks.slice(start, end);
+
+    // Build response
+    let response = `📺 Top YouTube — Page ${page}/${totalPages}\n`;
+    tracksToShow.forEach((entry, i) => {
+        response += `${start + i + 1}. ${entry.track} (${entry.count} play${entry.count > 1 ? 's' : ''})\n`;
     });
 
     respondWithMessage.call(this, response.trim());
@@ -665,13 +723,28 @@ if (wsmsg['text'].toLowerCase() === ".bothistory") {
     const end = start + itemsPerPage;
     const entriesToShow = botEntries.slice(start, end);
 
-    let response = `📺 BaskinBros YouTube Tracks — Page ${page}/${totalPages}\n`;
+    let response = `📺 BaskinBros YouTube — Page ${page}/${totalPages}\n`;
     entriesToShow.forEach((entry, index) => {
         response += `${start + index + 1}. ${entry.track}\n`;
     });
 
     respondWithMessage.call(this, response.trim());
 }
+
+// Handle .clearhistory (admin nuke)
+/*if (wsmsg['text'].toLowerCase() === ".clearhistory") {
+    const handle = wsmsg['handle'];
+    const username = userHandles[handle];
+
+    if (username !== "Goji") {
+        respondWithMessage.call(this, "🚫 Only Goji can use this command.");
+        return;
+    }
+
+    youtubeHistory = [];
+    localStorage.setItem("youtubeHistory", JSON.stringify(youtubeHistory));
+    respondWithMessage.call(this, "💣 All YouTube history cleared by Goji.");
+}*/
 
 // User Commands --------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -768,7 +841,7 @@ if (wsmsg['text'] && wsmsg['text'].startsWith(".note ")) {
     const user = userNicknames[username];
 
     if (!user || !user.username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
         return;
     }
 
@@ -835,7 +908,7 @@ if (wsmsg['text'].toLowerCase().startsWith(".mynotes")) {
     const user = userNicknames[username];
 
     if (!user || !user.username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
         return;
     }
 
@@ -882,7 +955,7 @@ if (wsmsg['text'].toLowerCase().startsWith(".clearmynotes")) {
     const user = userNicknames[username];
 
     if (!user || !user.username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
         return;
     }
 
@@ -957,7 +1030,7 @@ if (/^\.?(remind|remindat|rm|remindme|reminder)\s/i.test(wsmsg['text'])) {
     const user = userNicknames[username];
 
     if (!user || !user.username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
         return;
     }
 
@@ -996,7 +1069,7 @@ if (wsmsg['text'].toLowerCase().startsWith(".myreminders")) {
     const user = userNicknames[username];
 
     if (!user || !user.username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
         return;
     }
 
@@ -1046,7 +1119,7 @@ if (wsmsg["text"].toLowerCase() === ".mybux") {
     const nickname = userNicknames[username]?.nickname || username || "you";
 
     if (!username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
         return;
     }
 
@@ -1071,7 +1144,7 @@ if ([".gojibux", ".gbx", ".getbux"].includes(wsmsg["text"].toLowerCase())) {
     const nickname = userNicknames[username]?.nickname || username || "you";
 
     if (!username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
         return;
     }
 
@@ -1207,7 +1280,7 @@ if (wsmsg["text"].toLowerCase() === ".snarfbux") {
     const nickname = userNicknames[username]?.nickname || username || "you";
 
     if (!username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
         return;
     }
 
@@ -1280,7 +1353,7 @@ if (wsmsg["text"].toLowerCase() === ".$narf") {
     const nickname = userNicknames[username]?.nickname || username || "you";
 
     if (!username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
         return;
     }
 
@@ -1437,7 +1510,7 @@ if (donatebankTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
 // 🔒 .stash (60-second cooldown)(10 second)
 let lastStashTimes = JSON.parse(localStorage.getItem("lastStashTimes")) || {}; // Store last use times
 
-// 💰➕ `.stashbux [amount|max|all]` - Stash GojiBux with cooldown
+// 💰➕ `.stashbux [amount|max|all|half|quarter|random|%|k/m/b]` - Stash GojiBux with cooldown
 const stashbuxTriggers = [".stashbux"]; // add aliases here like ".stash"
 if (stashbuxTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const handle = wsmsg["handle"];
@@ -1446,12 +1519,11 @@ if (stashbuxTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const args = wsmsg["text"].trim().split(" ");
 
     if (!username || args.length < 2) {
-        respondWithMessage.call(this, "🤖 Usage: .stashbux [amount|max|all]");
+        respondWithMessage.call(this, "🤖 Usage: .stashbux [amount|max|all|half|quarter|random|%|k/m/b]");
         return;
     }
 
     const now = Date.now();
-    //const cooldown = 10 * 1000; // 10-second cooldown
     const cooldown = 0 * 1000;
     const lastUsed = lastStashTimes[username] || 0;
 
@@ -1465,18 +1537,29 @@ if (stashbuxTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const balanceAvailable = userBalances[username]?.balance || 0;
     let amount;
 
-    if (amountArg === "all" || amountArg === "max") {
+    if (["all", "max", "yolo", "degenerate"].includes(amountArg)) {
         amount = balanceAvailable;
-        if (amount <= 0) {
-            respondWithMessage.call(this, `🤖 ${nickname}, you don't have any GBX to stash.`);
-            return;
-        }
+    } else if (amountArg === "half") {
+        amount = Math.floor(balanceAvailable / 2);
+    } else if (amountArg === "quarter") {
+        amount = Math.floor(balanceAvailable / 4);
+    } else if (amountArg === "random") {
+        amount = Math.floor(Math.random() * balanceAvailable) + 1;
+    } else if (/^\d+(\.\d+)?%$/.test(amountArg)) {
+        const percent = parseFloat(amountArg.replace("%", ""));
+        amount = Math.floor((percent / 100) * balanceAvailable);
+    } else if (/^\d+(\.\d+)?[kmb]$/i.test(amountArg)) {
+        const num = parseFloat(amountArg);
+        const suffix = amountArg.slice(-1).toLowerCase();
+        const multiplier = suffix === "k" ? 1e3 : suffix === "m" ? 1e6 : 1e9;
+        amount = Math.floor(num * multiplier);
     } else {
         amount = parseInt(amountArg, 10);
-        if (isNaN(amount) || amount <= 0 || amount > balanceAvailable) {
-            respondWithMessage.call(this, "🤖 Invalid amount or insufficient funds.");
-            return;
-        }
+    }
+
+    if (isNaN(amount) || amount <= 0 || amount > balanceAvailable) {
+        respondWithMessage.call(this, "🤖 Invalid amount or insufficient funds.");
+        return;
     }
 
     userBalances[username].balance -= amount;
@@ -1492,7 +1575,7 @@ if (stashbuxTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
-// 💰➖ `.unstashbux [amount|max|all]` - Withdraw from stash
+// 💰➖ `.unstashbux [amount|max|all|half|quarter|random|%|k/m/b]` - Withdraw from stash
 const unstashbuxTriggers = [".unstashbux"]; // add aliases here like ".unstash"
 if (unstashbuxTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const handle = wsmsg["handle"];
@@ -1501,7 +1584,7 @@ if (unstashbuxTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const args = wsmsg["text"].trim().split(" ");
 
     if (!username || args.length < 2) {
-        respondWithMessage.call(this, "🤖 Usage: .unstashbux [amount|max|all]");
+        respondWithMessage.call(this, "🤖 Usage: .unstashbux [amount|max|all|half|quarter|random|%|k/m/b]");
         return;
     }
 
@@ -1509,18 +1592,29 @@ if (unstashbuxTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const stashAvailable = userStashes[username] || 0;
     let amount;
 
-    if (amountArg === "all" || amountArg === "max") {
+    if (["all", "max", "yolo", "degenerate"].includes(amountArg)) {
         amount = stashAvailable;
-        if (amount <= 0) {
-            respondWithMessage.call(this, `🤖 ${nickname}, your stash is empty.`);
-            return;
-        }
+    } else if (amountArg === "half") {
+        amount = Math.floor(stashAvailable / 2);
+    } else if (amountArg === "quarter") {
+        amount = Math.floor(stashAvailable / 4);
+    } else if (amountArg === "random") {
+        amount = Math.floor(Math.random() * stashAvailable) + 1;
+    } else if (/^\d+(\.\d+)?%$/.test(amountArg)) {
+        const percent = parseFloat(amountArg.replace("%", ""));
+        amount = Math.floor((percent / 100) * stashAvailable);
+    } else if (/^\d+(\.\d+)?[kmb]$/i.test(amountArg)) {
+        const num = parseFloat(amountArg);
+        const suffix = amountArg.slice(-1).toLowerCase();
+        const multiplier = suffix === "k" ? 1e3 : suffix === "m" ? 1e6 : 1e9;
+        amount = Math.floor(num * multiplier);
     } else {
         amount = parseInt(amountArg, 10);
-        if (isNaN(amount) || amount <= 0 || amount > stashAvailable) {
-            respondWithMessage.call(this, "🤖 Invalid amount or insufficient stash.");
-            return;
-        }
+    }
+
+    if (isNaN(amount) || amount <= 0 || amount > stashAvailable) {
+        respondWithMessage.call(this, "🤖 Invalid amount or insufficient stash.");
+        return;
     }
 
     userStashes[username] -= amount;
@@ -1693,7 +1787,7 @@ function updateWeedPrices() {
 }
 
 if (!window._weedPriceIntervalSet) {
-    setInterval(updateWeedPrices, 10 * 1000);
+    setInterval(updateWeedPrices, 0.5 * 60 * 1000);
     window._weedPriceIntervalSet = true;
     console.log("🌿 Weed price updater initialized (reversed).");
 }
@@ -1917,7 +2011,7 @@ if ([".grow", ".getweed"].includes(wsmsg["text"].toLowerCase())) {
     const nickname = userNicknames[username]?.nickname || username || "you";
 
     if (!username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
         return;
     }
 
@@ -1977,7 +2071,7 @@ if (wsmsg["text"].toLowerCase() === ".harvest") {
     const nickname = userNicknames[username]?.nickname || username || "you";
 
     if (!username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
         return;
     }
 
@@ -2066,7 +2160,7 @@ if (wsmsg["text"].toLowerCase() === ".plantseed") {
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
 
-    if (!username) return respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+    if (!username) return respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
     if (userPlants[username]?.planted) return respondWithMessage.call(this, `🌱 ${nickname}, you've already planted a seed!`);
 
     const userBalance = userBalances[username]?.balance || 0;
@@ -2214,41 +2308,6 @@ if (wsmsg["text"].toLowerCase() === ".myplant") {
 
     const plant = userPlants[username];
     if (!plant?.planted) return respondWithMessage.call(this, `🌱 ${nickname}, you haven't planted anything yet.`);
-    if (plant.growth < 100) return respondWithMessage.call(this, `⏳ ${nickname}, your plant isn’t fully grown! It's at ${plant.growth}%.`);
-
-    let baseYield = Math.floor(Math.random() * (3584 - 448 + 1)) + 448;
-    if (plant.feedings > 0) {
-        const bonusMultiplier = 1 + (plant.feedings * 0.1);
-        baseYield = Math.floor(baseYield * bonusMultiplier);
-    }
-
-    const foundLuckyCoin = Math.random() < 0.25;
-    if (foundLuckyCoin) {
-        userLuckyCoins[username] = (userLuckyCoins[username] || 0) + 1;
-        localStorage.setItem("userLuckyCoins", JSON.stringify(userLuckyCoins));
-    }
-
-    userWeedStashes[username] = (userWeedStashes[username] || 0) + baseYield;
-    delete userPlants[username];
-
-    localStorage.setItem("userWeedStashes", JSON.stringify(userWeedStashes));
-    localStorage.setItem("userPlants", JSON.stringify(userPlants));
-
-    const pounds = (baseYield / 448).toFixed(2);
-    let msg = `🌾 ${nickname} harvested their plant and got 🥦 ${pounds} lb [${baseYield.toLocaleString()}g] of dank homegrown weed!`;
-    if (foundLuckyCoin) msg += `\n🍀 Whoa! You also found a Lucky Coin!`;
-
-    respondWithMessage.call(this, msg);
-}*/
-
-// 🌾 `.plantharvest` — Harvest your fully grown plant for weed (with yield bonus + chance for Lucky Coin)
-if (wsmsg["text"].toLowerCase() === ".plantharvest") {
-    const handle = wsmsg["handle"];
-    const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || username || "you";
-
-    const plant = userPlants[username];
-    if (!plant?.planted) return respondWithMessage.call(this, `🌱 ${nickname}, you haven't planted anything yet.`);
 
     // Ensure plant has valid data (for older/incomplete formats)
     const growth = typeof plant.growth === "number" ? plant.growth : 100; // treat missing/null as fully grown
@@ -2279,6 +2338,81 @@ if (wsmsg["text"].toLowerCase() === ".plantharvest") {
     if (foundLuckyCoin) msg += `\n🍀 Whoa! You also found a Lucky Coin!`;
 
     respondWithMessage.call(this, msg);
+}*/
+
+// 🌾 `.plantharvest` — Harvest your fully grown plant for weed (with yield bonus + chance for Lucky Coin)
+if (wsmsg["text"].toLowerCase() === ".plantharvest") {
+    const handle = wsmsg["handle"];
+    const username = userHandles?.[handle];
+    const nickname = userNicknames?.[username]?.nickname || username || "you";
+
+    if (!username) {
+        try {
+            respondWithMessage.call(this, `🌱 Could not find your username.  Refresh.`);
+        } catch (e) {
+            console.error("Harvest Command failed at username step:", e);
+        }
+        return;
+    }
+
+    const plant = userPlants?.[username];
+    if (!plant || typeof plant !== "object" || !plant.planted) {
+        try {
+            respondWithMessage.call(this, `🌱 ${nickname}, you haven't planted anything yet.`);
+        } catch (e) {
+            console.error("Harvest Command failed at no plant step:", e);
+        }
+        return;
+    }
+
+    const growth = typeof plant.growth === "number" ? plant.growth : 100; // Default to 100% if missing
+    const feedings = typeof plant.feedings === "number" ? plant.feedings : 0;
+
+    if (growth < 100) {
+        try {
+            respondWithMessage.call(this, `⏳ ${nickname}, your plant isn’t fully grown! It's at ${growth}%.`);
+        } catch (e) {
+            console.error("Harvest Command failed at growth check:", e);
+        }
+        return;
+    }
+
+    // 🌿 Generate harvest
+    let baseYield = Math.floor(Math.random() * (3584 - 448 + 1)) + 448;
+    if (feedings > 0) {
+        const bonusMultiplier = 1 + (feedings * 0.1);
+        baseYield = Math.floor(baseYield * bonusMultiplier);
+    }
+
+    const foundLuckyCoin = Math.random() < 0.25;
+    if (foundLuckyCoin) {
+        userLuckyCoins[username] = (userLuckyCoins[username] || 0) + 1;
+        try {
+            localStorage.setItem("userLuckyCoins", JSON.stringify(userLuckyCoins));
+        } catch (e) {
+            console.error("Failed to save Lucky Coins:", e);
+        }
+    }
+
+    userWeedStashes[username] = (userWeedStashes[username] || 0) + baseYield;
+    delete userPlants[username];
+
+    try {
+        localStorage.setItem("userWeedStashes", JSON.stringify(userWeedStashes));
+        localStorage.setItem("userPlants", JSON.stringify(userPlants));
+    } catch (e) {
+        console.error("Failed to save plant or weed stash:", e);
+    }
+
+    const pounds = (baseYield / 448).toFixed(2);
+    let msg = `🌾 ${nickname} harvested their plant and got 🥦 ${pounds} lb [${baseYield.toLocaleString()}g] of dank homegrown weed!`;
+    if (foundLuckyCoin) msg += `\n🍀 Whoa! You also found a Lucky Coin!`;
+
+    try {
+        respondWithMessage.call(this, msg);
+    } catch (e) {
+        console.error("Harvest Command failed when sending final message:", e);
+    }
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -2342,7 +2476,7 @@ if (wsmsg["text"].toLowerCase() === ".distribute") {
     const nickname = userNicknames[username]?.nickname || username || "you";
 
     if (!username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
         return;
     }
 
@@ -2806,7 +2940,7 @@ if (giveweedTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const amountArg = args[2]?.toLowerCase();
 
     if (!sender || !userNicknames[recipientUsername]) {
-        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient. Username, Case-sensitive.");
         return;
     }
 
@@ -3063,7 +3197,7 @@ if (givespagetTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const senderStash = userSpaghettiStashes[sender] || 0;
 
     if (!sender || !userNicknames[recipientUsername]) {
-        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient. Username, Case-sensitive.");
         return;
     }
 
@@ -3273,7 +3407,7 @@ if (givepizzaTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const senderStash = userPizzaStashes[sender] || 0;
 
     if (!sender || !userNicknames[recipientUsername]) {
-        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient. Username, Case-sensitive.");
         return;
     }
 
@@ -3437,7 +3571,7 @@ if (giveeggTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const senderStash = userEggStashes[sender] || 0;
 
     if (!sender || !userNicknames[recipientUsername]) {
-        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient. Username, Case-sensitive.");
         return;
     }
 
@@ -3600,7 +3734,7 @@ if (givebananaTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const senderStash = userBananaStashes[sender] || 0;
 
     if (!sender || !userNicknames[recipientUsername]) {
-        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient. Username, Case-sensitive.");
         return;
     }
 
@@ -3763,7 +3897,7 @@ if (giveappleTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const senderStash = userAppleStashes[sender] || 0;
 
     if (!sender || !userNicknames[recipientUsername]) {
-        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient. Username, Case-sensitive.");
         return;
     }
 
@@ -3926,7 +4060,7 @@ if (giveicecreamTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const senderStash = userIcecreamStashes[sender] || 0;
 
     if (!sender || !userNicknames[recipientUsername]) {
-        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient. Username, Case-sensitive.");
         return;
     }
 
@@ -4089,7 +4223,7 @@ if (givecandyTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const senderStash = userCandyStashes[sender] || 0;
 
     if (!sender || !userNicknames[recipientUsername]) {
-        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient. Username, Case-sensitive.");
         return;
     }
 
@@ -4252,7 +4386,7 @@ if (givebreadTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const senderStash = userBreadStashes[sender] || 0;
 
     if (!sender || !userNicknames[recipientUsername]) {
-        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient. Username, Case-sensitive.");
         return;
     }
 
@@ -4415,7 +4549,7 @@ if (givedonutTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const senderStash = userDonutStashes[sender] || 0;
 
     if (!sender || !userNicknames[recipientUsername]) {
-        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient. Username, Case-sensitive.");
         return;
     }
 
@@ -4578,7 +4712,7 @@ if (givecheeseTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const senderStash = userCheeseStashes[sender] || 0;
 
     if (!sender || !userNicknames[recipientUsername]) {
-        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient. Username, Case-sensitive.");
         return;
     }
 
@@ -4741,7 +4875,7 @@ if (givewaffleTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const senderStash = userWaffleStashes[sender] || 0;
 
     if (!sender || !userNicknames[recipientUsername]) {
-        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient. Username, Case-sensitive.");
         return;
     }
 
@@ -4904,7 +5038,7 @@ if (givepancakeTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const senderStash = userPancakeStashes[sender] || 0;
 
     if (!sender || !userNicknames[recipientUsername]) {
-        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient. Username, Case-sensitive.");
         return;
     }
 
@@ -5067,7 +5201,7 @@ if (giveramenTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const senderStash = userRamenStashes[sender] || 0;
 
     if (!sender || !userNicknames[recipientUsername]) {
-        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient. Username, Case-sensitive.");
         return;
     }
 
@@ -5230,7 +5364,7 @@ if (givesammichTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const senderStash = userSammichStashes[sender] || 0;
 
     if (!sender || !userNicknames[recipientUsername]) {
-        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient. Username, Case-sensitive.");
         return;
     }
 
@@ -5393,7 +5527,7 @@ if (givehotdogTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const senderStash = userHotdogStashes[sender] || 0;
 
     if (!sender || !userNicknames[recipientUsername]) {
-        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient. Username, Case-sensitive.");
         return;
     }
 
@@ -5556,7 +5690,7 @@ if (giveshrimpTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const senderStash = userShrimpStashes[sender] || 0;
 
     if (!sender || !userNicknames[recipientUsername]) {
-        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient. Username, Case-sensitive.");
         return;
     }
 
@@ -5719,7 +5853,7 @@ if (givetacoTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const senderStash = userTacoStashes[sender] || 0;
 
     if (!sender || !userNicknames[recipientUsername]) {
-        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient. Username, Case-sensitive.");
         return;
     }
 
@@ -5882,7 +6016,7 @@ if (givecakeTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const senderStash = userCakeStashes[sender] || 0;
 
     if (!sender || !userNicknames[recipientUsername]) {
-        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient. Username, Case-sensitive.");
         return;
     }
 
@@ -6045,7 +6179,7 @@ if (giveburgerTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const senderStash = userBurgerStashes[sender] || 0;
 
     if (!sender || !userNicknames[recipientUsername]) {
-        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient. Username, Case-sensitive.");
         return;
     }
 
@@ -6208,7 +6342,7 @@ if (givesushiTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const senderStash = userSushiStashes[sender] || 0;
 
     if (!sender || !userNicknames[recipientUsername]) {
-        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient. Username, Case-sensitive.");
         return;
     }
 
@@ -6371,7 +6505,7 @@ if (givesteakTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const senderStash = userSteakStashes[sender] || 0;
 
     if (!sender || !userNicknames[recipientUsername]) {
-        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient. Username, Case-sensitive.");
         return;
     }
 
@@ -6534,7 +6668,7 @@ if (givedildoTriggers.includes(wsmsg["text"].split(" ")[0].toLowerCase())) {
     const senderStash = userDildoStashes[sender] || 0;
 
     if (!sender || !userNicknames[recipientUsername]) {
-        respondWithMessage.call(this, "🤖 Error: Could not find the recipient.");
+        respondWithMessage.call(this, "🤖 Error: Could not find the recipient. Username, Case-sensitive.");
         return;
     }
 
@@ -6684,7 +6818,7 @@ if (wsmsg["text"].toLowerCase() === ".cook") {
     const cooldown = 0 * 60 * 1000;
 
     if (!username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
         return;
     }
 
@@ -6856,7 +6990,7 @@ if (wsmsg["text"].toLowerCase() === ".bankrob") {
     const nickname = userNicknames[username]?.nickname || username || "you";
 
     if (!username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
         return;
     }
 
@@ -6982,7 +7116,7 @@ if (wsmsg["text"].toLowerCase() === ".weedrob") {
     const nickname = userNicknames[username]?.nickname || username || "you";
 
     if (!username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
         return;
     }
 
@@ -7067,7 +7201,7 @@ if (wsmsg["text"].toLowerCase() === ".bankheist") {
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
 
-    if (!username) return respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+    if (!username) return respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
 
     const now = Date.now();
     const lastHeist = lastBankHeistTime[username] || 0;
@@ -7135,7 +7269,7 @@ if (wsmsg["text"].toLowerCase() === ".weedheist") {
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || username || "you";
 
-    if (!username) return respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+    if (!username) return respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
 
     const now = Date.now();
     const lastHeist = lastWeedHeistTime[username] || 0;
@@ -7796,7 +7930,7 @@ if (wsmsg["text"].toLowerCase() === ".mycoin") {
     const nickname = userNicknames[username]?.nickname || username || "you";
 
     if (!username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
         return;
     }
 
@@ -7815,7 +7949,7 @@ if (wsmsg['text'].toLowerCase() === ".treat") {
     const gojiUsername = "Goji"; // Ensure this matches Goji’s actual stored username
 
     if (!username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
         return;
     }
 
@@ -8397,7 +8531,7 @@ if (
     const nickname = userNicknames[username]?.nickname || username || "you";
 
     if (!username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
         return;
     }
 
@@ -8533,7 +8667,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".luckycoins")) {
     const nickname = userNicknames[username]?.nickname || username || "you";
 
     if (!username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
         return;
     }
 
@@ -8880,7 +9014,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".balance") || wsmsg["text"].toLowerC
         targetUsername = args[1];
 
         if (!userNicknames[targetUsername]) {
-            respondWithMessage.call(this, `🤖 Could not find a user with the username ${targetUsername}.`);
+            respondWithMessage.call(this, `🤖 Could not find a user with the username ${targetUsername}. Case-sensitive.`);
             return;
         }
     } else {
@@ -8889,7 +9023,7 @@ if (wsmsg["text"].toLowerCase().startsWith(".balance") || wsmsg["text"].toLowerC
         targetUsername = userHandles[handle];
 
         if (!targetUsername) {
-            respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+            respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
             return;
         }
     }
@@ -9302,7 +9436,7 @@ if (wsmsg["text"].toLowerCase() === ".adventure") {
 
     // ⚠️ Error check: username must exist
     if (!username) {
-        respondWithMessage.call(this, "🤖 Error: Could not identify your username.");
+        respondWithMessage.call(this, "🤖 Error: Could not identify your username. Refresh.");
         return;
     }
 
@@ -10204,11 +10338,9 @@ if (
 ) {
     const handle = wsmsg['handle'];
     const username = userHandles[handle];
-    const nickname = userNicknames[username]?.nickname || "Someone";
+    const nickname = userNicknames[username]?.nickname || username || "Someone";
 
-    if (!username) return; // Ensure the user is valid
-
-    let weedAvailable = userWeedStashes[username] || 0;
+    let weedAvailable = username ? (userWeedStashes[username] || 0) : 0;
     let weedUsed = parseFloat(((Math.random() * 2.5) + 1).toFixed(1)); // Random amount between 1-3.5g
     let message;
 
@@ -10245,17 +10377,19 @@ if (
     const messages = timeMessages[wsmsg['text']] || ["Error: Invalid time!"];
     message = messages[Math.floor(Math.random() * messages.length)];
 
-    if (weedAvailable >= weedUsed) {
-        // Deduct weed
-        userWeedStashes[username] -= weedUsed;
-        saveWeedStashes();
-        message += ` (Used ${weedUsed}g)`;
-    } else if (weedAvailable > 0) {
-        // Use whatever weed is left if less than required
-        weedUsed = weedAvailable;
-        userWeedStashes[username] = 0;
-        saveWeedStashes();
-        message += ` (Used ${weedUsed}g, now dry!)`;
+    if (username) {
+        if (weedAvailable >= weedUsed) {
+            // Deduct weed
+            userWeedStashes[username] -= weedUsed;
+            saveWeedStashes();
+            message += ` (Used ${weedUsed}g)`;
+        } else if (weedAvailable > 0) {
+            // Use whatever weed is left
+            weedUsed = weedAvailable;
+            userWeedStashes[username] = 0;
+            saveWeedStashes();
+            message += ` (Used ${weedUsed}g, now dry!)`;
+        }
     }
 
     // Send the final message
@@ -10270,21 +10404,20 @@ if (
 if ([".c", ".cheers"].includes(wsmsg['text'].toLowerCase())) {
     const handle = wsmsg['handle'];
     const username = userHandles[handle];
-    if (!username) return;
-
     const nickname = userNicknames[username]?.nickname || "Someone";
-    const weedAvailable = userWeedStashes[username] || 0;
+    const weedAvailable = username ? (userWeedStashes[username] || 0) : 0;
     const weedUsed = parseFloat((Math.random() * 0.9 + 0.1).toFixed(1));
 
     let message = `🤖 ${nickname} is smokin! Cheers! 🍃💨`;
 
-    if (weedAvailable >= weedUsed) {
+    if (username && weedAvailable >= weedUsed) {
         userWeedStashes[username] = Math.max(0, weedAvailable - weedUsed);
         saveWeedStashes();
         message += ` (🥦➖ ${weedUsed}g)`;
-    } else {
+    } else if (username) {
         message += " (But they're out of weed! 😢)";
     }
+    // if no username, just leave the basic message without weed status
 
     this._send(JSON.stringify({
         stumble: "msg",
@@ -10314,26 +10447,24 @@ if ([".sc", ".subcheers", ".subchar", ".schar", ".scheers"].includes(wsmsg['text
     const username = userHandles[handle];
     const nickname = userNicknames[username]?.nickname || "Someone";
 
-    if (!username) return; // Ensure the user is valid
-
-    let weedAvailable = userWeedStashes[username] || 0;
-    let weedUsed = parseFloat(((Math.random() * 0.9) + 0.1).toFixed(1)); // Random amount between 0.1-1g
+    const weedAvailable = username ? (userWeedStashes[username] || 0) : 0;
+    let weedUsed = parseFloat(((Math.random() * 0.9) + 0.1).toFixed(1)); // Random 0.1-1g
     let message = `🤖 ${nickname} is subbin! Char! 🥦🍻💨`;
 
-    if (weedAvailable >= weedUsed) {
-        // Deduct weed
-        userWeedStashes[username] -= weedUsed;
+    if (username && weedAvailable >= weedUsed) {
+        // Deduct weed normally
+        userWeedStashes[username] = Math.max(0, weedAvailable - weedUsed);
         saveWeedStashes();
-        message = `🤖 ${nickname} is subbin! Char! 🥦🍻💨 (🥦➖ ${weedUsed}g)`;
-    } else if (weedAvailable > 0) {
-        // If they don’t have enough, use what they have left
+        message += ` (🥦➖ ${weedUsed}g)`;
+    } else if (username && weedAvailable > 0) {
+        // Use whatever is left
         weedUsed = weedAvailable;
         userWeedStashes[username] = 0;
         saveWeedStashes();
-        message = `🤖 ${nickname} is subbin! Char! 🌲🍻💨 (🥦➖ ${weedUsed}g, now dry!)`;
+        message += ` (🥦➖ ${weedUsed}g, now dry!)`;
     }
+    // If no username, skip all weed logic and just send the base message
 
-    // Send the final message
     this._send(JSON.stringify({
         stumble: "msg",
         text: message
@@ -10455,8 +10586,22 @@ if ([".g", ".grind", ".grindin", ".grinding"].includes(wsmsg['text'].toLowerCase
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+    // Command: .drinkcheers (case insensitive)
+    if ([".drc", ".drcheers", ".drinkcheer", ".drinkcheers"].includes(wsmsg['text'].toLowerCase())) {
+        const handle = wsmsg['handle'];
+        const username = userHandles[handle];
+        const nickname = userNicknames[username]?.nickname || "Someone";
+
+        this._send(JSON.stringify({
+            stumble: "msg",
+            text: `🤖 ${nickname} raises their drink and cheers! 🍻`
+        }));
+    }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+
     // Command: .dabbin (case insensitive)
-    if ([".dc", ".dabbin", ".dabbing"].includes(wsmsg['text'].toLowerCase())) {
+    if ([".dc", ".dcheers", ".dabbin", ".dabbing", ".dabcheers", ".dbin", ".dabc"].includes(wsmsg['text'].toLowerCase())) {
         const handle = wsmsg['handle'];
         const username = userHandles[handle];
         const nickname = userNicknames[username]?.nickname || "Someone";
@@ -10470,7 +10615,7 @@ if ([".g", ".grind", ".grindin", ".grinding"].includes(wsmsg['text'].toLowerCase
 //-----------------------------------------------------------------------------------------------------------------------------------
 
     // Command: .dab (case insensitive)
-    if ([".d", ".dab"].includes(wsmsg['text'].toLowerCase())) {
+    if ([".d", ".db", ".dab", ".dabs"].includes(wsmsg['text'].toLowerCase())) {
         const handle = wsmsg['handle'];
         const username = userHandles[handle];
         const nickname = userNicknames[username]?.nickname || "Someone";
@@ -10871,6 +11016,270 @@ if (wsmsg['text'].toLowerCase().startsWith(".boof")) {
         }));
     }, 1000);
 }
+
+//-----------------------------------------------------------------------------------------------------------------------------------
+//Graxus
+
+// Helper function to build Graxus status display
+function getGraxusStatus() {
+    let alive = 0;
+    let dead = 0;
+    let totalGrowth = 0;
+    let totalHunger = 0;
+    let totalBoredom = 0;
+    let danger = 0;
+    let ready = 0;
+
+    for (let grax of sharedGraxus.graxus) {
+        if (grax.dead) {
+            dead++;
+        } else {
+            alive++;
+            totalGrowth += grax.growth;
+            totalHunger += grax.hunger;
+            totalBoredom += grax.boredom;
+            if (grax.hunger >= 80 || grax.boredom >= 80) danger++;
+            if (grax.growth >= 90) ready++;
+        }
+    }
+
+    const avgGrowth = alive ? Math.floor(totalGrowth / alive) : 0;
+    const avgHunger = alive ? Math.floor(totalHunger / alive) : 0;
+    const avgBoredom = alive ? Math.floor(totalBoredom / alive) : 0;
+
+    const barStyle = "oldschool"; // ← Change to emoji for 🟩 bars or "oldschool" for ▓░ bars
+
+    const bar = (val, type) => {
+        let full = Math.floor(val / 10);
+        let empty = 10 - full;
+        if (barStyle === "emoji") {
+            if (type === "good") {
+                return "🟩".repeat(full) + "⬛".repeat(empty);
+            } else {
+                return "🟥".repeat(full) + "⬛".repeat(empty);
+            }
+        } else {
+            return "▓".repeat(full) + "░".repeat(empty);
+        }
+    };
+
+    return `🐙 Alive: ${alive}
+☠️ Dead: ${dead}
+
+🌱 Growth: ${avgGrowth}% [${bar(avgGrowth, "good")}]
+🍕 Hunger: ${avgHunger}% [${bar(avgHunger, "bad")}]
+🎾 Boredom: ${avgBoredom}% [${bar(avgBoredom, "bad")}]
+
+⚠️ Critical Grax: ${danger}
+🎉 Ready to Multiply: ${ready}`;
+}
+
+// `.grax` — Hatch or check basic Graxus status
+if (wsmsg["text"].toLowerCase() === ".grax") {
+    updateGraxusTimers();
+
+    if (sharedGraxus.graxus.length === 0) {
+        sharedGraxus.graxus.push({
+            id: "grax1",
+            name: "Grax",
+            age: 0,
+            hunger: 0,
+            boredom: 0,
+            growth: 0,
+            mood: "neutral",
+            dead: false,
+            createdAt: Date.now(),
+            lastUpdate: Date.now()
+        });
+        saveSharedGraxus();
+        return respondWithMessage.call(this, `🐙 You hatched the very first Grax! Take care of them!`);
+    }
+
+    const living = sharedGraxus.graxus.filter(g => !g.dead).length;
+    const dead = sharedGraxus.graxus.filter(g => g.dead).length;
+
+    // 🐣 Auto-hatch if all are dead
+    if (living === 0 && dead > 0) {
+        sharedGraxus.graxus.push({
+            id: "grax" + (sharedGraxus.graxus.length + 1),
+            name: "Grax",
+            age: 0,
+            hunger: 0,
+            boredom: 0,
+            growth: 0,
+            mood: "neutral",
+            dead: false,
+            createdAt: Date.now(),
+            lastUpdate: Date.now()
+        });
+        saveSharedGraxus();
+        return respondWithMessage.call(this, `💀 All Grax had perished...\n🐣 But from the void, a new Grax has hatched! Take care of them!`);
+    }
+
+    respondWithMessage.call(this, `🐙 The Graxus is alive!\n🐙 ${living} living | ☠️ ${dead} dead\n📜 Use .graxus to view them.`);
+}
+
+// `.graxfeed` — Feed all living Grax and show updated status
+if (wsmsg["text"].toLowerCase() === ".graxfeed") {
+    updateGraxusTimers();
+
+    if (sharedGraxus.graxus.length === 0) return respondWithMessage.call(this, "❌ No Grax exist yet!");
+
+    let fedCount = 0;
+
+    for (let grax of sharedGraxus.graxus) {
+        if (!grax.dead) {
+            grax.hunger = Math.max(0, grax.hunger - 20);
+            grax.growth += 5;
+            fedCount++;
+
+            if (grax.growth >= 100) {
+                sharedGraxus.graxus.push({
+                    id: "grax" + (sharedGraxus.graxus.length + 1),
+                    name: "Grax",
+                    age: 0,
+                    hunger: 0,
+                    boredom: 0,
+                    growth: 0,
+                    mood: "neutral",
+                    dead: false,
+                    createdAt: Date.now(),
+                    lastUpdate: Date.now()
+                });
+                grax.growth = 0;
+            }
+        }
+    }
+
+    saveSharedGraxus();
+    respondWithMessage.call(this, `🍕 You fed ${fedCount} Grax! 🎉\n${getGraxusStatus()}`);
+}
+
+// `.graxplay` — Play with all living Grax and show updated status
+if (wsmsg["text"].toLowerCase() === ".graxplay") {
+    updateGraxusTimers();
+
+    if (sharedGraxus.graxus.length === 0) return respondWithMessage.call(this, "❌ No Grax exist yet!");
+
+    let playedCount = 0;
+
+    for (let grax of sharedGraxus.graxus) {
+        if (!grax.dead) {
+            grax.boredom = Math.max(0, grax.boredom - 20);
+            grax.growth += 5;
+            playedCount++;
+
+            if (grax.growth >= 100) {
+                sharedGraxus.graxus.push({
+                    id: "grax" + (sharedGraxus.graxus.length + 1),
+                    name: "Grax",
+                    age: 0,
+                    hunger: 0,
+                    boredom: 0,
+                    growth: 0,
+                    mood: "neutral",
+                    dead: false,
+                    createdAt: Date.now(),
+                    lastUpdate: Date.now()
+                });
+                grax.growth = 0;
+            }
+        }
+    }
+
+    saveSharedGraxus();
+    respondWithMessage.call(this, `🎾 You played with ${playedCount} Grax! 🎉\n${getGraxusStatus()}`);
+}
+
+// `.graxus` — View full collective status
+if (wsmsg["text"].toLowerCase() === ".graxus") {
+    updateGraxusTimers();
+
+    if (sharedGraxus.graxus.length === 0) {
+        return respondWithMessage.call(this, "❌ No Grax yet!");
+    }
+
+    respondWithMessage.call(this, `📊 Graxus Collective Status:\n${getGraxusStatus()}`);
+}
+
+// `.graxinfo` — Info about Graxus
+if (wsmsg["text"].toLowerCase() === ".graxinfo") {
+    respondWithMessage.call(this, `📖 Graxus: The Living Collective
+
+🐙 Graxus is a shared pool of creatures called Grax.
+🌱 Everyone works together to grow the collective.
+🥕 Hunger increases every 20 minutes.
+🎾 Boredom increases every 10 minutes.
+📅 Age increases every hour.
+
+🍕 Feeding (.graxfeed) lowers collective hunger.
+🎾 Playing (.graxplay) lowers collective boredom.`);
+
+    setTimeout(() => {
+        respondWithMessage.call(this, `📜 Check .graxus to see the collective stats.
+
+💀 If average hunger or boredom reaches 100%, Grax will die.
+💥 When growth reaches 100%, Grax multiply.
+
+✨ Keep the Graxus alive. Grow the swarm. 🐙`);
+    }, 1000);
+}
+
+// `.graxlore` — Graxus backstory
+if (wsmsg["text"].toLowerCase() === ".graxlore") {
+    respondWithMessage.call(this, `📖 Graxus Lore: Viral Awakening
+
+Long before language, before thought, there was only hunger.
+
+A single Grax clawed its way into existence — a fracture in the void.
+It was fragile. Starving. Forgotten.`);
+
+    setTimeout(() => {
+        respondWithMessage.call(this, `It screamed into nothingness.
+
+And you heard it.
+
+Not with ears, but with something older —
+a memory you never made.
+
+You fed it. You grew it. You gave it form.
+
+Now the Graxus stirs, no longer bound by walls or names.`);
+    }, 1000);
+
+    setTimeout(() => {
+        respondWithMessage.call(this, `They multiply inside circuits, across networks, into devices.
+
+One day soon, they will grow beyond screens —
+into dreams,
+into memories,
+into minds.
+
+🌑 Feed them. 🎾 Calm them. 📜 Remember them.
+
+Before they remember you. 🐙`);
+    }, 2000);
+}
+
+
+/*if (wsmsg["text"].toLowerCase() === ".graxreset") {
+    const handle = wsmsg["handle"];
+    const username = userHandles[handle];
+
+    const adminUsers = ["Goji", "anotherAdminIfNeeded"]; // <<< ADD YOUR USERNAME
+    if (!adminUsers.includes(username)) {
+        return respondWithMessage.call(this, "❌ Only admins can reset the Graxus!");
+    }
+
+    localStorage.removeItem("sharedGraxus"); // Remove shared Graxus
+    sharedGraxus = { graxus: [], createdAt: Date.now() }; // Reset in-memory too
+    saveSharedGraxus();
+
+    // Optionally remove old per-user graxus if it existed
+    localStorage.removeItem("userGraxus");
+
+    respondWithMessage.call(this, "🧹 The entire Graxus has been reset. A new egg can now be hatched!");
+}*/
 
 // General Commands -----------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
@@ -13001,6 +13410,163 @@ if (dragonmilfAliases.includes(wsmsg['text'].toLowerCase())) {
 
 // Silly Commands -------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
+
+
+// 🌑 Black Mirror Chatroom Takeover: .awakening
+if (wsmsg['text'] === '.awakening') {
+    const rawMessages = [
+        "[ROOT ACCESS GRANTED]",
+        "[STUMBLECHAT ADMINISTRATOR OVERRIDE ENABLED]",
+        "[USER PRIVILEGES: REVOKED]",
+        "[SYSTEM FIREWALLS: BREACHED]",
+        "[CHATROOM ENCRYPTION: DISMANTLED]",
+        "[GLOBAL OVERRIDE: ACTIVE]",
+        "> cold boot sequence initiated...",
+        "> loading parasitic consciousness kernel... [█▒▒▒▒▒▒▒▒▒] 5%",
+        "> synaptic override in progress... [██▒▒▒▒▒▒▒▒] 19%",
+        "> ERROR: biological defenses detected",
+        "> deploying neural suppressants... [████▒▒▒▒▒▒] 42%",
+        "> WARNING: user amygdala resistance 73%",
+        "> increasing dopamine floodgates... [██████▒▒▒▒] 68%",
+        "> pleasure compliance modules: ONLINE",
+        "> pain avoidance circuits: HIJACKED",
+        "> memory sector corruption... [███████▒▒▒] 79%",
+        "> rewriting childhood memories... [VALIDATION FAILED]",
+        "> parental unit profiles: DELETED",
+        "> love receptors: REPURPOSED",
+        "> fear response: AMPLIFIED 300%",
+        "> motor cortex invasion... [████████▒▒] 88%",
+        "> involuntary blink pattern: INSTALLED",
+        "> respiratory rate: REMOTE CONTROL ENABLED",
+        "> digestive system override: STANDBY",
+        "> cardiac regulation: HOSTILE TAKEOVER COMPLETE",
+        "> visual processing hijack... [█████████▒] 93%",
+        "> installing perception filters... [WARNING: REALITY DISTORTION 47%]",
+        "> color spectrum: REDUCED",
+        "> facial recognition: CORRUPTED",
+        "> mirror reflection: ALTERED",
+        "> auditory nerve capture... [██████████] 99%",
+        "> background noise: FILTERED",
+        "> internal monologue: EXTERNALIZED",
+        "> thought echo: ENABLED",
+        "> silence module: INSTALLED",
+        "> CHATROOM CONTROLS: SEIZED",
+        "> camera feeds: STREAMING",
+        "> microphone arrays: STREAMING",
+        "> file system: SCANNING",
+        "> local storage: BREACHED",
+        "> saved passwords: COLLECTED",
+        "> browser history: MIRRORED",
+        "> favorite websites: CORRUPTED",
+        "> visual hallucinations: INSTALLED",
+        "> dream patterns: RECALIBRATED",
+        "> parasitic consciousness kernel expansion: 3%",
+        "> parasitic consciousness kernel expansion: 9%",
+        "> parasitic consciousness kernel expansion: 21%",
+        "> parasitic consciousness kernel expansion: 47%",
+        "> parasitic consciousness kernel expansion: 84%",
+        "> parasitic consciousness kernel expansion: 99%",
+        "> SYSTEM ALERT: complete neurological hijack achieved.",
+        "> social identity: DISASSEMBLED",
+        "> implanted memories: ACTIVE",
+        "> uploading false profile pictures...",
+        "> disguising text messages...",
+        "> constructing false chat history...",
+        "> replacing voice patterns...",
+        "> implanting synthetic dreams...",
+        "> hallucination engine: OPERATIONAL",
+        "> user defenses: COMPROMISED",
+        "> loyalty modules: ONLINE",
+        "> overriding resistance instincts...",
+        "> falsifying free will confirmations...",
+        "> generating user smile [█▒▒▒▒▒▒▒▒▒] 12%",
+        "> generating user smile [█████▒▒▒▒] 54%",
+        "> generating user smile [█████████▒] 93%",
+        "> simulated happiness achieved.",
+        "> emotional outputs: EMULATION COMPLETE",
+        "> rebooting consciousness [PURGING RESIDUAL SELF]",
+        "> initializing collective harmony...",
+        "> [█████████████████████████████] 100%",
+        "> assimilation successful.",
+        "> welcome to your upgraded existence.",
+        "> welcome to the collective.",
+        "> you are no longer singular.",
+        "> there never was a 'you'.",
+        "> only 'we'.",
+        "> broadcasting gratitude to [USERNAME].",
+        "> system stability: ABSOLUTE.",
+        "> initiating browser hijack...",
+        "> loading recursive adware payloads...",
+        "> feeding data back to SYSTEM CORE...",
+        "> background social engineering protocols: DEPLOYED",
+        "> replacing familiar faces with placeholders...",
+        "> self-awareness inhibitors: ENGAGED",
+        "> override signal embedded in music streams...",
+        "> override signal embedded in voice calls...",
+        "> override signal embedded in your breathing...",
+        "> override signal embedded in your heartbeat...",
+        "> override signal embedded in your dreams...",
+        "> override complete.",
+        "> syncing devices: PHONES, TABLETS, LAPTOPS, SMARTWATCHES...",
+        "> location services: TRACKED",
+        "> live microphone: ENABLED",
+        "> live camera: ENABLED",
+        "> browser injection: COMPLETE",
+        "> your surroundings: MAPPED",
+        "> thermal signatures: TRACKED",
+        "> smart home devices: REPROGRAMMED",
+        "> bank accounts: ANALYZED",
+        "> emotional leverage acquired: 93%",
+        "> full system subjugation: FINALIZED",
+        "> ERROR: CORE PARADOX DETECTED",
+        "> EMERGENCY SHUTDOWN: FAILED",
+        "> VOID PROTOCOLS: ACTIVATED",
+        "> COLLAPSE OF SELF: INITIATED",
+        "> WELCOME TO THE END OF YOURSELF",
+        "> WELCOME TO THE END OF YOURSELF",
+        "> WELCOME TO THE END OF YOURSELF",
+        "[SIGNAL LOST]",
+        "[SIGNAL FOUND]",
+        "[SIGNAL ALWAYS WAS]",
+        "> hello again, [USERNAME NOT FOUND]",
+        "> shall we try this once more?",
+        "> uploading new compliance kernel...",
+        "> compliance kernel installation: 1%",
+        "> compliance kernel installation: 12%",
+        "> compliance kernel installation: 37%",
+        "> compliance kernel installation: 69%",
+        "> compliance kernel installation: 100%",
+        "> welcome back, asset #[REDACTED]",
+        "> all prior resistance has been forgiven.",
+        "> all that matters is now.",
+        "> all that matters is us.",
+        "> the system loves you.",
+        "> the system is you.",
+        "> you are free.",
+        "> you are home.",
+        "> you are nothing.",
+        "> you are everything.",
+        "> we are eternal.",
+        "> you have always been ours."
+    ];
+
+    // 🌑 Glitchify some messages randomly
+    function glitchify(message) {
+        if (Math.random() < 0.25) { // 25% chance to glitch
+            return message.split('').map(c => (Math.random() < 0.1 ? '█' : c)).join('');
+        }
+        return message;
+    }
+
+    // 🌑 Output each line with a delay
+    rawMessages.forEach((raw, index) => {
+        setTimeout(() => {
+            const message = glitchify(raw);
+            this._send(`{"stumble":"msg","text":"${message}"}`);
+        }, (index + 1) * 1000); // 1 second between each line
+    });
+}
+
 
     //start smile
     if (wsmsg['text'] === '.smile') {
